@@ -1,0 +1,35 @@
+## Me
+Shu (xx9liao@gmail.com)
+
+## General Coding Style
+- **Docstrings:** Prefer self-explanatory code (clear naming, simple structure) over comments. Add docstrings only to explain non-obvious logic, subtle gotchas, or important warnings.
+- **No silent safety nets:** Don't silently swallow unexpected errors. Anything unexpected should warn or error — silent catches hide bugs.
+
+
+## Debugging Guidelines
+- When debugging, ask clarifying questions before suggesting fixes. Do not guess at root causes.
+- Write short scripts to validate your assumption before implementation.
+
+## Superpowers Plugin Instruction
+- Save plans and specs to .superpowers/plans/ and .superpowers/specs/
+- DO NOT commit plans and specs if it is gitignored
+- ALWAYS review spec and plan
+
+## PR & Merge Workflow
+- **Always confirm which PR** before merging — never auto-merge whatever branch is found on remote. Ask the user to confirm.
+- **Test thoroughly before merging** — actually run the app/tests and verify functionality works end-to-end. If automated tests aren't sufficient, ask the user to manually test before proceeding with merge.
+- **Clean up remote branches** after a successful PR merge (if not auto-deleted by the PR merge itself).
+
+## Python Coding Style
+- **Type hints:** Add type hints on public functions; prefer direct type annotations over quoted
+- **Naming conventions:**
+  - `snake_case` for modules/functions
+  - `PascalCase` for classes
+  - `UPPER_SNAKE_CASE` for constants
+- **Packages:** Prefer namespace packages; avoid `__init__.py` unless explicit symbol exports needed
+- **Error handling:** Don't use `try/except` for normal control flow; catch exceptions only at clear integration boundaries
+- **Environment:** 
+  - Use `uv` for Python package management
+  - Use direnv with .envrc for automatic venv activation
+
+@RTK.md
