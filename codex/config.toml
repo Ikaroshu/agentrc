@@ -1,0 +1,21 @@
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+personality = "pragmatic"
+
+[projects."/Users/shu/Documents/Projects/portfolio_backtest"]
+trust_level = "trusted"
+
+[projects."/Users/shu/Documents/Projects/chatall"]
+trust_level = "trusted"
+
+[projects."/Users/shu/Projects/HomePi"]
+trust_level = "trusted"
+
+[notice.model_migrations]
+"gpt-5.3-codex" = "gpt-5.4"
+
+[plugins."google-calendar@openai-curated"]
+enabled = true
+
+[plugins."gmail@openai-curated"]
+enabled = true

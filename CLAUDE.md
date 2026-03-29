@@ -8,30 +8,33 @@ This repository tracks and manages configurations and settings for AI tools (Cla
 
 ## Repository Structure
 
-- `claude/` — Claude Code global settings, mirroring `~/.claude/` structure
-  - `settings.json` — main config (permissions, hooks, plugins, statusline)
-  - `CLAUDE.md`, `RTK.md` — global instructions
-  - `file-suggestion.sh` — `@`-autocomplete hook (rg + fzf)
-  - `statusline-command.sh` — status line display script
-  - `hooks/` — PreToolUse hooks (e.g., RTK rewrite)
-  - `commands/` — slash commands (commit, merge workflows)
-  - `install.sh` — symlinks repo files into `~/.claude/` (local machine setup)
-  - `sync-remote.sh` — rsync files to a remote machine's `~/.claude/`
+Each AI tool gets its own top-level directory mirroring its config location:
+
+- `claude/` — Claude Code (`~/.claude/`)
+  - `settings.json`, `CLAUDE.md`, `RTK.md`, `file-suggestion.sh`, `statusline-command.sh`
+  - `hooks/` — PreToolUse hooks (RTK rewrite)
+  - `commands/` — slash commands (commit, merge)
+  - `install.sh` / `sync-remote.sh`
+- `codex/` — Codex CLI (`~/.codex/`)
+  - `AGENTS.md`, `config.toml`
+  - `install.sh` / `sync-remote.sh`
 
 ## Setup
 
-**Local machine** (symlink approach — edits in either place are the same file):
-```bash
-./claude/install.sh
-```
+Each tool directory has the same two scripts:
 
-**Remote machine** (copy approach):
+- `install.sh` — local machine: symlinks repo files into the tool's config dir
+- `sync-remote.sh <host>` — remote machine: copies files, merges machine-specific settings
+
 ```bash
-./claude/sync-remote.sh mini
+./claude/install.sh          # local symlinks for Claude
+./codex/install.sh           # local symlinks for Codex
+./claude/sync-remote.sh mini # sync Claude to remote
+./codex/sync-remote.sh mini  # sync Codex to remote
 ```
 
 ## Conventions
 
-- Paths in `settings.json` must use `~/.claude/...` (not absolute paths) for portability
-- Shell scripts should be POSIX-compatible where possible; bash-specific features are acceptable when needed
-- New AI tool configs go in their own top-level directory (e.g., `claude/`, `codex/`)
+- Paths in config files must use `~/` (not absolute paths) for portability
+- Shell scripts should be POSIX-compatible where possible
+- `sync-remote.sh` merges settings files to preserve machine-specific config (env vars, project trust, permissions mode)
