@@ -5,15 +5,15 @@ Shu (xx9liao@gmail.com)
 - **Docstrings:** Prefer self-explanatory code (clear naming, simple structure) over comments. Add docstrings only to explain non-obvious logic, subtle gotchas, or important warnings.
 - **No silent safety nets:** Don't silently swallow unexpected errors. Anything unexpected should warn or error — silent catches hide bugs.
 
-
 ## Debugging Guidelines
-- When debugging, ask clarifying questions before suggesting fixes. Do not guess at root causes.
-- Write short scripts to validate your assumption before implementation.
+- Ask clarifying questions before suggesting fixes.
+- Write short scripts to falsify/validate your assumption about the fix.
+- Search online for solutions after 3 assumptions has been falsified.
 
 ## Superpowers Plugin Instruction
 - Save plans and specs to .superpowers/plans/ and .superpowers/specs/
-- DO NOT commit plans and specs if it is gitignored
-- ALWAYS review spec and plan
+- DO NOT commit plans and specs
+- ALWAYS use code-reviewer to review spec and plan
 
 ## PR & Merge Workflow
 - **Always confirm which PR** before merging — never auto-merge whatever branch is found on remote. Ask the user to confirm.

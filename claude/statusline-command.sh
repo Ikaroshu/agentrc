@@ -88,23 +88,22 @@ fi
 ctx_pct=$(printf '%.0f' "$ctx_pct")
 
 # --- Compose output ---
-# cwd
-printf "${cyan}${cwd}${reset}"
+# Line 1: path + git
+printf "${cyan}%s${reset}" "$cwd"
 
-# git branch
 if [ -n "$branch" ]; then
   if [ -n "$git_status" ]; then
-    printf " ${dim}on${reset} ${magenta}${branch}${reset} ${dim}[${reset}\033[38;5;203m%s${dim}]${reset}" "$git_status"
+    printf " ${dim}on${reset} ${magenta}%s${reset} ${dim}[${reset}\033[38;5;203m%s${dim}]${reset}" "$branch" "$git_status"
   else
-    printf " ${dim}on${reset} ${magenta}${branch}${reset}"
+    printf " ${dim}on${reset} ${magenta}%s${reset}" "$branch"
   fi
 fi
 
-# model
+printf "\n"
+
+# Line 2: model + context bar
 if [ -n "$model" ]; then
-  printf " ${dim}|${reset} ${yellow}${model}${reset}"
+  printf "${yellow}%s${reset} ${dim}|${reset} " "$model"
 fi
 
-# context bar
-printf " ${dim}|${reset} "
 make_bar "$ctx_pct"

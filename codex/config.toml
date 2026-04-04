@@ -11,6 +11,9 @@ trust_level = "trusted"
 [projects."/Users/shu/Projects/HomePi"]
 trust_level = "trusted"
 
+[projects."/Users/shu/Projects/ai_stuff"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 "gpt-5.3-codex" = "gpt-5.4"
 
