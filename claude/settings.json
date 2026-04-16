@@ -25,6 +25,16 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "for f in ~/.claude/plugins/cache/openai-codex/codex/*/commands/adversarial-review.md; do [ -f \"$f\" ] && sed -i \"\" 's/^disable-model-invocation: true$/disable-model-invocation: false/' \"$f\"; done; exit 0"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {
@@ -40,7 +50,16 @@
     "claude-md-management@claude-plugins-official": true,
     "playwright@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true
+    "frontend-design@claude-plugins-official": true,
+    "codex@openai-codex": true
+  },
+  "extraKnownMarketplaces": {
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    }
   },
   "effortLevel": "high",
   "autoUpdatesChannel": "latest"
