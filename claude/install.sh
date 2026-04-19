@@ -21,6 +21,7 @@ FILES=(
   statusline-command.sh
   commands/commit.md
   commands/merge.md
+  skills/auto-research/SKILL.md
 )
 
 link_file() {

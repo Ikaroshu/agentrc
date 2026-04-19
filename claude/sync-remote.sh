@@ -13,7 +13,7 @@ REMOTE="${1:?Usage: $0 <ssh-host>}"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Directories to ensure exist on remote
-ssh "$REMOTE" 'mkdir -p ~/.claude/commands'
+ssh "$REMOTE" 'mkdir -p ~/.claude/commands ~/.claude/skills/auto-research'
 
 # Sync non-settings files
 scp -q \
@@ -26,6 +26,10 @@ scp -q \
   "$REPO_DIR/commands/commit.md" \
   "$REPO_DIR/commands/merge.md" \
   "$REMOTE:~/.claude/commands/"
+
+scp -q \
+  "$REPO_DIR/skills/auto-research/SKILL.md" \
+  "$REMOTE:~/.claude/skills/auto-research/"
 
 # Merge settings.json: update shared keys, preserve machine-specific ones
 REMOTE_SETTINGS=$(ssh "$REMOTE" 'cat ~/.claude/settings.json 2>/dev/null || echo "{}"')
