@@ -13,20 +13,14 @@ REMOTE="${1:?Usage: $0 <ssh-host>}"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # Directories to ensure exist on remote
-ssh "$REMOTE" 'mkdir -p ~/.claude/hooks ~/.claude/commands'
+ssh "$REMOTE" 'mkdir -p ~/.claude/commands'
 
 # Sync non-settings files
 scp -q \
   "$REPO_DIR/CLAUDE.md" \
-  "$REPO_DIR/RTK.md" \
   "$REPO_DIR/file-suggestion.sh" \
   "$REPO_DIR/statusline-command.sh" \
   "$REMOTE:~/.claude/"
-
-scp -q \
-  "$REPO_DIR/hooks/rtk-rewrite.sh" \
-  "$REPO_DIR/hooks/.rtk-hook.sha256" \
-  "$REMOTE:~/.claude/hooks/"
 
 scp -q \
   "$REPO_DIR/commands/commit.md" \
@@ -59,6 +53,6 @@ print(json.dumps(remote, indent=2))
 echo "$MERGED" | ssh "$REMOTE" 'cat > ~/.claude/settings.json'
 
 # Fix permissions on remote
-ssh "$REMOTE" 'chmod +x ~/.claude/file-suggestion.sh ~/.claude/hooks/rtk-rewrite.sh ~/.claude/statusline-command.sh 2>/dev/null'
+ssh "$REMOTE" 'chmod +x ~/.claude/file-suggestion.sh ~/.claude/statusline-command.sh 2>/dev/null'
 
 echo "Sync complete → $REMOTE"

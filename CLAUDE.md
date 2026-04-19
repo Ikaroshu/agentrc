@@ -11,8 +11,7 @@ This repository tracks and manages configurations and settings for AI tools (Cla
 Each AI tool gets its own top-level directory mirroring its config location:
 
 - `claude/` — Claude Code (`~/.claude/`)
-  - `settings.json`, `CLAUDE.md`, `RTK.md`, `file-suggestion.sh`, `statusline-command.sh`
-  - `hooks/` — PreToolUse hooks (RTK rewrite)
+  - `settings.json`, `CLAUDE.md`, `file-suggestion.sh`, `statusline-command.sh`
   - `commands/` — slash commands (commit, merge)
   - `install.sh` / `sync-remote.sh`
 - `codex/` — Codex CLI (`~/.codex/`)

@@ -21,13 +21,14 @@ QUERY=$(printf '%s' "$INPUT" | sed -n 's/.*"query" *: *"\([^"]*\)".*/\1/p')
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
 cd "$PROJECT_DIR" || exit 1
 
-EXCLUDES=(-g '!.git/' -g '!__pycache__/' -g '!.venv/' -g '!.cache/' -g '!*.pyc' -g '!node_modules/')
+EXCLUDES=(-g '!.git/' -g '!.github/' -g '!__pycache__/' -g '!.venv/' -g '!.cache/' -g '!*.pyc' -g '!node_modules/')
 
 list_dirs() {
-  find "$1" -type d \
-    \( -name .git -o -name .venv -o -name .cache -o -name __pycache__ -o -name node_modules \) -prune \
-    -o -type d -print \
-    | sed "s|^\./||; /^$/d; s|$|/|"
+  fd --type d --follow --hidden \
+     --exclude .git --exclude __pycache__ --exclude .venv --exclude .cache --exclude node_modules \
+     --exclude .pytest_cache --exclude .ruff_cache --exclude .mypy_cache --exclude .github \
+     . "$1" 2>/dev/null \
+    | sed "s|^\./||"
 }
 
 {

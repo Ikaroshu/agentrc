@@ -17,11 +17,8 @@ TARGET_DIR="$HOME/.claude"
 FILES=(
   settings.json
   CLAUDE.md
-  RTK.md
   file-suggestion.sh
   statusline-command.sh
-  hooks/rtk-rewrite.sh
-  hooks/.rtk-hook.sha256
   commands/commit.md
   commands/merge.md
 )
@@ -66,7 +63,6 @@ done
 
 # Ensure scripts are executable
 chmod +x "$REPO_DIR/file-suggestion.sh" 2>/dev/null || true
-chmod +x "$REPO_DIR/hooks/rtk-rewrite.sh" 2>/dev/null || true
 
 echo
 echo "Done. Settings are now symlinked to this repo."
