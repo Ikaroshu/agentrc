@@ -1,6 +1,7 @@
 model = "gpt-5.4"
 model_reasoning_effort = "high"
 personality = "pragmatic"
+sandbox_mode = "workspace-write"
 
 [projects."/Users/shu/Documents/Projects/portfolio_backtest"]
 trust_level = "trusted"
@@ -23,18 +24,39 @@ trust_level = "trusted"
 [plugins."gmail@openai-curated"]
 enabled = true
 
-[[skills.config]]
-path = "/Users/shu/.codex/skills/doc/SKILL.md"
-enabled = false
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[plugins."google-calendar@openai-curated"]
+enabled = true
+
+[plugins."google-drive@openai-curated"]
+enabled = true
+
+[plugins."superpowers@openai-curated"]
+enabled = true
 
 [[skills.config]]
 path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905eb7afb6aa0cef34edc79e/skills/gmail/SKILL.md"
 enabled = false
 
 [[skills.config]]
-path = "/Users/shu/.codex/skills/.system/imagegen/SKILL.md"
-enabled = false
-
-[[skills.config]]
 path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905eb7afb6aa0cef34edc79e/skills/gmail-inbox-triage/SKILL.md"
 enabled = false
+
+[marketplaces.openai-bundled]
+last_updated = "2026-04-22T13:22:32Z"
+source_type = "local"
+source = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[features]
+memories = true
+
+[tui]
+status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining"]
+
+[sandbox_workspace_write]
+network_access = true

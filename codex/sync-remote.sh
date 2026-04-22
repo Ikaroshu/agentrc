@@ -10,59 +10,25 @@ set -euo pipefail
 
 REMOTE="${1:?Usage: $0 <ssh-host>}"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
+REMOTE_CONFIG_FILE="$(mktemp)"
 
-ssh "$REMOTE" 'mkdir -p ~/.codex'
+cleanup() {
+  rm -f "$REMOTE_CONFIG_FILE"
+}
+trap cleanup EXIT
+
+ssh "$REMOTE" 'mkdir -p ~/.codex/commands ~/.codex/skills/auto-research'
 
 # AGENTS.md: always overwrite (no machine-specific content)
 scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
+scp -q "$REPO_DIR/commands/commit.md" "$REPO_DIR/commands/merge.md" "$REMOTE:~/.codex/commands/"
+scp -q "$REPO_DIR/skills/auto-research/SKILL.md" "$REMOTE:~/.codex/skills/auto-research/"
 
-# config.toml: merge — keep remote's [projects.*] and [notice.*] sections,
-# update shared keys (model, personality, plugins)
-REMOTE_CONFIG=$(ssh "$REMOTE" 'cat ~/.codex/config.toml 2>/dev/null || echo ""')
-REPO_CONFIG=$(cat "$REPO_DIR/config.toml")
-
-python3 -c '
-import sys, re
-
-remote = sys.argv[1]
-repo = sys.argv[2]
-
-# Parse TOML sections naively (good enough for flat codex config)
-def parse_sections(text):
-    """Return (top-level keys, section blocks)."""
-    top = []
-    sections = {}
-    current = None
-    for line in text.splitlines():
-        header = re.match(r"^\[(.+)\]$", line)
-        if header:
-            current = header.group(0)
-            sections[current] = [line]
-        elif current:
-            sections[current].append(line)
-        else:
-            top.append(line)
-    return top, sections
-
-repo_top, repo_sections = parse_sections(repo)
-remote_top, remote_sections = parse_sections(remote)
-
-# Start with repo top-level keys (model, personality, etc.)
-out = list(repo_top)
-
-# Add repo plugin sections only (not projects — those are machine-specific)
-for key, lines in repo_sections.items():
-    if key.startswith("[plugins."):
-        out.append("")
-        out.extend(lines)
-
-# Preserve all remote sections (projects, notice, plugins not in repo, etc.)
-for key, lines in remote_sections.items():
-    if key not in repo_sections:
-        out.append("")
-        out.extend(lines)
-
-print("\n".join(out))
-' "$REMOTE_CONFIG" "$REPO_CONFIG" | ssh "$REMOTE" 'cat > ~/.codex/config.toml'
+# config.toml: merge shared repo settings while preserving remote machine-specific
+# sections such as project trust, notices, marketplaces, and skill path entries.
+ssh "$REMOTE" 'cat ~/.codex/config.toml 2>/dev/null || true' > "$REMOTE_CONFIG_FILE"
+python3 "$ROOT_DIR/scripts/merge-codex-config.py" "$REMOTE_CONFIG_FILE" "$REPO_DIR/config.toml" \
+  | ssh "$REMOTE" 'cat > ~/.codex/config.toml'
 
 echo "Sync complete → $REMOTE"

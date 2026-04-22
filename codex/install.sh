@@ -10,6 +10,9 @@ TARGET_DIR="$HOME/.codex"
 FILES=(
   AGENTS.md
   config.toml
+  commands/commit.md
+  commands/merge.md
+  skills/auto-research/SKILL.md
 )
 
 link_file() {
