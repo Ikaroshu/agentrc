@@ -1,4 +1,4 @@
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 sandbox_mode = "workspace-write"
@@ -39,6 +39,18 @@ enabled = true
 [plugins."superpowers@openai-curated"]
 enabled = true
 
+[plugins."browser-use@openai-bundled"]
+enabled = true
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
 [[skills.config]]
 path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905eb7afb6aa0cef34edc79e/skills/gmail/SKILL.md"
 enabled = false
@@ -48,15 +60,23 @@ path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905
 enabled = false
 
 [marketplaces.openai-bundled]
-last_updated = "2026-04-22T13:22:32Z"
+last_updated = "2026-04-29T00:32:43Z"
 source_type = "local"
 source = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled"
+
+[marketplaces.openai-primary-runtime]
+last_updated = "2026-04-29T01:27:59Z"
+source_type = "local"
+source = "/Users/shu/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
 [features]
 memories = true
 
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining"]
+
+[tui.model_availability_nux]
+"gpt-5.5" = 1
 
 [sandbox_workspace_write]
 network_access = true
