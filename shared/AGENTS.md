@@ -13,7 +13,7 @@ Shu (xx9liao@gmail.com)
 ## Superpowers Plugin Instruction
 - Save plans to `<project-root>/.superpowers/plans/` and specs to `<project-root>/.superpowers/specs/` (NOT inside worktree directories — worktrees are ephemeral)
 - DO NOT commit plans and specs
-- After writing the spec and plan, invoke ONE `/codex:adversarial-review` via the Skill tool on both files before starting implementation. Address findings before proceeding.
+- After writing the spec and plan, invoke ONE `/codex:adversarial-review --wait` via the Skill tool on both files before starting implementation. The `--wait` flag is required so the review runs in the foreground and returns results in the same turn — do not let it prompt for foreground/background. Address findings before proceeding.
 
 ## PR & Merge Workflow
 - **Always confirm which PR** before merging — never auto-merge whatever branch is found on remote. Ask the user to confirm.
