@@ -14,6 +14,7 @@ Shu (xx9liao@gmail.com)
 - Save plans to `<project-root>/.superpowers/plans/` and specs to `<project-root>/.superpowers/specs/` (NOT inside worktree directories — worktrees are ephemeral)
 - DO NOT commit plans and specs
 - After writing the spec and plan, invoke ONE `/codex:adversarial-review --wait` via the Skill tool on both files before starting implementation. The `--wait` flag is required so the review runs in the foreground and returns results in the same turn — do not let it prompt for foreground/background. Address findings before proceeding.
+- **Cap `/codex:adversarial-review` at TWO invocations per spec/plan cycle** (the initial review, plus at most one re-review after addressing findings). Do not run a third review on your own initiative — even if you think more findings might surface or you want to validate a rewrite. If a third pass seems warranted, ask the user first; only run more when they explicitly say so.
 
 ## PR & Merge Workflow
 - **Always confirm which PR** before merging — never auto-merge whatever branch is found on remote. Ask the user to confirm.
