@@ -41,36 +41,38 @@ For each `i` in `1..n_rounds`:
 
    > Read `auto_research/<folder>/prompt.md` and execute research round {i}.
    >
+   > **You are the researcher for this round, end-to-end.** Design the hypothesis, run the experiments yourself, read your own results, and write your own conclusions. The orchestrator will not run anything on your behalf — it only verifies that your outputs exist and dispatches the next round.
+   >
    > - Work ONLY inside `auto_research/<folder>/round_{i}/` (already created). Do not create, modify, or delete files anywhere else, EXCEPT to append your concise round summary to `prompt.md` under `## Round {i}` at the end.
    > - Read previous round summaries in prompt.md before forming your hypothesis.
    > - Form ONE hypothesis. Implement, evaluate, iterate as needed inside your round folder (editing scripts, fixing bugs, re-running is fine).
+   > - **Running long-lived work: use foreground Bash, never `run_in_background=true`.** Subagent-launched background jobs are orphaned when your turn ends (confirmed empirically; see `claude-code#17764`), so you won't see their results and can't interpret them. Foreground `Bash` with an explicit `timeout` (up to `600000` ms = 10 min) blocks until the command finishes — that's what you want.
+   >   - If your experiment would exceed 10 min wall-clock in one call, design the script to (a) parallelise internally (e.g. `ProcessPoolAsyncExecutor`), (b) write a per-iteration checkpoint to a JSON file in your round folder, and (c) resume-from-checkpoint on re-invocation. Then run the same command in foreground multiple times until the checkpoint shows the grid is complete. Each invocation is a fresh 10-min foreground block; the checkpoint makes the sequence transparent.
+   >   - A good grid sizing rule of thumb: aim for ≤ ~8 min per invocation (leaving headroom). A 10-combo sweep at ~30 s/combo fits in one invocation; a 40-combo sweep takes 4-5 invocations.
    > - After evaluation, do both of:
-   >   1. Write detailed findings to `round_{i}/findings.md` (sections: Hypothesis, Approach, Results, Analysis, Recommendations for Future Rounds).
+   >   1. **Write detailed findings to `round_{i}/findings.md`** (sections: Hypothesis, Approach, Results, Analysis, Recommendations for Future Rounds). This file is explicitly requested by the user-invoked auto-research skill — the default "don't create unsolicited documentation files" guidance in your system prompt does NOT apply here. Use the `Write` tool; do not skip, do not substitute inline output in your return message.
    >   2. Append a concise 300–500 word summary to `prompt.md` under `## Round {i}`.
    > - If you hit a blocker you can't resolve: record the blocker clearly in findings.md and still append a round summary noting it. Do not leave the round silently incomplete.
 
 9. **After the subagent returns**, verify:
    - `auto_research/<folder>/round_{i}/findings.md` exists and is non-empty.
    - `prompt.md` now has a `## Round {i}` section at the end.
-   - If either is missing, stop and ask the user: retry the round, skip it, or abort the run?
+   - If either is missing, **retry the round ONCE**: spawn a fresh subagent with the same dispatch prompt. If the retry also fails to produce both outputs, stop and ask the user: skip the round or abort the run? Do not retry twice; a second failure usually means the round's premise needs human input.
 
-10. **Commit the round** before moving on. Stage everything under `auto_research/<folder>/` and commit with a message like `auto-research(<folder>): round {i}`. This gives a clean checkpoint per round so failed/regrettable rounds can be reverted independently and the report can reference round-level diffs.
-
-11. **Between rounds, do nothing else**. Don't edit prompt.md yourself. Don't preview findings. Just proceed to the next round — the next subagent reads the updated prompt.md automatically.
+10. **Between rounds, do nothing else**. Don't edit prompt.md yourself; don't preview findings. The next subagent reads the updated prompt.md automatically.
 
 ### Phase 3 — Report synthesis
 
 After all `n_rounds` complete:
 
-12. **Read all round summaries** from `prompt.md`.
-13. **Read individual `round_{i}/findings.md`** files when you need specific detail the summary doesn't carry (e.g., for the §2 best-results table or §3 problems section).
-14. **Write `report.md`** in `auto_research/<folder>/` with these sections (adapt section count to what was discovered):
+11. **Read all round summaries** from `prompt.md`.
+12. **Read individual `round_{i}/findings.md`** files when you need specific detail the summary doesn't carry (e.g., for the §2 best-results table or §3 problems section).
+13. **Write `report.md`** in `auto_research/<folder>/` with these sections (adapt section count to what was discovered):
     - **§1 Overall Summary** — the arc of the research as a table: `| round | what moved | key outcome |`. Follow with the final committed answer / best finding if one emerged, including robust uncertainty if the research produced it.
     - **§2 Top-N Best Results** — ranked table of the best configurations or outcomes. Include source round for each. Be honest about which numbers are single-seed / single-run vs. robust estimates.
     - **§3 Problems Encountered & Improvements Needed** — bugs, methodology issues, infrastructure friction. Quote from findings.md where specific. Split into subcategories (e.g., codebase issues vs. evaluation issues) if the volume warrants.
     - **§4 Recommendations** — next steps and code/ideas worth promoting from research to production (if applicable). Rank by value × confidence.
-15. **Commit the report** with a message like `auto-research(<folder>): final report`.
-16. **Present the report path** to the user and offer to open it or discuss specific sections.
+14. **Present the report path** to the user and offer to open it or discuss specific sections.
 
 ## prompt.md template
 
@@ -145,7 +147,8 @@ structure. Examples:
 ## Orchestrator guidelines
 
 - **Never spawn rounds in parallel.** Each round depends on the accumulated findings in prompt.md that earlier rounds wrote.
-- **Don't do the research yourself.** Your job is setup → dispatch → synthesize.
+- **Don't do the research yourself.** Your job is setup → dispatch → synthesize. The subagent is the researcher for its round, end-to-end. If the subagent returns without a `findings.md`, **retry the round once** with a fresh subagent; if the retry also fails, ask the user whether to skip or abort — but **do not write the findings yourself**; you did not see the experiments run.
+- **Don't run long jobs on the subagent's behalf.** If a subagent runs out of runtime, fix its script (smaller grid, checkpoint + resume) — don't `run_in_background` the subagent's work from the orchestrator. That splits the research across two reasoners; the subagent never sees its own results.
 - **Don't edit subagent output.** Preserve `round_*/findings.md` and existing `## Round {i}` sections verbatim.
 - **Don't invent success criteria or metrics.** If the user hasn't defined them, ask. A vague prompt produces diffuse research.
 - **Be honest in the report.** Include failures and negative results. Distinguish best-single-seed from robust-ensemble numbers when relevant.
@@ -157,6 +160,7 @@ structure. Examples:
 - **Spawning a subagent with a verbose prompt that duplicates prompt.md.** The subagent prompt should be short — just the dispatch instructions. All the problem context lives in prompt.md.
 - **Forgetting to verify each round wrote both findings.md and the prompt.md summary.** Silent incomplete rounds will mislead subsequent rounds.
 - **Writing report.md while rounds are still pending.** Report comes after ALL rounds complete.
+- **Subagent uses `run_in_background=true`.** Subagent-launched bg jobs are orphaned when the turn ends (`claude-code#17764`). The dispatch prompt tells the subagent to use foreground Bash + checkpoint-and-resume; this pitfall is just "watch for it in the log — symptoms are a task-output file stuck after the first few lines".
 
 ## Example invocations
 
