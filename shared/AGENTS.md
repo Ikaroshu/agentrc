@@ -3,7 +3,7 @@ Shu (xx9liao@gmail.com)
 
 ## General Coding Style
 - **Docstrings:** Prefer self-explanatory code (clear naming, simple structure) over comments. Add docstrings only to explain non-obvious logic, subtle gotchas, or important warnings.
-- **No silent safety nets:** Don't silently swallow unexpected errors. Anything unexpected should warn or error — silent catches hide bugs.
+- **Fail out loud:** Don't add defensive code — error handling, input validation, fallbacks, or "just in case" guards for conditions that shouldn't happen given the surrounding contract. Don't silently swallow unexpected errors. Both turn loud failures into silent ones and hide real bugs. Let errors propagate so the actual cause is visible. Validate or catch only at true system boundaries (untrusted input, external APIs, user-facing entry points).
 
 ## Debugging Guidelines
 - Ask clarifying questions before suggesting fixes.
