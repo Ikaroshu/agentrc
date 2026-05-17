@@ -23,7 +23,7 @@ ssh "$REMOTE" 'mkdir -p ~/.codex/commands ~/.codex/skills/auto-research'
 # AGENTS.md: always overwrite (no machine-specific content)
 scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
 scp -q "$REPO_DIR/commands/commit.md" "$REPO_DIR/commands/merge.md" "$REMOTE:~/.codex/commands/"
-scp -q "$REPO_DIR/skills/auto-research/SKILL.md" "$REMOTE:~/.codex/skills/auto-research/"
+scp -q "$ROOT_DIR/shared/skills/auto-research/SKILL.md" "$REMOTE:~/.codex/skills/auto-research/"
 
 # config.toml: merge shared repo settings while preserving remote machine-specific
 # sections such as project trust, notices, marketplaces, and skill path entries.

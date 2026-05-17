@@ -7,16 +7,18 @@ This repository tracks portable configuration for AI coding agents such as Claud
 - `AGENTS.md` — canonical repo-level instructions for all agents working in this repository.
 - `CLAUDE.md -> AGENTS.md` — Claude compatibility symlink; edit `AGENTS.md`, not `CLAUDE.md`.
 - `shared/AGENTS.md` — canonical cross-project personal agent instructions.
+- `shared/skills/` — canonical shared skills used by more than one agent.
 - `claude/` — files installed into `~/.claude/`.
   - `CLAUDE.md -> ../shared/AGENTS.md`
   - `settings.json`
   - `commands/`
-  - `skills/`
+  - `skills/auto-research/SKILL.md -> ../../../shared/skills/auto-research/SKILL.md`
   - `install.sh`
   - `sync-remote.sh`
 - `codex/` — files installed into `~/.codex/`.
   - `AGENTS.md -> ../shared/AGENTS.md`
   - `config.toml`
+  - `skills/auto-research/SKILL.md -> ../../../shared/skills/auto-research/SKILL.md`
   - `install.sh`
   - `sync-remote.sh`
 - `scripts/` — validation and merge helpers used by install/sync scripts.
@@ -48,6 +50,7 @@ Validate the repository after every config change:
 ## Editing Rules
 
 - Keep behavioral instructions in `shared/AGENTS.md` unless the instruction is only about maintaining this repository.
+- Keep skills shared by Claude and Codex in `shared/skills/`; point tool-specific skill paths at the shared source.
 - Keep repo maintenance instructions in root `AGENTS.md`.
 - Do not edit symlink targets through the compatibility symlink paths when the canonical path is clearer.
 - Preserve machine-specific settings during remote syncs:

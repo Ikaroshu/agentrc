@@ -11,6 +11,7 @@ set -euo pipefail
 
 REMOTE="${1:?Usage: $0 <ssh-host>}"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
 
 # Directories to ensure exist on remote
 ssh "$REMOTE" 'mkdir -p ~/.claude/commands ~/.claude/skills/auto-research'
@@ -28,7 +29,7 @@ scp -q \
   "$REMOTE:~/.claude/commands/"
 
 scp -q \
-  "$REPO_DIR/skills/auto-research/SKILL.md" \
+  "$ROOT_DIR/shared/skills/auto-research/SKILL.md" \
   "$REMOTE:~/.claude/skills/auto-research/"
 
 # Merge settings.json: update shared keys, preserve machine-specific ones

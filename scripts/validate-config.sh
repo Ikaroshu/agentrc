@@ -42,15 +42,17 @@ require_executable() {
 
 require_file "AGENTS.md"
 require_file "shared/AGENTS.md"
+require_file "shared/skills/auto-research/SKILL.md"
 require_symlink "CLAUDE.md" "AGENTS.md"
 require_symlink "claude/CLAUDE.md" "../shared/AGENTS.md"
 require_symlink "codex/AGENTS.md" "../shared/AGENTS.md"
+require_symlink "claude/skills/auto-research/SKILL.md" "../../../shared/skills/auto-research/SKILL.md"
+require_symlink "codex/skills/auto-research/SKILL.md" "../../../shared/skills/auto-research/SKILL.md"
 
 require_file "claude/settings.json"
 require_file "codex/config.toml"
 require_file "codex/commands/commit.md"
 require_file "codex/commands/merge.md"
-require_file "codex/skills/auto-research/SKILL.md"
 
 require_executable "install.sh"
 require_executable "sync-remote.sh"
