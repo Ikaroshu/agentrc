@@ -87,8 +87,7 @@ if [ -z "$ctx_pct" ]; then
 fi
 ctx_pct=$(printf '%.0f' "$ctx_pct")
 
-# --- Compose output ---
-# Line 1: path + git
+# --- Compose output (single line) ---
 printf "${cyan}%s${reset}" "$cwd"
 
 if [ -n "$branch" ]; then
@@ -99,9 +98,8 @@ if [ -n "$branch" ]; then
   fi
 fi
 
-printf "\n"
+printf " ${dim}|${reset} "
 
-# Line 2: model + context bar
 if [ -n "$model" ]; then
   printf "${yellow}%s${reset} ${dim}|${reset} " "$model"
 fi

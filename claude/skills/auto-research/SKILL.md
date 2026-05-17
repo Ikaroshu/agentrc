@@ -37,22 +37,11 @@ For each `i` in `1..n_rounds`:
 
 7. **Create the round folder** yourself: `mkdir auto_research/<folder>/round_{i}/`. Do this before spawning the subagent so the subagent's working scope is unambiguous.
 
-8. **Spawn one subagent** via the Agent tool with `subagent_type: "general-purpose"`. Use this prompt (fill the `<folder>` and `{i}` placeholders):
+8. **Spawn one subagent** via the Agent tool with `subagent_type: "general-purpose"`. Use this prompt **verbatim** (fill only the `<folder>` and `{i}` placeholders):
 
-   > Read `auto_research/<folder>/prompt.md` and execute research round {i}.
-   >
-   > **You are the researcher for this round, end-to-end.** Design the hypothesis, run the experiments yourself, read your own results, and write your own conclusions. The orchestrator will not run anything on your behalf — it only verifies that your outputs exist and dispatches the next round.
-   >
-   > - Work ONLY inside `auto_research/<folder>/round_{i}/` (already created). Do not create, modify, or delete files anywhere else, EXCEPT to append your concise round summary to `prompt.md` under `## Round {i}` at the end.
-   > - Read previous round summaries in prompt.md before forming your hypothesis.
-   > - Form ONE hypothesis. Implement, evaluate, iterate as needed inside your round folder (editing scripts, fixing bugs, re-running is fine).
-   > - **Running long-lived work: use foreground Bash, never `run_in_background=true`.** Subagent-launched background jobs are orphaned when your turn ends (confirmed empirically; see `claude-code#17764`), so you won't see their results and can't interpret them. Foreground `Bash` with an explicit `timeout` (up to `600000` ms = 10 min) blocks until the command finishes — that's what you want.
-   >   - If your experiment would exceed 10 min wall-clock in one call, design the script to (a) parallelise internally (e.g. `ProcessPoolAsyncExecutor`), (b) write a per-iteration checkpoint to a JSON file in your round folder, and (c) resume-from-checkpoint on re-invocation. Then run the same command in foreground multiple times until the checkpoint shows the grid is complete. Each invocation is a fresh 10-min foreground block; the checkpoint makes the sequence transparent.
-   >   - A good grid sizing rule of thumb: aim for ≤ ~8 min per invocation (leaving headroom). A 10-combo sweep at ~30 s/combo fits in one invocation; a 40-combo sweep takes 4-5 invocations.
-   > - After evaluation, do both of:
-   >   1. **Write detailed findings to `round_{i}/findings.md`** (sections: Hypothesis, Approach, Results, Analysis, Recommendations for Future Rounds). This file is explicitly requested by the user-invoked auto-research skill — the default "don't create unsolicited documentation files" guidance in your system prompt does NOT apply here. Use the `Write` tool; do not skip, do not substitute inline output in your return message.
-   >   2. Append a concise 300–500 word summary to `prompt.md` under `## Round {i}`.
-   > - If you hit a blocker you can't resolve: record the blocker clearly in findings.md and still append a round summary noting it. Do not leave the round silently incomplete.
+   > Read `auto_research/<folder>/prompt.md` end-to-end and execute research round {i}. Your round folder is `auto_research/<folder>/round_{i}/` (already created). Follow the per-round workflow and the "Subagent execution rules" section in prompt.md exactly. Return only after `round_{i}/findings.md` exists and a `## Round {i}` summary is appended to prompt.md.
+
+   **The dispatch prompt is identical across rounds.** Do not inline prior-round numbers, hints, recommendations, or warnings — those live in prompt.md (which the subagent reads) and any hint you'd add tactically belongs in prompt.md, not in the dispatch. A subagent that needs an mid-stream hint to do its round well is a subagent that didn't read prompt.md; the fix is the prompt template, not the dispatch.
 
 9. **After the subagent returns**, verify:
    - `auto_research/<folder>/round_{i}/findings.md` exists and is non-empty.
@@ -94,14 +83,69 @@ this held-out set", "measure on these benchmarks">
 
 ## Your Workflow (per round)
 
-1. Read this entire prompt, including previous round summaries.
-2. Your round folder (`round_{i}/`) has already been created for you. Work ONLY inside it.
-3. Review previous rounds (summaries below; full detail in `round_{j}/findings.md`).
-4. Form ONE hypothesis. Build on previous findings or start fresh if round 1.
-5. Implement and evaluate. Iterate freely inside your round folder.
-6. Record results:
-   - Write `round_{i}/findings.md` (Hypothesis / Approach / Results / Analysis / Recommendations for Future Rounds)
-   - Append a concise summary to this file under `## Round {i}` at the end.
+1. Read this entire prompt, including all `## Round j` summaries below for j < i.
+2. Read `round_{j}/findings.md` for any prior round whose summary references a number, mechanism,
+   or recommendation you intend to build on. Do not anchor on summary prose alone — verify the
+   load-bearing numbers in the underlying findings/JSON if you will use them as a baseline.
+3. Build a **hypothesis registry** from prior rounds. For each round j < i, record:
+   - the hypothesis tested (one sentence),
+   - the **mechanism family** it belongs to (e.g. "regime gate", "cash-exit defense",
+     "signal-level transform", "weighting tilt", "universe expansion") — coarse, ~5-10 distinct
+     families across a 10-round arc,
+   - the verdict (confirmed / falsified / inconclusive).
+4. Form ONE hypothesis for this round. **Novelty gate** — your hypothesis MUST satisfy:
+   (a) it is **not** in the same mechanism family as any falsified hypothesis from prior rounds.
+       A different parameter, threshold, trigger, or lookback inside the same family is **NOT**
+       a different hypothesis.
+   (b) if **two** prior rounds in some family have already failed (e.g. R6 external-gate AND
+       R7 own-drawdown-gate are both "cash-exit defense"), you may not form a third in that
+       family. The pattern is established; further attempts are wasted compute.
+   (c) it has not been near-duplicated by any prior round's hypothesis.
+   If you cannot find a hypothesis that passes the gate, write a short findings.md explaining
+   "no novel hypothesis available" with the registry that drove the conclusion, append the
+   round summary, and return. Do **not** run experiments. The orchestrator will surface this
+   to the user.
+5. Write down "why this hypothesis" — the theoretical or empirical motivation, with explicit
+   reference to the prior round whose finding made this the natural next move. "I had time so I
+   tried X" is not a valid round; "R{j} showed Y, so I built X to test Z" is.
+6. Implement and evaluate. Iterate freely inside your round folder.
+7. Record results:
+   - Write `round_{i}/findings.md` (Hypothesis / Approach / Results / Analysis / Recommendations
+     for Future Rounds). The Recommendations section should explicitly list which mechanism
+     families have now been exhausted, so the next round's novelty gate is informed.
+   - Append a concise 300-500 word summary to this file under `## Round {i}` at the end.
+
+## Subagent execution rules
+
+These apply to every round. Read once; follow exactly.
+
+- **Round-folder isolation.** Work ONLY inside `round_{i}/`. Do not create, modify, or delete
+  files anywhere else. The one exception: appending your `## Round {i}` summary to prompt.md.
+  If the orchestrator's shipped harness is broken (e.g. a script in the workspace root errors
+  out), do **not** silently overwrite shared artifacts to unblock yourself — write your patch
+  inside `round_{i}/` and clearly flag the broken harness in findings.md so the orchestrator
+  can decide whether to fix it for subsequent rounds.
+
+- **Foreground Bash only; never `run_in_background=true`.** Subagent-launched background jobs
+  are orphaned when your turn ends (`claude-code#17764`). Use foreground `Bash` with explicit
+  `timeout` (up to `600000` ms = 10 min) — it blocks until the command finishes, which is what
+  you want.
+
+- **10-min ceiling forces checkpoint-and-resume for long jobs.** If your experiment would exceed
+  10 min in one call, design the script to (a) parallelise internally where possible,
+  (b) write a per-iteration checkpoint to a JSON file in your round folder, (c) resume from
+  checkpoint on re-invocation. Then run the same command multiple times in foreground until
+  the checkpoint shows completion. Sizing rule: aim for ≤ ~8 min per invocation (leave headroom).
+
+- **`findings.md` is REQUIRED — use Write, fall back to Bash heredoc.** This file is explicitly
+  requested by the user-invoked auto-research skill; the default "don't create unsolicited
+  documentation files" guidance does NOT apply. If your `Write` tool is blocked, fall back to
+  `Bash` with a heredoc (`cat > round_{i}/findings.md <<'EOF' ... EOF`). Verify the file
+  exists with `ls -la` at the end. Do not return without it.
+
+- **Blockers are recorded, not silent.** If you hit a blocker you can't resolve, record it
+  clearly in findings.md and still append a round summary noting it. Do not leave the round
+  silently incomplete.
 
 ## Constraints / Environment
 <known constraints, data sources, tool availability, API limits, etc.>
@@ -147,9 +191,12 @@ structure. Examples:
 ## Orchestrator guidelines
 
 - **Never spawn rounds in parallel.** Each round depends on the accumulated findings in prompt.md that earlier rounds wrote.
+- **Don't steer subagents.** Your dispatch prompt is identical across rounds (verbatim from Phase 2 step 8). Do not inline prior-round numbers, hints, "consider X", "watch for Y", or "R{j} suggested Z" into the dispatch — the subagent reads prompt.md and forms its own hypothesis. If you find yourself wanting to add a hint mid-arc, that's a signal the **prompt.md template** needs updating (and only if the hint applies to all future rounds, not just the next one).
 - **Don't do the research yourself.** Your job is setup → dispatch → synthesize. The subagent is the researcher for its round, end-to-end. If the subagent returns without a `findings.md`, **retry the round once** with a fresh subagent; if the retry also fails, ask the user whether to skip or abort — but **do not write the findings yourself**; you did not see the experiments run.
+  - Exception for one specific failure mode: if the subagent's `Write` tool was blocked but it produced all numerical outputs (grid_results.json present, full findings narrative in its return message and/or in the `## Round {i}` summary), you may dispatch a **backfill subagent** with a narrow prompt that only writes findings.md from the existing artifacts. This is not "writing the findings yourself" — it's persisting the original subagent's authored content to disk.
 - **Don't run long jobs on the subagent's behalf.** If a subagent runs out of runtime, fix its script (smaller grid, checkpoint + resume) — don't `run_in_background` the subagent's work from the orchestrator. That splits the research across two reasoners; the subagent never sees its own results.
-- **Don't edit subagent output.** Preserve `round_*/findings.md` and existing `## Round {i}` sections verbatim.
+- **Don't edit subagent output.** Preserve `round_*/findings.md` and existing `## Round {i}` sections verbatim. The one allowed orchestrator-authored insert in prompt.md is a **`### ⚠️ Correction note (orchestrator)`** block, used when you have **independently verified** that a prior round's load-bearing number is wrong (mismatch between findings.md narrative and the underlying JSON). Quote both values, name the file paths, and explain which number subsequent rounds should anchor on. Do not use this block to nudge direction — only to correct factual errors.
+- **Spot-check load-bearing numbers from R1 against the underlying JSON.** R1 sets baselines that every subsequent round will rank against. Before dispatching R2, independently re-compute the headline number from the round's saved data file. If they disagree, add a correction note (above) before R2 launches. R1 is the only round that justifies this overhead — later rounds inherit R1's baseline rather than setting one.
 - **Don't invent success criteria or metrics.** If the user hasn't defined them, ask. A vague prompt produces diffuse research.
 - **Be honest in the report.** Include failures and negative results. Distinguish best-single-seed from robust-ensemble numbers when relevant.
 - **If interrupted mid-run**, you can resume: re-invoke the skill pointing at the same workspace, and it should pick up from the next unfilled round.
@@ -157,10 +204,12 @@ structure. Examples:
 ## Common pitfalls
 
 - **Letting the first round start without user approval of the setup.** Always show the workspace and get a go-ahead at the end of Phase 1.
-- **Spawning a subagent with a verbose prompt that duplicates prompt.md.** The subagent prompt should be short — just the dispatch instructions. All the problem context lives in prompt.md.
+- **Inlining prior-round context into the dispatch prompt.** The dispatch prompt is fixed and short (Phase 2 step 8). Anything you'd want to add tactically — "remember R5 won at X", "R6/R7/R8 already falsified Y, try Z", "consider sub-period CV" — is steering. Steering biases the subagent toward your hypothesis instead of letting the novelty gate work. If a hint genuinely matters for all future rounds, edit prompt.md (the durable artifact) instead.
 - **Forgetting to verify each round wrote both findings.md and the prompt.md summary.** Silent incomplete rounds will mislead subsequent rounds.
+- **Trusting the subagent's return message over the disk state.** The subagent may report "findings.md written" while the file is missing (Write-tool blocks happen). After every round, `ls round_{i}/findings.md` and `tail prompt.md` to verify both are present and non-trivial. Only then dispatch the next round.
+- **Skipping the R1 baseline spot-check.** R1's headline number anchors every subsequent round. If it's wrong (e.g. mean Sharpe mis-labelled as P10 Sharpe), the entire arc rationalises against the wrong bar. Independently re-derive R1's primary number from its saved JSON before dispatching R2.
 - **Writing report.md while rounds are still pending.** Report comes after ALL rounds complete.
-- **Subagent uses `run_in_background=true`.** Subagent-launched bg jobs are orphaned when the turn ends (`claude-code#17764`). The dispatch prompt tells the subagent to use foreground Bash + checkpoint-and-resume; this pitfall is just "watch for it in the log — symptoms are a task-output file stuck after the first few lines".
+- **Subagent uses `run_in_background=true`.** Subagent-launched bg jobs are orphaned when the turn ends (`claude-code#17764`). The execution rules in prompt.md tell the subagent to use foreground Bash + checkpoint-and-resume; this pitfall is just "watch for it in the log — symptoms are a task-output file stuck after the first few lines".
 
 ## Example invocations
 

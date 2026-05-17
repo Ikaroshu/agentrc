@@ -54,6 +54,8 @@
   },
   "effortLevel": "high",
   "autoUpdatesChannel": "latest",
+  "remoteControlAtStartup": true,
   "autoConnectIde": false,
-  "autoInstallIdeExtension": false
+  "autoInstallIdeExtension": false,
+  "agentPushNotifEnabled": true
 }

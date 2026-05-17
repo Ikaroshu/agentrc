@@ -3,6 +3,8 @@ model_reasoning_effort = "high"
 personality = "pragmatic"
 sandbox_mode = "workspace-write"
 
+notify = ["/Users/shu/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+
 [projects."/Users/shu/Documents/Projects/portfolio_backtest"]
 trust_level = "trusted"
 
@@ -39,9 +41,6 @@ enabled = true
 [plugins."superpowers@openai-curated"]
 enabled = true
 
-[plugins."browser-use@openai-bundled"]
-enabled = true
-
 [plugins."documents@openai-primary-runtime"]
 enabled = true
 
@@ -49,6 +48,9 @@ enabled = true
 enabled = true
 
 [plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
 enabled = true
 
 [[skills.config]]
@@ -60,12 +62,12 @@ path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905
 enabled = false
 
 [marketplaces.openai-bundled]
-last_updated = "2026-04-29T00:32:43Z"
+last_updated = "2026-05-16T23:48:57Z"
 source_type = "local"
 source = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-04-29T01:27:59Z"
+last_updated = "2026-05-17T00:28:10Z"
 source_type = "local"
 source = "/Users/shu/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
@@ -73,10 +75,10 @@ source = "/Users/shu/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-
 memories = true
 
 [tui]
-status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-remaining"]
+status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-used"]
 
 [tui.model_availability_nux]
-"gpt-5.5" = 1
+"gpt-5.5" = 3
 
 [sandbox_workspace_write]
 network_access = true
