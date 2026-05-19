@@ -19,8 +19,11 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `AGENTS.md -> ../shared/AGENTS.md`
   - `config.toml`
   - `skills/auto-research/SKILL.md -> ../../../shared/skills/auto-research/SKILL.md`
+  - `skills/commit-workflow/SKILL.md`
+  - `skills/merge-workflow/SKILL.md`
   - `install.sh`
   - `sync-remote.sh`
+- Codex skills are installed into `~/.agents/skills/`.
 - `scripts/` — validation and merge helpers used by install/sync scripts.
 
 ## Common Commands
