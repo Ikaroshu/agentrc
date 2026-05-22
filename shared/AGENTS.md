@@ -17,6 +17,9 @@ Shu (xx9liao@gmail.com)
 - **Cap `/codex:adversarial-review` at TWO invocations per spec/plan cycle** (the initial review, plus at most one re-review after addressing findings). Do not run a third review on your own initiative — even if you think more findings might surface or you want to validate a rewrite. If a third pass seems warranted, ask the user first; only run more when they explicitly say so.
 - Prefer implement directly on new branch, ask user if current branch is not main or if there are uncommited files.
 
+## Github
+- Do not suggest fix when creating issue.
+
 ## PR & Merge Workflow
 - **Always confirm which PR** before merging — never auto-merge whatever branch is found on remote. Ask the user to confirm.
 - **Test thoroughly before merging** — actually run the app/tests and verify functionality works end-to-end. If automated tests aren't sufficient, ask the user to manually test before proceeding with merge.

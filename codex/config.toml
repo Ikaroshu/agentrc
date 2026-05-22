@@ -62,17 +62,18 @@ path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905
 enabled = false
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-16T23:48:57Z"
+last_updated = "2026-05-22T04:50:39Z"
 source_type = "local"
 source = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-05-17T00:28:10Z"
+last_updated = "2026-05-22T05:28:11Z"
 source_type = "local"
 source = "/Users/shu/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
 [features]
 memories = true
+js_repl = false
 
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-used"]
@@ -82,3 +83,24 @@ status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-use
 
 [sandbox_workspace_write]
 network_access = true
+
+[desktop]
+mac-menu-bar-enabled = false
+
+[mcp_servers.node_repl]
+args = []
+command = "/Applications/Codex.app/Contents/Resources/node_repl"
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+BROWSER_USE_MARKETPLACE_NAME = "openai-bundled"
+CODEX_CLI_PATH = "/Applications/Codex.app/Contents/Resources/codex"
+CODEX_HOME = "/Users/shu/.codex"
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = ""
+NODE_REPL_NODE_PATH = "/Applications/Codex.app/Contents/Resources/node"
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "167fdf579477181fba1773c1efb067b00c5a64fe85dafb50a2001bde198dc739"
+NODE_REPL_TRUSTED_CODE_PATHS = "/Users/shu/.codex"
+NODE_REPL_UNTRUSTED_ENV_ALLOWLIST = "BROWSER_USE_MARKETPLACE_NAME"
+SKY_CUA_SERVICE_PATH = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled/plugins/computer-use/Codex Computer Use.app"
