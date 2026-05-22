@@ -20,11 +20,6 @@ Shu (xx9liao@gmail.com)
 ## Github
 - Do not suggest fix when creating issue.
 
-## PR & Merge Workflow
-- **Always confirm which PR** before merging — never auto-merge whatever branch is found on remote. Ask the user to confirm.
-- **Test thoroughly before merging** — actually run the app/tests and verify functionality works end-to-end. If automated tests aren't sufficient, ask the user to manually test before proceeding with merge.
-- **Clean up remote branches** after a successful PR merge (if not auto-deleted by the PR merge itself).
-
 ## Pre-existing errors (lint, type check, tests)
 - If pre-stage checks (ruff, pyright, pytest, etc.) fail on files I did NOT touch in this session, **STOP**. Do not silently classify them as "pre-existing and unrelated" and move on.
 - Report the errors to the user and ask explicitly: "these are pre-existing failures in <files> — fix in this session, or commit around them?"
