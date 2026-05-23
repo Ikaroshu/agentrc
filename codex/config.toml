@@ -29,9 +29,6 @@ enabled = true
 [plugins."computer-use@openai-bundled"]
 enabled = true
 
-[plugins."github@openai-curated"]
-enabled = true
-
 [plugins."google-calendar@openai-curated"]
 enabled = true
 
@@ -62,7 +59,7 @@ path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905
 enabled = false
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-22T04:50:39Z"
+last_updated = "2026-05-23T13:08:52Z"
 source_type = "local"
 source = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
