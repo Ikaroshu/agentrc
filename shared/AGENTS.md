@@ -18,7 +18,7 @@ Shu (xx9liao@gmail.com)
 - Prefer implement directly on new branch, ask user if current branch is not main or if there are uncommited files.
 
 ## Github
-- Do not suggest fix when creating issue.
+- Do not suggest fix when creating issue. Issue should be focused on the problem and context.
 
 ## Pre-existing errors (lint, type check, tests)
 - If pre-stage checks (ruff, pyright, pytest, etc.) fail on files I did NOT touch in this session, **STOP**. Do not silently classify them as "pre-existing and unrelated" and move on.
