@@ -15,7 +15,8 @@
       "Write",
       "Read",
       "Search",
-      "Skill"
+      "Skill",
+      "mcp__plugin_context7_context7__*"
     ]
   },
   "hooks": {

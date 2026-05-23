@@ -1,7 +1,9 @@
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 personality = "pragmatic"
+approval_policy = "never"
 sandbox_mode = "workspace-write"
+web_search = "live"
 
 notify = ["/Users/shu/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
 
