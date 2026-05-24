@@ -73,6 +73,7 @@ source = "/Users/shu/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-
 [features]
 memories = true
 js_repl = false
+terminal_resize_reflow = true
 
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-used"]

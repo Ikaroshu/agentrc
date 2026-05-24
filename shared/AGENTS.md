@@ -11,9 +11,11 @@ Shu (xx9liao@gmail.com)
 - Search online for solutions after 3 assumptions have been falsified.
 
 ## Superpowers Plugin Instruction
+- **Workflow order: doc → review → worktree → implement.** Stay on `main` (in the main repo cwd, NOT a worktree) while writing the spec and plan and while running the adversarial review. Only create the worktree once the doc cycle is finished and you're ready to write code. Reason: `/codex:adversarial-review` treats the cwd as a code-review target and runs `git diff` against main — from a worktree, the diff is empty and the reviewer gets confused. From main repo cwd, the spec/plan files are at the expected `.superpowers/...` relative paths and the reviewer reads them directly.
 - Save plans to `<project-root>/.superpowers/plans/` and specs to `<project-root>/.superpowers/specs/` (NOT inside worktree directories — worktrees are ephemeral)
 - DO NOT commit plans and specs
-- After writing the spec and plan, invoke ONE `/codex:adversarial-review --wait` via the Skill tool on both files before starting implementation. The `--wait` flag is required so the review runs in the foreground and returns results in the same turn — do not let it prompt for foreground/background. Address findings before proceeding.
+- After writing the spec and plan (on main), invoke ONE `/codex:adversarial-review --wait` via the Skill tool on both files before starting implementation. The `--wait` flag is required so the review runs in the foreground and returns results in the same turn — do not let it prompt for foreground/background. Address findings before proceeding.
+- If you must run the review from inside a worktree (e.g. you only realised mid-stream the doc cycle isn't done), pass the spec/plan **contents** to the review prompt directly rather than relying on file-path arguments — the reviewer's git-diff framing will otherwise mislead it.
 - **Cap `/codex:adversarial-review` at TWO invocations per spec/plan cycle** (the initial review, plus at most one re-review after addressing findings). Do not run a third review on your own initiative — even if you think more findings might surface or you want to validate a rewrite. If a third pass seems warranted, ask the user first; only run more when they explicitly say so.
 - Prefer using worktree for development. If the scope is small and main branch is clean, consider developing on main directly.
 
