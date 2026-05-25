@@ -22,6 +22,7 @@ FILES=(
   commands/commit.md
   commands/merge.md
   skills/auto-research/SKILL.md
+  skills/adversarial-doc-review/SKILL.md
 )
 
 link_file() {

@@ -72,6 +72,7 @@ require_symlink "claude/skills/auto-research/SKILL.md" "../../../shared/skills/a
 require_symlink "codex/skills/auto-research/SKILL.md" "../../../shared/skills/auto-research/SKILL.md"
 
 require_file "claude/settings.json"
+require_file "claude/skills/adversarial-doc-review/SKILL.md"
 require_file "codex/config.toml"
 require_file "codex/skills/commit-workflow/SKILL.md"
 require_file "codex/skills/merge-workflow/SKILL.md"
