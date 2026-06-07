@@ -18,6 +18,7 @@ Shu (xx9liao@gmail.com)
 - **Cap `adversarial-doc-review` at TWO invocations per spec/plan cycle** (the initial review, plus at most one re-review after addressing findings). Do not run a third review on your own initiative — even if you think more findings might surface or you want to validate a rewrite. If a third pass seems warranted, ask the user first; only run more when they explicitly say so.
 - After completing a development phase (and again before merging a branch), run a Codex code review of the diff via the `codex-code-review` skill (it drives `codex exec review` against `--base`/`--commit`/`--uncommitted`). Address each finding or explicitly push back with reasoning before moving on — don't silently skip.
 - Prefer using worktree for development. If the scope is small and main branch is clean, consider developing on main directly.
+- Prefer subagent driven development. If the scope is small, consider inline development.
 
 ## GitHub Issues
 - Issue bodies describe the problem and context only — no proposed fixes, suggested approaches, design sketches, or acceptance criteria. The author often doesn't fully understand the problem; prescribing a solution biases whoever picks it up later.
