@@ -10,7 +10,7 @@ A homebrewed replacement for the `/codex:adversarial-review` plugin command. She
 ## When to use
 
 - After writing a spec and/or plan (typically under `<project-root>/.superpowers/specs/` and `<project-root>/.superpowers/plans/`), before implementation begins.
-- The skill reviews **documents**, not code diffs. Do not use it as a code reviewer — use `/code-review` or `/ultrareview` for code.
+- The skill reviews **documents**, not code diffs. To have Codex review a code diff during implementation, use the sibling `codex-code-review` skill (it drives `codex exec review`). For Claude-native code review use `/code-review`.
 
 ## Prerequisites
 
@@ -36,16 +36,31 @@ At least one of `--spec` or `--plan` must be provided. Paths may be absolute or 
 3. **Run Codex.** Invoke the CLI exactly like this (single Bash call, no backgrounding):
 
    ```bash
+   OUT=$(mktemp /tmp/codex_doc_review.XXXX.txt)
+   LOG=$(mktemp /tmp/codex_doc_review_log.XXXX.txt)
    codex exec \
      --skip-git-repo-check \
      --sandbox read-only \
      --color never \
-     "$PROMPT"
+     -o "$OUT" \
+     "$PROMPT" </dev/null >"$LOG" 2>&1
+   rc=$?
+   if [ "$rc" -eq 0 ]; then cat "$OUT"; else echo "codex failed (rc=$rc); log tail:"; tail -40 "$LOG"; fi
+   rm -f "$OUT" "$LOG"
    ```
 
+   - **`-o "$OUT"` is the whole point of this invocation: it writes ONLY the
+     agent's final message to `$OUT`.** Everything else — the prompt echo,
+     headers, reasoning traces, per-tool output, token usage — is verbose noise
+     (a single run can exceed 200KB) and goes to `$LOG`, which is discarded
+     unless the run fails. Read `$OUT`, never the raw stream. Do **not** pipe
+     the raw stream through `awk`/`tail` to "extract" the verdict; that still
+     drags the agent's intermediate tool output into context. Use `-o`.
+   - `</dev/null` is required: Codex hangs waiting on "additional input from
+     stdin" if stdin is left open.
    - `--sandbox read-only` is required: the reviewer must not edit files.
-   - `--color never` keeps stdout clean for relay to the user.
-   - Do **not** pass `--json`; we want the plain final message.
+   - `--color never` keeps the captured message clean.
+   - Do **not** pass `--json`; `-o` already gives us the plain final message.
    - Do **not** background the call. The review must complete in the same turn so findings can be acted on.
 
 4. **Relay findings.** Show the user the reviewer's verdict and findings. Then either:
@@ -124,7 +139,7 @@ Rules:
 
 ## Failure modes & guidance
 
-- **Codex hangs or times out.** `codex exec` is synchronous; if it stalls, kill it (Ctrl-C) and report. Do not retry blindly — diagnose first (CLI version, auth, network).
+- **Codex hangs or times out.** `codex exec` is synchronous; if it stalls, kill it (`pkill -f "codex exec"`) and report. The most common cause is an open stdin — confirm the `</dev/null` redirect is present. Otherwise diagnose before retrying (CLI version, auth, network).
 - **Reviewer cites files outside the supplied paths.** That's fine if it's reading repo context for grounding; flag it only if the review drifts away from the doc.
 - **Reviewer wants to edit files.** It cannot — `--sandbox read-only` blocks writes. The verdict and findings are the deliverable.
 - **No findings at all + APPROVE.** Trust it but spot-check the doc yourself before moving to implementation; don't treat APPROVE as a rubber stamp.

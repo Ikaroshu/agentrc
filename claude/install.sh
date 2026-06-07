@@ -23,6 +23,7 @@ FILES=(
   commands/merge.md
   skills/auto-research/SKILL.md
   skills/adversarial-doc-review/SKILL.md
+  skills/codex-code-review/SKILL.md
 )
 
 link_file() {
