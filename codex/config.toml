@@ -1,11 +1,12 @@
 model = "gpt-5.5"
 model_reasoning_effort = "high"
 personality = "pragmatic"
-approval_policy = "never"
+approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "live"
 
 notify = ["/Users/shu/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+approvals_reviewer = "guardian_subagent"
 
 [projects."/Users/shu/Documents/Projects/portfolio_backtest"]
 trust_level = "trusted"
@@ -22,13 +23,13 @@ trust_level = "trusted"
 [projects."/Users/shu/Projects/Portseer"]
 trust_level = "trusted"
 
+[projects."/Users/shu/Documents/Codex/2026-05-30/can-you-open-nordvpn-and-toggle"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 "gpt-5.3-codex" = "gpt-5.4"
 
 [plugins."gmail@openai-curated"]
-enabled = true
-
-[plugins."computer-use@openai-bundled"]
 enabled = true
 
 [plugins."google-calendar@openai-curated"]
@@ -52,6 +53,9 @@ enabled = true
 [plugins."browser@openai-bundled"]
 enabled = true
 
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
 [[skills.config]]
 path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905eb7afb6aa0cef34edc79e/skills/gmail/SKILL.md"
 enabled = false
@@ -61,28 +65,25 @@ path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905
 enabled = false
 
 [marketplaces.openai-bundled]
-last_updated = "2026-05-23T13:08:52Z"
+last_updated = "2026-06-06T13:09:18Z"
 source_type = "local"
 source = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-05-22T05:28:11Z"
+last_updated = "2026-06-03T00:28:24Z"
 source_type = "local"
 source = "/Users/shu/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
 [features]
 memories = true
-js_repl = false
 terminal_resize_reflow = true
+js_repl = false
 
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-used"]
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4
-
-[sandbox_workspace_write]
-network_access = true
 
 [desktop]
 mac-menu-bar-enabled = false
@@ -93,14 +94,15 @@ command = "/Applications/Codex.app/Contents/Resources/node_repl"
 startup_timeout_sec = 120
 
 [mcp_servers.node_repl.env]
-BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
-BROWSER_USE_MARKETPLACE_NAME = "openai-bundled"
-CODEX_CLI_PATH = "/Applications/Codex.app/Contents/Resources/codex"
-CODEX_HOME = "/Users/shu/.codex"
 NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
 NODE_REPL_NODE_MODULE_DIRS = ""
 NODE_REPL_NODE_PATH = "/Applications/Codex.app/Contents/Resources/node"
-NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "167fdf579477181fba1773c1efb067b00c5a64fe85dafb50a2001bde198dc739"
 NODE_REPL_TRUSTED_CODE_PATHS = "/Users/shu/.codex"
-NODE_REPL_UNTRUSTED_ENV_ALLOWLIST = "BROWSER_USE_MARKETPLACE_NAME"
-SKY_CUA_SERVICE_PATH = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled/plugins/computer-use/Codex Computer Use.app"
+CODEX_HOME = "/Users/shu/.codex"
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "2de792ebdf729e85542c94275f6654821dddce546d9c7374c915f2297529e313"
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
+NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
+BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
+BROWSER_USE_CODEX_APP_VERSION = "26.602.40724"
+CODEX_CLI_PATH = "/Applications/Codex.app/Contents/Resources/codex"
