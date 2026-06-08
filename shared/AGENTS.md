@@ -15,8 +15,8 @@ Shu (xx9liao@gmail.com)
 - Save plans to `<project-root>/.superpowers/plans/` and specs to `<project-root>/.superpowers/specs/` (NOT inside worktree directories — worktrees are ephemeral)
 - DO NOT commit plans and specs
 - After writing the spec and plan (on main), invoke the `adversarial-doc-review` skill via the Skill tool, passing the spec and plan paths. The skill shells out to `codex exec` synchronously and returns findings in the same turn. Address findings before proceeding.
-- **Cap `adversarial-doc-review` at TWO invocations per spec/plan cycle** (the initial review, plus at most one re-review after addressing findings). Do not run a third review on your own initiative — even if you think more findings might surface or you want to validate a rewrite. If a third pass seems warranted, ask the user first; only run more when they explicitly say so.
 - After completing a development phase (and again before merging a branch), run a Codex code review of the diff via the `codex-code-review` skill (it drives `codex exec review` against `--base`/`--commit`/`--uncommitted`). Address each finding or explicitly push back with reasoning before moving on — don't silently skip.
+- **Cap `adversarial-doc-review` and `codex-code-review` at TWO invocations per session** (the initial review, plus at most one re-review after addressing findings). Do not run a third review on your own initiative — even if you think more findings might surface or you want to validate a rewrite. If a third pass seems warranted, ask the user first; only run more when they explicitly say so.
 - Prefer using worktree for development. If the scope is small and main branch is clean, consider developing on main directly.
 - Prefer subagent driven development. If the scope is small, consider inline development.
 
@@ -34,6 +34,7 @@ Shu (xx9liao@gmail.com)
   - `snake_case` for modules/functions
   - `PascalCase` for classes
   - `UPPER_SNAKE_CASE` for constants
+  - No underscore-prefixed module files (`_xxx.py`). Module privacy is conveyed by package structure and `__all__`, not filename leading underscores — name the module for what it holds (e.g. `decision_bound.py`, not `_decision_bound.py`).
 - **Packages:** Prefer namespace packages; avoid `__init__.py` unless explicit symbol exports needed
 - **Environment:**
   - Use `uv` for Python package management
