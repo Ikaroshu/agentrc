@@ -26,6 +26,9 @@ trust_level = "trusted"
 [projects."/Users/shu/Documents/Codex/2026-05-30/can-you-open-nordvpn-and-toggle"]
 trust_level = "trusted"
 
+[projects."/Users/shu/Documents/Codex/2026-06-10/files-mentioned-by-the-user-pasted"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 "gpt-5.3-codex" = "gpt-5.4"
 
