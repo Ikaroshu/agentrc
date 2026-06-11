@@ -15,6 +15,8 @@ CODEX_FILES=(
 
 SKILLS=(
   auto-research
+  adversarial-doc-review
+  claude-code-review
   commit-workflow
   merge-workflow
 )
