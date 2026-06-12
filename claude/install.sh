@@ -21,6 +21,7 @@ FILES=(
   statusline-command.sh
   commands/commit.md
   commands/merge.md
+  commands/issue.md
   skills/auto-research/SKILL.md
   skills/adversarial-doc-review/SKILL.md
   skills/codex-code-review/SKILL.md

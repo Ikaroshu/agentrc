@@ -26,6 +26,7 @@ scp -q \
 scp -q \
   "$REPO_DIR/commands/commit.md" \
   "$REPO_DIR/commands/merge.md" \
+  "$REPO_DIR/commands/issue.md" \
   "$REMOTE:~/.claude/commands/"
 
 scp -q \
