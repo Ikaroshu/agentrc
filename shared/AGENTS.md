@@ -34,8 +34,9 @@ Shu (xx9liao@gmail.com)
   - `snake_case` for modules/functions
   - `PascalCase` for classes
   - `UPPER_SNAKE_CASE` for constants
-  - No underscore-prefixed module files (`_xxx.py`). Module privacy is conveyed by package structure and `__all__`, not filename leading underscores — name the module for what it holds (e.g. `decision_bound.py`, not `_decision_bound.py`).
-- **Packages:** Prefer namespace packages; avoid `__init__.py` unless explicit symbol exports needed
+  - No underscore-prefixed module files (`_xxx.py`). Module identity is conveyed by package structure, not filename leading underscores — name the module for what it holds (e.g. `decision_bound.py`, not `_decision_bound.py`).
+  - **Symbol privacy is a house-rule convention: a leading underscore on a name (`_helper`, `_CACHE`) marks it private; no leading underscore means public API.** Do NOT maintain `__all__` — the underscore convention is the only privacy signal. A symbol consumed by another module must be public (no underscore); never import an underscore-prefixed name across module boundaries, including from tests.
+- **Packages:** Prefer namespace packages; avoid `__init__.py` unless a package genuinely needs to re-export symbols at the package level (still no `__all__` — rely on the underscore convention)
 - **Environment:**
   - Use `uv` for Python package management
   - Use direnv with .envrc for automatic venv activation
