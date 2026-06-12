@@ -72,6 +72,18 @@ If the feature branch had a worktree, remove it:
 git worktree remove <worktree-path>
 ```
 
+## Step 7: Close the Linked Issue
+
+After the merge is pushed, close any GitHub issue the merged work resolves — do this automatically, without being asked.
+
+Find the issue number from the branch name or the merged commit messages (e.g. `issue #106`, `fixes #106`, `closes #42`). If exactly one issue is referenced, close it with a comment pointing at the merge commit:
+
+```bash
+gh issue close <number> --comment "Resolved by <merge-commit-sha> on main."
+```
+
+If multiple distinct issues are referenced, close each. If none is referenced, skip this step. If the merge happened via `gh pr merge` and the PR body used a closing keyword (`Closes #N`), GitHub already closed the issue — verify with `gh issue view <number>` and only close manually if still open.
+
 ## Summary
 
 | Step | Local Merge | PR Merge |
@@ -83,3 +95,4 @@ git worktree remove <worktree-path>
 | Delete local branch | yes | yes |
 | Delete remote branch | yes | automatic |
 | Remove worktree | if exists | if exists |
+| Close linked issue | yes | verify (auto if PR keyword) |
