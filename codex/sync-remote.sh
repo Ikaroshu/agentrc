@@ -18,13 +18,20 @@ cleanup() {
 }
 trap cleanup EXIT
 
-ssh "$REMOTE" 'rm -f ~/.codex/commands/commit.md ~/.codex/commands/merge.md; rmdir ~/.codex/commands 2>/dev/null || true; mkdir -p ~/.agents/skills/auto-research ~/.agents/skills/commit-workflow ~/.agents/skills/merge-workflow'
+SHARED_SKILLS=(auto-research commit merge issue)
+
+ssh "$REMOTE" '
+  rm -f ~/.codex/commands/commit.md ~/.codex/commands/merge.md
+  rmdir ~/.codex/commands 2>/dev/null || true
+  rm -rf ~/.agents/skills/commit-workflow ~/.agents/skills/merge-workflow
+  mkdir -p ~/.agents/skills/auto-research ~/.agents/skills/commit ~/.agents/skills/merge ~/.agents/skills/issue
+'
 
 # AGENTS.md: always overwrite (no machine-specific content)
 scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
-scp -q "$ROOT_DIR/shared/skills/auto-research/SKILL.md" "$REMOTE:~/.agents/skills/auto-research/SKILL.md"
-scp -q "$REPO_DIR/skills/commit-workflow/SKILL.md" "$REMOTE:~/.agents/skills/commit-workflow/SKILL.md"
-scp -q "$REPO_DIR/skills/merge-workflow/SKILL.md" "$REMOTE:~/.agents/skills/merge-workflow/SKILL.md"
+for skill in "${SHARED_SKILLS[@]}"; do
+  scp -q "$ROOT_DIR/shared/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
+done
 
 # config.toml: merge shared repo settings while preserving remote machine-specific
 # sections such as project trust, notices, marketplaces, and skill path entries.

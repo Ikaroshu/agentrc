@@ -13,8 +13,15 @@ REMOTE="${1:?Usage: $0 <ssh-host>}"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
 
-# Directories to ensure exist on remote
-ssh "$REMOTE" 'mkdir -p ~/.claude/commands ~/.claude/skills/auto-research'
+SHARED_SKILLS=(auto-research commit merge issue)
+
+# Directories to ensure exist on remote; drop legacy command files now migrated to skills
+ssh "$REMOTE" '
+  rm -f ~/.claude/commands/commit.md ~/.claude/commands/merge.md ~/.claude/commands/issue.md \
+        ~/.claude/commands/commit.md.bak ~/.claude/commands/merge.md.bak ~/.claude/commands/issue.md.bak
+  rmdir ~/.claude/commands 2>/dev/null || true
+  mkdir -p ~/.claude/skills/auto-research ~/.claude/skills/commit ~/.claude/skills/merge ~/.claude/skills/issue
+'
 
 # Sync non-settings files
 scp -q \
@@ -23,15 +30,9 @@ scp -q \
   "$REPO_DIR/statusline-command.sh" \
   "$REMOTE:~/.claude/"
 
-scp -q \
-  "$REPO_DIR/commands/commit.md" \
-  "$REPO_DIR/commands/merge.md" \
-  "$REPO_DIR/commands/issue.md" \
-  "$REMOTE:~/.claude/commands/"
-
-scp -q \
-  "$ROOT_DIR/shared/skills/auto-research/SKILL.md" \
-  "$REMOTE:~/.claude/skills/auto-research/"
+for skill in "${SHARED_SKILLS[@]}"; do
+  scp -q "$ROOT_DIR/shared/skills/$skill/SKILL.md" "$REMOTE:~/.claude/skills/$skill/"
+done
 
 # Merge settings.json: update shared keys, preserve machine-specific ones
 REMOTE_SETTINGS=$(ssh "$REMOTE" 'cat ~/.claude/settings.json 2>/dev/null || echo "{}"')
