@@ -17,14 +17,25 @@ SKILLS=(
   auto-research
   adversarial-doc-review
   claude-code-review
-  commit-workflow
-  merge-workflow
+  commit
+  merge
+  issue
 )
+
+# Skills whose SKILL.md is itself a symlink into shared/ are linked at the
+# SKILL.md level (the repo dir holds only a symlink, not a real file). Others
+# are linked at the directory level.
+is_shared_skill() {
+  case "$1" in
+    auto-research|commit|merge|issue) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 skill_source() {
   local name="$1"
 
-  if [ "$name" = "auto-research" ]; then
+  if is_shared_skill "$name"; then
     echo "$REPO_DIR/skills/$name/SKILL.md"
   else
     echo "$REPO_DIR/skills/$name"
@@ -34,7 +45,7 @@ skill_source() {
 skill_target() {
   local name="$1"
 
-  if [ "$name" = "auto-research" ]; then
+  if is_shared_skill "$name"; then
     echo "$SKILLS_TARGET_DIR/$name/SKILL.md"
   else
     echo "$SKILLS_TARGET_DIR/$name"
@@ -124,6 +135,15 @@ echo
 
 for skill in "${SKILLS[@]}"; do
   link_path "$(skill_source "$skill")" "$(skill_target "$skill")" "$skill"
+done
+
+# Drop legacy skill symlinks now replaced by the shared commit/merge skills
+for legacy in commit-workflow merge-workflow; do
+  dst="$SKILLS_TARGET_DIR/$legacy"
+  if [ -L "$dst" ]; then
+    rm "$dst"
+    echo "DROP legacy skill $legacy"
+  fi
 done
 
 echo

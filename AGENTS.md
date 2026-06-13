@@ -11,8 +11,10 @@ This repository tracks portable configuration for AI coding agents such as Claud
 - `claude/` — files installed into `~/.claude/`.
   - `CLAUDE.md -> ../shared/AGENTS.md`
   - `settings.json`
-  - `commands/`
   - `skills/auto-research/SKILL.md -> ../../../shared/skills/auto-research/SKILL.md`
+  - `skills/commit/SKILL.md -> ../../../shared/skills/commit/SKILL.md`
+  - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`
+  - `skills/issue/SKILL.md -> ../../../shared/skills/issue/SKILL.md`
   - `skills/adversarial-doc-review/SKILL.md`
   - `skills/codex-code-review/SKILL.md`
   - `install.sh`
@@ -21,10 +23,11 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `AGENTS.md -> ../shared/AGENTS.md`
   - `config.toml`
   - `skills/auto-research/SKILL.md -> ../../../shared/skills/auto-research/SKILL.md`
+  - `skills/commit/SKILL.md -> ../../../shared/skills/commit/SKILL.md`
+  - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`
+  - `skills/issue/SKILL.md -> ../../../shared/skills/issue/SKILL.md`
   - `skills/adversarial-doc-review/SKILL.md`
   - `skills/claude-code-review/SKILL.md`
-  - `skills/commit-workflow/SKILL.md`
-  - `skills/merge-workflow/SKILL.md`
   - `install.sh`
   - `sync-remote.sh`
 - Codex skills are installed into `~/.agents/skills/`.

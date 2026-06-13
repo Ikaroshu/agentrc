@@ -19,10 +19,10 @@ FILES=(
   CLAUDE.md
   file-suggestion.sh
   statusline-command.sh
-  commands/commit.md
-  commands/merge.md
-  commands/issue.md
   skills/auto-research/SKILL.md
+  skills/commit/SKILL.md
+  skills/merge/SKILL.md
+  skills/issue/SKILL.md
   skills/adversarial-doc-review/SKILL.md
   skills/codex-code-review/SKILL.md
 )
@@ -64,6 +64,16 @@ echo
 for f in "${FILES[@]}"; do
   link_file "$f"
 done
+
+# Drop legacy command symlinks now migrated to shared skills
+for legacy in commit merge issue; do
+  dst="$TARGET_DIR/commands/$legacy.md"
+  if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$REPO_DIR/commands/$legacy.md" ]; then
+    rm "$dst"
+    echo "DROP legacy commands/$legacy.md"
+  fi
+done
+rmdir "$TARGET_DIR/commands" 2>/dev/null || true
 
 # Ensure scripts are executable
 chmod +x "$REPO_DIR/file-suggestion.sh" 2>/dev/null || true

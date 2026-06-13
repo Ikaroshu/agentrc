@@ -1,12 +1,17 @@
+---
+name: issue
+description: Read a GitHub issue, explore the code to understand it, and discuss the problem and solution with the user. Use when the user asks to triage an issue, look at issue #N, or work through a GitHub issue. Stops at discussion — writes no spec, plan, or code.
+---
+
 # Issue Triage Workflow
 
 Read a GitHub issue, explore the code to understand it, and discuss the problem and solution with the user.
 
-Usage: `/issue <issue-link-or-number>`
+Usage: `issue <issue-link-or-number>`
 
 **Announce at start:** "Running issue workflow."
 
-This command stops at discussion. It does NOT write a spec, plan, or any code, and never edits files — that comes later, once the user agrees on a direction.
+This workflow stops at discussion. It does NOT write a spec, plan, or any code, and never edits files — that comes later, once the user agrees on a direction.
 
 ## Step 1: Read the Issue
 
@@ -31,7 +36,7 @@ Ground everything in code you actually read:
 - **Map the blast radius** — grep for importers/callers/consumers and the tests that pin current behavior. Report counts (source vs. test). Note persisted-state risk (cache, pickle, on-disk schema).
 - **Reproduce when surprised** — if a claim or data point is surprising, verify it empirically with a quick script before theorizing.
 
-Use subagents (`Explore`) for broad searches when the relevant code isn't obvious. Make no code changes — say so.
+Use subagents for broad searches when the relevant code isn't obvious. Make no code changes — say so.
 
 ## Step 3: Present Your Understanding
 
@@ -50,7 +55,7 @@ If your reading of the code contradicts the issue's description, say so directly
 Work through the open decisions — only the ones where the choice actually changes the outcome. Pin them one fork at a time; the user answers tersely ("A", "1", "confirm") and expects forward motion after each.
 
 - Present options as a short labeled list (A/B/C), each with its cost, and give a **recommendation** with a one-line why — not a neutral menu.
-- **Flag any new method, parameter, or abstraction you'd introduce as its own decision point** ("do we need this, or can existing X carry it?"). Prefer the smallest change that fixes the root cause. Respect the project + global CLAUDE.md conventions (namespace packages, no `__init__.py` just for scaffolding, the underscore-privacy house rule, fail-loud).
+- **Flag any new method, parameter, or abstraction you'd introduce as its own decision point** ("do we need this, or can existing X carry it?"). Prefer the smallest change that fixes the root cause. Respect the project + global instruction conventions (namespace packages, no `__init__.py` just for scaffolding, the underscore-privacy house rule, fail-loud).
 - **Non-code outcomes are valid endpoints** — propose them when they fit: document a limitation, re-scope/rewrite the issue body, or close-with-comment because existing code already subsumes it.
 - **Offer to spin out-of-scope findings into separate deferred issues** rather than bloating this one. (Issue bodies stay problem + context + `file:line` references only — no proposed fix — unless the user says this is a personal work-queue item.)
 

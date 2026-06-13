@@ -1,3 +1,8 @@
+---
+name: merge
+description: Run Shu's merge workflow for a branch or pull request. Use when the user asks to merge, finish a branch, merge a PR, or clean up after merging. Always confirms the exact PR or branch, tests before and after merge, cleans up local and remote branches and worktrees, and closes the linked issue.
+---
+
 # Merge Workflow
 
 Test, merge, test again, and clean up. Handles both local merges and PR merges.
@@ -17,7 +22,7 @@ If already on main with no feature branch, inform the user and stop.
 
 ## Step 2: Test on Feature Branch
 
-Run the project's test command (from `## Git Workflow` in CLAUDE.md, or `pytest` by default).
+Run the project's test command (from `## Git Workflow` in the repo instructions — `AGENTS.md`, falling back to `CLAUDE.md` — or `pytest` by default).
 
 **If no automated tests exist:** actually start the app, exercise the changed functionality, and verify it works end-to-end. If you can't fully verify (e.g., UI changes, auth flows), **ask the user to manually test before proceeding**. Do not skip testing just because there's no test suite.
 
@@ -67,7 +72,7 @@ Check for worktree:
 git worktree list
 ```
 
-If the feature branch had a worktree, remove it:
+If the feature branch had a worktree, remove it (only after confirming it belongs to the merged branch):
 ```bash
 git worktree remove <worktree-path>
 ```

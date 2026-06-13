@@ -1,0 +1,1 @@
+../../../shared/skills/issue/SKILL.md

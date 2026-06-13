@@ -1,0 +1,1 @@
+../../../shared/skills/merge/SKILL.md
