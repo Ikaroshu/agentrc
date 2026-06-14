@@ -18,7 +18,7 @@ Shu (xx9liao@gmail.com)
 - After completing a development phase (and again before merging a branch), run a cross-agent code review of the diff: Claude should use `codex-code-review`; Codex should use `claude-code-review`. Address each finding or explicitly push back with reasoning before moving on — don't silently skip.
 - **Cap `adversarial-doc-review` and the cross-agent code review skill at TWO invocations per session** (the initial review, plus at most one re-review after addressing findings). Do not run a third review on your own initiative — even if you think more findings might surface or you want to validate a rewrite. If a third pass seems warranted, ask the user first; only run more when they explicitly say so.
 - Prefer using worktree for development. If the scope is small and main branch is clean, consider developing on main directly.
-- Prefer subagent driven development. If the scope is small, consider inline development.
+- Prefer subagent driven development no need to stop and ask for it. If the scope is small, consider asking for inline development.
 
 ## GitHub Issues
 - Issue bodies describe the problem and context only — no proposed fixes, suggested approaches, design sketches, or acceptance criteria. The author often doesn't fully understand the problem; prescribing a solution biases whoever picks it up later.
