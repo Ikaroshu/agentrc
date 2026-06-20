@@ -21,7 +21,7 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `sync-remote.sh`
 - `codex/` — files installed into `~/.codex/`.
   - `AGENTS.md -> ../shared/AGENTS.md`
-  - `config.toml`
+  - `config.toml` — portable baseline merged into the machine-local config during install/sync.
   - `skills/auto-research/SKILL.md -> ../../../shared/skills/auto-research/SKILL.md`
   - `skills/commit/SKILL.md -> ../../../shared/skills/commit/SKILL.md`
   - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`
@@ -65,7 +65,7 @@ Validate the repository after every config change:
 - Do not edit symlink targets through the compatibility symlink paths when the canonical path is clearer.
 - Preserve machine-specific settings during remote syncs:
   - Claude sync may preserve remote-only settings such as environment and permissions.
-  - Codex sync must preserve remote project trust, notices, marketplaces, and skill path entries.
+  - Codex install and sync must preserve project trust, notices, marketplaces, skill path entries, and app-managed settings.
 - Paths inside portable config should prefer `~/` when the tool supports it. Absolute paths are acceptable only for machine-local Codex state that the CLI itself records.
 - Shell scripts should use `set -euo pipefail` and stay simple enough to review without a framework.
 

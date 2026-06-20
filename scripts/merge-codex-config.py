@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 SECTION_RE = re.compile(r"^(\[\[?.+\]\]?)$")
+TOP_LEVEL_KEY_RE = re.compile(r"^([A-Za-z0-9_-]+)\s*=")
 
 
 @dataclass(frozen=True)
@@ -82,12 +83,28 @@ def append_block(output: list[str], block: Block) -> None:
 
 def merge(remote_text: str, repo_text: str) -> str:
     repo_top, repo_blocks = split_blocks(repo_text)
-    _, remote_blocks = split_blocks(remote_text)
+    remote_top, remote_blocks = split_blocks(remote_text)
+
+    repo_top_keys = {
+        match.group(1)
+        for line in repo_top
+        if (match := TOP_LEVEL_KEY_RE.match(line)) is not None
+    }
+    remote_machine_top = [
+        line
+        for line in remote_top
+        if (match := TOP_LEVEL_KEY_RE.match(line)) is not None
+        and match.group(1) not in repo_top_keys
+    ]
 
     repo_shared_blocks = [block for block in repo_blocks if not is_machine_specific(block.name)]
     repo_shared_names = {block.name for block in repo_shared_blocks}
 
     output = list(repo_top)
+
+    if remote_machine_top:
+        output.append("")
+        output.extend(remote_machine_top)
 
     for block in repo_shared_blocks:
         append_block(output, block)

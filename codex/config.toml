@@ -5,32 +5,7 @@ approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "live"
 
-notify = ["/Users/shu/.codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
 approvals_reviewer = "guardian_subagent"
-
-[projects."/Users/shu/Documents/Projects/portfolio_backtest"]
-trust_level = "trusted"
-
-[projects."/Users/shu/Documents/Projects/chatall"]
-trust_level = "trusted"
-
-[projects."/Users/shu/Projects/HomePi"]
-trust_level = "trusted"
-
-[projects."/Users/shu/Projects/ai_stuff"]
-trust_level = "trusted"
-
-[projects."/Users/shu/Projects/Portseer"]
-trust_level = "trusted"
-
-[projects."/Users/shu/Documents/Codex/2026-05-30/can-you-open-nordvpn-and-toggle"]
-trust_level = "trusted"
-
-[projects."/Users/shu/Documents/Codex/2026-06-10/files-mentioned-by-the-user-pasted"]
-trust_level = "trusted"
-
-[notice.model_migrations]
-"gpt-5.3-codex" = "gpt-5.4"
 
 [plugins."gmail@openai-curated"]
 enabled = true
@@ -59,23 +34,8 @@ enabled = true
 [plugins."computer-use@openai-bundled"]
 enabled = true
 
-[[skills.config]]
-path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905eb7afb6aa0cef34edc79e/skills/gmail/SKILL.md"
-enabled = false
-
-[[skills.config]]
-path = "/Users/shu/.codex/plugins/cache/openai-curated/gmail/f78e3ad49297672a905eb7afb6aa0cef34edc79e/skills/gmail-inbox-triage/SKILL.md"
-enabled = false
-
-[marketplaces.openai-bundled]
-last_updated = "2026-06-12T23:43:24Z"
-source_type = "local"
-source = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled"
-
-[marketplaces.openai-primary-runtime]
-last_updated = "2026-06-03T00:28:24Z"
-source_type = "local"
-source = "/Users/shu/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
 
 [features]
 memories = true
@@ -85,27 +45,5 @@ js_repl = false
 [tui]
 status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-used"]
 
-[tui.model_availability_nux]
-"gpt-5.5" = 4
-
 [desktop]
 mac-menu-bar-enabled = false
-
-[mcp_servers.node_repl]
-args = []
-command = "/Applications/Codex.app/Contents/Resources/cua_node/bin/node_repl"
-startup_timeout_sec = 120
-
-[mcp_servers.node_repl.env]
-NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
-NODE_REPL_NODE_MODULE_DIRS = "/Applications/Codex.app/Contents/Resources/cua_node/lib/node_modules"
-NODE_REPL_NODE_PATH = "/Applications/Codex.app/Contents/Resources/cua_node/bin/node"
-NODE_REPL_TRUSTED_CODE_PATHS = "/Users/shu/.codex"
-CODEX_HOME = "/Users/shu/.codex"
-NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "27dca86fd6b571c49414a4b78e46b57bcf683a46cd1319799c11fbb6cfae3110"
-BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
-NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
-NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
-BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.609.41114"
-CODEX_CLI_PATH = "/Applications/Codex.app/Contents/Resources/codex"

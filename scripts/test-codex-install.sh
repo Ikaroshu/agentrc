@@ -4,13 +4,43 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 TEST_HOME="$(mktemp -d)"
+MIGRATION_HOME="$(mktemp -d)"
 
 cleanup() {
-  rm -rf "$TEST_HOME"
+  rm -rf "$TEST_HOME" "$MIGRATION_HOME"
 }
 trap cleanup EXIT
 
+mkdir -p "$TEST_HOME/.codex"
+cat >"$TEST_HOME/.codex/config.toml" <<'EOF'
+model = "machine-model"
+machine_marker = true
+
+[projects."/machine/project"]
+trust_level = "trusted"
+EOF
+
 HOME="$TEST_HOME" "$ROOT_DIR/codex/install.sh" >/dev/null
+
+if [ -L "$TEST_HOME/.codex/config.toml" ]; then
+  echo "Expected a real local Codex config file" >&2
+  exit 1
+fi
+
+grep -F 'model = "gpt-5.5"' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F 'machine_marker = true' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F '[projects."/machine/project"]' "$TEST_HOME/.codex/config.toml" >/dev/null
+
+mkdir -p "$MIGRATION_HOME/.codex"
+ln -s "$ROOT_DIR/codex/config.toml" "$MIGRATION_HOME/.codex/config.toml"
+HOME="$MIGRATION_HOME" "$ROOT_DIR/codex/install.sh" >/dev/null
+
+if [ -L "$MIGRATION_HOME/.codex/config.toml" ]; then
+  echo "Expected the tracked config symlink to be migrated to a real file" >&2
+  exit 1
+fi
+
+grep -F 'model = "gpt-5.5"' "$MIGRATION_HOME/.codex/config.toml" >/dev/null
 
 for skill in auto-research commit merge issue; do
   target="$TEST_HOME/.agents/skills/$skill"

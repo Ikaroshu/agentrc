@@ -24,6 +24,7 @@ def main() -> None:
             '''
 model = "old-model"
 personality = "remote"
+notify = ["/machine/notifier", "turn-ended"]
 
 [projects."/remote/project"]
 trust_level = "trusted"
@@ -82,6 +83,7 @@ network_access = true
 
     assert 'model = "gpt-5.4"' in merged
     assert 'personality = "pragmatic"' in merged
+    assert 'notify = ["/machine/notifier", "turn-ended"]' in merged
     assert 'sandbox_mode = "workspace-write"' in merged
     assert '[plugins."github@openai-curated"]' in merged
     assert '[plugins."remote-only@example"]' in merged

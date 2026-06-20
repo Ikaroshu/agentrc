@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Install Codex CLI settings and skills by symlinking from home paths to this repo.
-# Safe: backs up existing files before replacing, skips files already linked.
+# Install Codex CLI settings and skills from this repo.
+# Shared config is merged into the machine-local config; other files are symlinked.
 
 set -euo pipefail
 
@@ -11,7 +11,6 @@ SKILLS_TARGET_DIR="$HOME/.agents/skills"
 
 CODEX_FILES=(
   AGENTS.md
-  config.toml
 )
 
 SKILLS=(
@@ -68,6 +67,37 @@ link_file() {
   echo "LINK $rel"
 }
 
+install_config() {
+  local src="$REPO_DIR/config.toml"
+  local dst="$CODEX_TARGET_DIR/config.toml"
+  local current
+  local merged
+
+  mkdir -p "$CODEX_TARGET_DIR"
+  current="$(mktemp)"
+  merged="$(mktemp)"
+
+  if [ -e "$dst" ]; then
+    cp "$dst" "$current"
+  fi
+
+  python3 "$ROOT_DIR/scripts/merge-codex-config.py" "$current" "$src" >"$merged"
+
+  if [ -f "$dst" ] && [ ! -L "$dst" ] && cmp -s "$merged" "$dst"; then
+    rm "$current" "$merged"
+    echo "  OK config.toml"
+    return
+  fi
+
+  if [ -L "$dst" ]; then
+    rm "$dst"
+  fi
+
+  mv "$merged" "$dst"
+  rm "$current"
+  echo "MERGE config.toml"
+}
+
 link_path() {
   local src="$1"
   local dst="$2"
@@ -112,6 +142,7 @@ echo
 for f in "${CODEX_FILES[@]}"; do
   link_file "$f"
 done
+install_config
 
 cleanup_legacy_command "commands/commit.md"
 cleanup_legacy_command "commands/merge.md"
@@ -135,4 +166,4 @@ for legacy in commit-workflow merge-workflow; do
 done
 
 echo
-echo "Done. Settings are now symlinked to this repo."
+echo "Done. Settings are installed from this repo."
