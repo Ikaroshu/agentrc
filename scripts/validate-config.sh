@@ -92,6 +92,7 @@ require_executable "codex/install.sh"
 require_executable "claude/sync-remote.sh"
 require_executable "codex/sync-remote.sh"
 require_executable "scripts/validate-config.sh"
+require_executable "scripts/test-codex-install.sh"
 require_executable "scripts/merge-codex-config.py"
 require_executable "scripts/test-merge-codex-config.py"
 
@@ -102,10 +103,12 @@ bash -n "$ROOT_DIR/codex/install.sh"
 bash -n "$ROOT_DIR/claude/sync-remote.sh"
 bash -n "$ROOT_DIR/codex/sync-remote.sh"
 bash -n "$ROOT_DIR/scripts/validate-config.sh"
+bash -n "$ROOT_DIR/scripts/test-codex-install.sh"
 
 python3 -m json.tool "$ROOT_DIR/claude/settings.json" >/dev/null
 "$PYTHON_TOML_BIN" -c 'import pathlib, tomllib, sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' "$ROOT_DIR/codex/config.toml"
 python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
+"$ROOT_DIR/scripts/test-codex-install.sh"
 
 echo "Config repository validation passed."

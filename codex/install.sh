@@ -5,6 +5,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
 CODEX_TARGET_DIR="$HOME/.codex"
 SKILLS_TARGET_DIR="$HOME/.agents/skills"
 
@@ -22,9 +23,6 @@ SKILLS=(
   issue
 )
 
-# Skills whose SKILL.md is itself a symlink into shared/ are linked at the
-# SKILL.md level (the repo dir holds only a symlink, not a real file). Others
-# are linked at the directory level.
 is_shared_skill() {
   case "$1" in
     auto-research|commit|merge|issue) return 0 ;;
@@ -36,19 +34,9 @@ skill_source() {
   local name="$1"
 
   if is_shared_skill "$name"; then
-    echo "$REPO_DIR/skills/$name/SKILL.md"
+    echo "$ROOT_DIR/shared/skills/$name"
   else
     echo "$REPO_DIR/skills/$name"
-  fi
-}
-
-skill_target() {
-  local name="$1"
-
-  if is_shared_skill "$name"; then
-    echo "$SKILLS_TARGET_DIR/$name/SKILL.md"
-  else
-    echo "$SKILLS_TARGET_DIR/$name"
   fi
 }
 
@@ -134,7 +122,7 @@ echo "Installing Codex skills from $REPO_DIR/skills -> $SKILLS_TARGET_DIR"
 echo
 
 for skill in "${SKILLS[@]}"; do
-  link_path "$(skill_source "$skill")" "$(skill_target "$skill")" "$skill"
+  link_path "$(skill_source "$skill")" "$SKILLS_TARGET_DIR/$skill" "$skill"
 done
 
 # Drop legacy skill symlinks now replaced by the shared commit/merge skills
