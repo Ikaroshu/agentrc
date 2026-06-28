@@ -23,7 +23,9 @@ For **each** task, dispatch **one fresh subagent** (clean context) instructed to
 2. **GREEN** — write the minimal implementation to make the test pass. No extra scope.
 3. **Verify** — run the test and the surrounding suite. Return the **actual command output** as evidence, plus a short summary of the diff.
 
-The subagent's final message must include the real test output.
+When a unit test doesn't fit the task — config/infra changes, docs, pure refactors — keep the cycle but generalize "test" to the **verification gate**: the repo's validation script, lint/type-check, or a concrete manual check with expected output. Confirm it's red (failing or unmet), do the work, then show it green. Never fabricate a trivial test just to satisfy the ritual.
+
+The subagent's final message must include the real verification output.
 
 ## Between tasks (orchestrator checkpoint)
 
