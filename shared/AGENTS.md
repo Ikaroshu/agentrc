@@ -1,24 +1,27 @@
-## Me
-Shu (xx9liao@gmail.com)
-
 ## General Coding Style
 - **Comments & docstrings:** Prefer self-explanatory code (clear naming, simple structure) over comments. Add docstrings only to explain non-obvious logic, subtle gotchas, or important warnings.
 - **Fail out loud:** Don't add defensive code — error handling, input validation, fallbacks, or "just in case" guards for conditions that shouldn't happen given the surrounding contract. Don't silently swallow unexpected errors. Don't use `try/except` (or equivalent) for normal control flow. These turn loud failures into silent ones and hide real bugs. Let errors propagate so the actual cause is visible. Validate or catch only at true system boundaries (untrusted input, external APIs, user-facing entry points).
 
 ## Debugging Guidelines
+- **Reproduce first** — get a reliable repro and read the full error before theorizing. No repro yet means keep gathering evidence, not guessing.
 - Ask clarifying questions before suggesting fixes.
-- Write short scripts to falsify/validate your assumption about the fix.
+- Write short scripts to falsify/validate your assumption about the cause; fix the root cause, not the symptom.
+- **One change at a time** — if a fix doesn't work, revert it before trying the next. Don't stack speculative patches.
 - Search online for solutions after 3 assumptions have been falsified.
+- **Verify against the original repro** before claiming it's fixed.
 
-## Superpowers Plugin Instruction
-- **Workflow order: doc → doc-review → worktree → implement → code-review.** Stay on `main` (in the main repo cwd, NOT a worktree) while writing the spec and plan and while running the adversarial doc review. Only create the worktree once the doc cycle is finished and you're ready to write code. Reason: spec/plan files live at stable `.superpowers/...` paths relative to project root; from a worktree those paths get confused.
-- Save plans to `<project-root>/.superpowers/plans/` and specs to `<project-root>/.superpowers/specs/` (NOT inside worktree directories — worktrees are ephemeral)
-- DO NOT commit plans and specs
-- After writing the spec and plan (on main), invoke the `adversarial-doc-review` skill via the Skill tool, passing the spec and plan paths. Claude's version shells out to `codex exec`; Codex's version shells out to `claude -p`. Address findings before proceeding.
-- After completing a development phase (and again before merging a branch), run a cross-agent code review of the diff: Claude should use `codex-code-review`; Codex should use `claude-code-review`. Address each finding or explicitly push back with reasoning before moving on — don't silently skip.
-- **Cap `adversarial-doc-review` and the cross-agent code review skill at TWO invocations per session** (the initial review, plus at most one re-review after addressing findings). Do not run a third review on your own initiative — even if you think more findings might surface or you want to validate a rewrite. If a third pass seems warranted, ask the user first; only run more when they explicitly say so.
-- Prefer using worktree for development. If the scope is small and main branch is clean, consider developing on main directly.
-- Prefer subagent driven development no need to stop and ask for it. If the scope is small, consider asking for inline development.
+## Development Workflow
+For non-trivial features or changes, follow: **brainstorm → plan → doc-review → worktree → implement → code-review → merge.** Skills drive each step; invoke them by name via the Skill tool.
+
+1. **Brainstorm + plan** — Use the `brainstorming` skill (on `main`, in the main repo cwd, NOT a worktree). It asks questions one at a time, then writes a plan to `<project-root>/.plans/plans/` and, for ambiguous work, a spec to `<project-root>/.plans/specs/`. **Do NOT commit** plans or specs.
+2. **Doc-review** — Invoke `adversarial-doc-review` on the plan/spec. Claude shells out to `codex exec`; Codex shells out to `claude -p`. Address findings before coding.
+3. **Worktree** — Create an isolated worktree for the implementation. Skip for small changes when `main` is clean.
+4. **Implement** — Use the `implement` skill: one fresh subagent per task, each running a full TDD RED→GREEN→verify cycle, with a review checkpoint between tasks.
+5. **Code-review** — After a development phase and before merging, run the cross-agent diff review: `codex-code-review` (Claude) or `claude-code-review` (Codex). For each finding, **verify it's real before acting** (reviewers misread context and hit sandbox artifacts), then fix it or push back with specific reasoning — never silently skip, never blindly implement.
+6. **Merge** — Use the `merge` skill.
+
+- **Cap `adversarial-doc-review` and the cross-agent code review at TWO invocations per session** (initial review plus at most one re-review). Do not run a third on your own initiative — if a third pass seems warranted, ask the user first.
+- Trivial changes may skip the ceremony entirely. Use judgment about scope.
 
 ## GitHub Issues
 - Issue bodies describe the problem and context only — no proposed fixes, suggested approaches, design sketches, or acceptance criteria. The author often doesn't fully understand the problem; prescribing a solution biases whoever picks it up later.

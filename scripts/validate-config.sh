@@ -65,7 +65,9 @@ PYTHON_TOML_BIN="$(python_with_tomllib)"
 require_file "AGENTS.md"
 require_file "shared/AGENTS.md"
 require_file "shared/skills/auto-research/SKILL.md"
+require_file "shared/skills/brainstorming/SKILL.md"
 require_file "shared/skills/commit/SKILL.md"
+require_file "shared/skills/implement/SKILL.md"
 require_file "shared/skills/merge/SKILL.md"
 require_file "shared/skills/issue/SKILL.md"
 require_symlink "CLAUDE.md" "AGENTS.md"
@@ -73,7 +75,7 @@ require_symlink "claude/CLAUDE.md" "../shared/AGENTS.md"
 require_symlink "codex/AGENTS.md" "../shared/AGENTS.md"
 require_symlink "claude/skills/auto-research/SKILL.md" "../../../shared/skills/auto-research/SKILL.md"
 require_symlink "codex/skills/auto-research/SKILL.md" "../../../shared/skills/auto-research/SKILL.md"
-for skill in commit merge issue; do
+for skill in brainstorming commit implement merge issue; do
   require_symlink "claude/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
   require_symlink "codex/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
 done

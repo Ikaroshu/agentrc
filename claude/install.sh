@@ -20,7 +20,9 @@ FILES=(
   file-suggestion.sh
   statusline-command.sh
   skills/auto-research/SKILL.md
+  skills/brainstorming/SKILL.md
   skills/commit/SKILL.md
+  skills/implement/SKILL.md
   skills/merge/SKILL.md
   skills/issue/SKILL.md
   skills/adversarial-doc-review/SKILL.md

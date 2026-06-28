@@ -69,7 +69,12 @@ A trailing **`[PROMPT]`** (custom focus instruction) is accepted **only with no 
      `codex exec review "Weight look-ahead heavily."` and accept its default
      diff selection.
 
-3. **Relay findings.** Show the user the reviewer's summary. For each finding, either fix it in the working tree, or push back with reasoning if it's wrong — explicitly, never silently. After fixing, re-run with `--commit <fix-sha>` (or `--uncommitted`) to confirm the specific issues are resolved; tell the reviewer which prior findings it's confirming so it doesn't re-raise resolved items.
+3. **Relay and handle findings.** Show the user the reviewer's summary. For each finding, before acting:
+   1. **Verify it's real** — the reviewer can misread context or hit a sandbox artifact (see failure modes). Confirm the problem actually exists in the code before changing anything.
+   2. **Engage on the merits** — no reflexive "good catch" agreement; assess the technical substance.
+   3. **Then fix or push back** — fix verified findings in the working tree; for wrong ones, push back with specific reasoning. Never silently ignore, never blindly implement.
+
+   After fixing, re-run with `--commit <fix-sha>` (or `--uncommitted`) to confirm the specific issues are resolved; tell the reviewer which prior findings it's confirming so it doesn't re-raise resolved items.
 
 ## Failure modes & guidance
 

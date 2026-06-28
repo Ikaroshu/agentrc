@@ -16,15 +16,17 @@ CODEX_FILES=(
 SKILLS=(
   auto-research
   adversarial-doc-review
+  brainstorming
   claude-code-review
   commit
+  implement
   merge
   issue
 )
 
 is_shared_skill() {
   case "$1" in
-    auto-research|commit|merge|issue) return 0 ;;
+    auto-research|brainstorming|commit|implement|merge|issue) return 0 ;;
     *) return 1 ;;
   esac
 }

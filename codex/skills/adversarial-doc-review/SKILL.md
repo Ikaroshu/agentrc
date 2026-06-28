@@ -1,6 +1,6 @@
 ---
 name: adversarial-doc-review
-description: Run a Claude-backed adversarial review of a spec and/or implementation plan via `claude -p`. Use after writing spec/plan docs, typically in `.superpowers/specs/` and `.superpowers/plans/`, and before starting implementation. Returns the reviewer's findings inline so they can be addressed in the same turn.
+description: Run a Claude-backed adversarial review of a spec and/or implementation plan via `claude -p`. Use after writing spec/plan docs, typically in `.plans/specs/` and `.plans/plans/`, and before starting implementation. Returns the reviewer's findings inline so they can be addressed in the same turn.
 ---
 
 # Adversarial Doc Review
@@ -15,7 +15,7 @@ Shells out to the local Claude CLI (`claude -p`) with a critical-reviewer prompt
 ## Prerequisites
 
 - `claude` CLI on PATH. Verify with `command -v claude` if uncertain.
-- Run from the **main repo cwd on the main branch**, not from inside a worktree. Spec/plan files live at stable paths under `.superpowers/`; worktrees are ephemeral and relative paths get confused.
+- Run from the **main repo cwd on the main branch**, not from inside a worktree. Spec/plan files live at stable paths under `.plans/`; worktrees are ephemeral and relative paths get confused.
 
 ## Arguments
 
@@ -53,9 +53,10 @@ At least one of `--spec` or `--plan` must be provided. Paths may be absolute or 
    - `</dev/null` is required so the subprocess cannot wait for additional input.
    - Do **not** background the call. The review must complete in the same turn so findings can be acted on.
 
-4. **Relay findings.** Show the user the reviewer's verdict and findings. Then either:
-   - Address findings in the spec/plan and re-run the skill to verify, or
-   - Defend the design with reasoning if a finding is wrong. Do this explicitly, never quietly.
+4. **Relay and handle findings.** Show the user the reviewer's verdict and findings. For each finding, before acting:
+   1. **Verify it's real** — the reviewer can misread the doc or its context. Confirm the issue genuinely holds before changing anything.
+   2. **Engage on the merits** — no reflexive agreement; weigh the technical substance.
+   3. **Then address or push back** — fix verified findings in the spec/plan and re-run the skill to confirm; for wrong ones, defend the design with specific reasoning. Never silently ignore, never blindly implement.
 
 ## Prompt template
 

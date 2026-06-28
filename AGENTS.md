@@ -12,7 +12,9 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `CLAUDE.md -> ../shared/AGENTS.md`
   - `settings.json`
   - `skills/auto-research/SKILL.md -> ../../../shared/skills/auto-research/SKILL.md`
+  - `skills/brainstorming/SKILL.md -> ../../../shared/skills/brainstorming/SKILL.md`
   - `skills/commit/SKILL.md -> ../../../shared/skills/commit/SKILL.md`
+  - `skills/implement/SKILL.md -> ../../../shared/skills/implement/SKILL.md`
   - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`
   - `skills/issue/SKILL.md -> ../../../shared/skills/issue/SKILL.md`
   - `skills/adversarial-doc-review/SKILL.md`
@@ -23,7 +25,9 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `AGENTS.md -> ../shared/AGENTS.md`
   - `config.toml` — portable baseline merged into the machine-local config during install/sync.
   - `skills/auto-research/SKILL.md -> ../../../shared/skills/auto-research/SKILL.md`
+  - `skills/brainstorming/SKILL.md -> ../../../shared/skills/brainstorming/SKILL.md`
   - `skills/commit/SKILL.md -> ../../../shared/skills/commit/SKILL.md`
+  - `skills/implement/SKILL.md -> ../../../shared/skills/implement/SKILL.md`
   - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`
   - `skills/issue/SKILL.md -> ../../../shared/skills/issue/SKILL.md`
   - `skills/adversarial-doc-review/SKILL.md`

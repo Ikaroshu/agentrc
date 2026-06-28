@@ -1,6 +1,6 @@
 ---
 name: adversarial-doc-review
-description: Run a Codex-backed adversarial review of a spec and/or implementation plan via `codex exec`. Use after writing spec/plan docs (typically in `.superpowers/specs/` and `.superpowers/plans/`) and before starting implementation. Returns the reviewer's findings inline so they can be addressed in the same turn.
+description: Run a Codex-backed adversarial review of a spec and/or implementation plan via `codex exec`. Use after writing spec/plan docs (typically in `.plans/specs/` and `.plans/plans/`) and before starting implementation. Returns the reviewer's findings inline so they can be addressed in the same turn.
 ---
 
 # Adversarial Doc Review
@@ -9,13 +9,13 @@ A homebrewed replacement for the `/codex:adversarial-review` plugin command. She
 
 ## When to use
 
-- After writing a spec and/or plan (typically under `<project-root>/.superpowers/specs/` and `<project-root>/.superpowers/plans/`), before implementation begins.
+- After writing a spec and/or plan (typically under `<project-root>/.plans/specs/` and `<project-root>/.plans/plans/`), before implementation begins.
 - The skill reviews **documents**, not code diffs. To have Codex review a code diff during implementation, use the sibling `codex-code-review` skill (it drives `codex exec review`). For Claude-native code review use `/code-review`.
 
 ## Prerequisites
 
 - `codex` CLI on PATH. Verify with `command -v codex` if uncertain.
-- Run from the **main repo cwd on the main branch**, NOT from inside a worktree. Spec/plan files live at stable paths under `.superpowers/`; worktrees are ephemeral and the relative paths get confused.
+- Run from the **main repo cwd on the main branch**, NOT from inside a worktree. Spec/plan files live at stable paths under `.plans/`; worktrees are ephemeral and the relative paths get confused.
 
 ## Arguments
 
@@ -63,9 +63,10 @@ At least one of `--spec` or `--plan` must be provided. Paths may be absolute or 
    - Do **not** pass `--json`; `-o` already gives us the plain final message.
    - Do **not** background the call. The review must complete in the same turn so findings can be acted on.
 
-4. **Relay findings.** Show the user the reviewer's verdict and findings. Then either:
-   - **Address findings** in the spec/plan and re-run the skill to verify, or
-   - **Defend the design** with reasoning if a finding is wrong — but do this explicitly, don't quietly ignore.
+4. **Relay and handle findings.** Show the user the reviewer's verdict and findings. For each finding, before acting:
+   1. **Verify it's real** — the reviewer can misread the doc or its context. Confirm the issue genuinely holds before changing anything.
+   2. **Engage on the merits** — no reflexive agreement; weigh the technical substance.
+   3. **Then address or push back** — fix verified findings in the spec/plan and re-run the skill to confirm; for wrong ones, defend the design with specific reasoning. Never silently ignore, never blindly implement.
 
 ## Prompt template
 
@@ -143,4 +144,4 @@ Rules:
 - **Reviewer cites files outside the supplied paths.** That's fine if it's reading repo context for grounding; flag it only if the review drifts away from the doc.
 - **Reviewer wants to edit files.** It cannot — `--sandbox read-only` blocks writes. The verdict and findings are the deliverable.
 - **No findings at all + APPROVE.** Trust it but spot-check the doc yourself before moving to implementation; don't treat APPROVE as a rubber stamp.
-- **Inside a worktree.** Stop and switch back to the main repo cwd on `main` before running. Spec/plan paths under `.superpowers/` are relative to project root and the reviewer expects to find them there.
+- **Inside a worktree.** Stop and switch back to the main repo cwd on `main` before running. Spec/plan paths under `.plans/` are relative to project root and the reviewer expects to find them there.
