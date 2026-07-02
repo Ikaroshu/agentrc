@@ -17,6 +17,8 @@ Execute an agreed plan with TDD discipline and per-task context isolation. This 
 
 ## Per-task loop
 
+When the main model is Fable, dispatch every task subagent with `model: "opus"`. For any other main model, omit the model override and use the default.
+
 For **each** task, dispatch **one fresh subagent** (clean context) instructed to run the full cycle and report back:
 
 1. **RED** — write a failing test that captures the task's requirement. Run it; confirm it fails *for the right reason* (not a typo or import error).
@@ -33,7 +35,8 @@ After each subagent returns:
 
 1. **Verify the evidence.** Confirm from the output that the test actually ran and passed — not a claim. If the output is missing or unconvincing, send it back.
 2. **Review the diff.** Check it matches the plan and does not sprawl beyond the task.
-3. Mark the todo complete and move to the next task.
+3. **Commit the task.** Stage only the current task's changes and create a focused commit before dispatching the next subagent.
+4. Mark the todo complete and move to the next task.
 
 ## Rules
 

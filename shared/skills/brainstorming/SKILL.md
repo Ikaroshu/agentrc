@@ -24,9 +24,9 @@ Turn a vague request into an agreed, written plan before any code is written. Th
    - Constraints — existing patterns, dependencies, performance, compatibility.
    - Design options — present 2-3 approaches with tradeoffs; get a decision.
 3. **Reflect understanding back.** Summarize the agreed problem and approach in a few sentences. Get explicit agreement before writing anything.
-4. **Write the plan.** Always write `plan.md`; write `spec.md` only when the problem itself is ambiguous (novel feature, unclear requirements).
-   - Plan path: `<project-root>/.plans/plans/<short-title>.md`
-   - Spec path: `<project-root>/.plans/specs/<short-title>.md`
+4. **Write the plan.** Always write a plan; write a spec only when the problem itself is ambiguous (novel feature, unclear requirements).
+   - Plan path: `<project-root>/.plans/plans/<YYYYMMDD>_<short_title>.md`
+   - Spec path: `<project-root>/.plans/specs/<YYYYMMDD>_<short_title>.md`
    - Write from the **main repo cwd on `main`**, NOT a worktree — these paths must stay stable for doc-review. Do not create a worktree yet.
    - **Do NOT commit** plan or spec files.
 5. **Hand off.** Tell the user the files are ready and recommend running `adversarial-doc-review` next.
