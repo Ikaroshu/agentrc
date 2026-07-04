@@ -37,27 +37,20 @@ Optional **`--focus <text>`** can be included in the prompt for any scope.
 
 2. **Build the review prompt.** Use the template below. Substitute the selected scope and include any focus text.
 
-3. **Run Claude.** Single Bash call, no backgrounding. Substitute the working tree path and prompt:
+3. **Run Claude.** Invoke the CLI directly, no backgrounding. Substitute the working tree path, then pass the fully rendered prompt as one shell-escaped literal argument. Do not store the prompt in a shell variable because that prevents Codex's narrow command rule from matching:
 
    ```bash
-   cd /path/to/worktree
-   unset PYTHONPATH VIRTUAL_ENV
-   OUT=$(mktemp /tmp/claude_code_review.XXXXXX.txt)
-   LOG=$(mktemp /tmp/claude_code_review_log.XXXXXX.txt)
-   claude -p \
-     --permission-mode plan \
-     --output-format text \
-     "$PROMPT" </dev/null >"$OUT" 2>"$LOG"
-   rc=$?
-   echo "rc=$rc; bytes=$(wc -c <"$OUT")"
-   if [ "$rc" -eq 0 ]; then cat "$OUT"; else echo "claude failed (rc=$rc); log tail:"; tail -40 "$LOG"; fi
-   rm -f "$OUT" "$LOG"
+   env -u PYTHONPATH -u VIRTUAL_ENV \
+     claude -p --permission-mode plan --output-format text '<fully rendered prompt>'
    ```
 
    - `-p` is required: it runs Claude non-interactively and prints the result.
    - `--permission-mode plan` is required: the reviewer must not edit files.
    - `--output-format text` keeps the captured answer easy to relay.
-   - `</dev/null` is required so the subprocess cannot wait for additional input.
+   - Set the tool call's working directory to the worktree. Keep the `env` and `claude` argument prefix exact so the review uses the worktree environment and matches the managed rule. Shell variables, command substitutions, redirects, and wrapper scripts prevent the rule from matching.
+   - Set the initial command yield to 30 seconds. If the command is still running, poll its session with an empty `write_stdin` call that waits 60 seconds.
+   - A silent reviewer is normal. Do not poll faster than once per 60 seconds, inspect its PID, or launch parallel status checks. Each extra check adds tool and context overhead without making the review finish sooner.
+   - Read only newly returned output. With text output, Claude prints the review result directly; temporary output and log files are unnecessary.
    - Do **not** background the call. It must finish this turn so findings can be acted on.
 
 4. **Relay and handle findings.** Show the user the reviewer's summary. For each finding, before acting:
@@ -126,7 +119,7 @@ For `--uncommitted`, replace the diff commands with:
 ## Failure modes & guidance
 
 - **Nothing to review.** The selected scope has no diff. Pick the right selector.
-- **Claude hangs.** Confirm `</dev/null` is present, kill the stuck process, and report. Do not retry blindly.
+- **Claude hangs.** Kill the stuck process and report. Do not retry blindly or reintroduce a shell wrapper; diagnose the direct invocation first.
 - **Reviewer tries to edit files.** It must not; `--permission-mode plan` plus the prompt make the review read-only.
 - **Reviewer reports harness-only failures.** If its sandbox or permission mode blocks a command, note that as a review harness artifact and rely on local verification as authoritative.
 - **No findings.** Trust but spot-check the diff yourself before merging.

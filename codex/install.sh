@@ -11,6 +11,7 @@ SKILLS_TARGET_DIR="$HOME/.agents/skills"
 
 CODEX_FILES=(
   AGENTS.md
+  rules/claude-review.rules
 )
 
 SKILLS=(

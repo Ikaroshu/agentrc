@@ -84,6 +84,7 @@ require_file "claude/settings.json"
 require_file "claude/skills/adversarial-doc-review/SKILL.md"
 require_file "claude/skills/codex-code-review/SKILL.md"
 require_file "codex/config.toml"
+require_file "codex/rules/claude-review.rules"
 require_file "codex/skills/adversarial-doc-review/SKILL.md"
 require_file "codex/skills/claude-code-review/SKILL.md"
 
@@ -112,5 +113,12 @@ python3 -m json.tool "$ROOT_DIR/claude/settings.json" >/dev/null
 python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 "$ROOT_DIR/scripts/test-codex-install.sh"
+codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rules" -- \
+  claude -p --permission-mode plan --output-format text review \
+  | grep -F '"decision": "allow"' >/dev/null
+codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rules" -- \
+  env -u PYTHONPATH -u VIRTUAL_ENV \
+  claude -p --permission-mode plan --output-format text review \
+  | grep -F '"decision": "allow"' >/dev/null
 
 echo "Config repository validation passed."

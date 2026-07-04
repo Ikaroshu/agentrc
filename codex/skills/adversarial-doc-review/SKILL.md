@@ -33,24 +33,19 @@ At least one of `--spec` or `--plan` must be provided. Paths may be absolute or 
 
 2. **Build the review prompt.** Use the template below verbatim, substituting the absolute paths of the supplied files. Include the `--focus` text under "Reviewer focus" if provided.
 
-3. **Run Claude.** Invoke the CLI in one Bash call, no backgrounding:
+3. **Run Claude.** Invoke the CLI directly, no backgrounding. Pass the fully rendered prompt as one shell-escaped literal argument; do not store it in a shell variable because that prevents Codex's narrow command rule from matching:
 
    ```bash
-   OUT=$(mktemp /tmp/claude_doc_review.XXXXXX.txt)
-   LOG=$(mktemp /tmp/claude_doc_review_log.XXXXXX.txt)
-   claude -p \
-     --permission-mode plan \
-     --output-format text \
-     "$PROMPT" </dev/null >"$OUT" 2>"$LOG"
-   rc=$?
-   if [ "$rc" -eq 0 ]; then cat "$OUT"; else echo "claude failed (rc=$rc); log tail:"; tail -40 "$LOG"; fi
-   rm -f "$OUT" "$LOG"
+   claude -p --permission-mode plan --output-format text '<fully rendered prompt>'
    ```
 
    - `-p` is required: it runs Claude non-interactively and prints the result.
    - `--permission-mode plan` is required: the reviewer must not edit files.
    - `--output-format text` keeps the captured answer easy to relay.
-   - `</dev/null` is required so the subprocess cannot wait for additional input.
+   - Keep this exact argument prefix and pass the prompt literally. Shell variables, command substitutions, redirects, and wrapper scripts prevent the managed `claude-review.rules` prefix from matching.
+   - Set the initial command yield to 30 seconds. If the command is still running, poll its session with an empty `write_stdin` call that waits 60 seconds.
+   - A silent reviewer is normal. Do not poll faster than once per 60 seconds, inspect its PID, or launch parallel status checks. Each extra check adds tool and context overhead without making the review finish sooner.
+   - Read only newly returned output. With text output, Claude prints the review result directly; temporary output and log files are unnecessary.
    - Do **not** background the call. The review must complete in the same turn so findings can be acted on.
 
 4. **Relay and handle findings.** Show the user the reviewer's verdict and findings. For each finding, before acting:
@@ -130,7 +125,7 @@ Rules:
 
 ## Failure modes & guidance
 
-- **Claude hangs or times out.** Confirm `</dev/null` is present, kill the stuck process, and report. Do not retry blindly.
+- **Claude hangs or times out.** Kill the stuck process and report. Do not retry blindly or reintroduce a shell wrapper; diagnose the direct invocation first.
 - **Reviewer wants to edit files.** It must not; `--permission-mode plan` plus the prompt make the review read-only. The verdict and findings are the deliverable.
 - **No findings at all + APPROVE.** Trust it but spot-check the doc yourself before moving to implementation. Do not treat APPROVE as a rubber stamp.
 - **Inside a worktree.** Stop and switch back to the main repo cwd on `main` before running.

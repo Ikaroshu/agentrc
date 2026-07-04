@@ -24,6 +24,7 @@ This repository tracks portable configuration for AI coding agents such as Claud
 - `codex/` — files installed into `~/.codex/`.
   - `AGENTS.md -> ../shared/AGENTS.md`
   - `config.toml` — portable baseline merged into the machine-local config during install/sync.
+  - `rules/claude-review.rules` — narrowly allows the read-only Claude CLI invocation used by Codex review skills.
   - `skills/auto-research/SKILL.md -> ../../../shared/skills/auto-research/SKILL.md`
   - `skills/brainstorming/SKILL.md -> ../../../shared/skills/brainstorming/SKILL.md`
   - `skills/commit/SKILL.md -> ../../../shared/skills/commit/SKILL.md`
@@ -35,6 +36,7 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `install.sh`
   - `sync-remote.sh`
 - Codex skills are installed into `~/.agents/skills/`.
+- Codex rules are installed as separate managed files under `~/.codex/rules/`; do not overwrite machine-local `default.rules`.
 - `scripts/` — validation and merge helpers used by install/sync scripts.
 
 ## Common Commands
