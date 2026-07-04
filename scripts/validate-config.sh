@@ -98,6 +98,7 @@ require_executable "scripts/validate-config.sh"
 require_executable "scripts/test-codex-install.sh"
 require_executable "scripts/merge-codex-config.py"
 require_executable "scripts/test-merge-codex-config.py"
+require_executable "scripts/test-sync-remote.sh"
 
 bash -n "$ROOT_DIR/install.sh"
 bash -n "$ROOT_DIR/sync-remote.sh"
@@ -107,12 +108,14 @@ bash -n "$ROOT_DIR/claude/sync-remote.sh"
 bash -n "$ROOT_DIR/codex/sync-remote.sh"
 bash -n "$ROOT_DIR/scripts/validate-config.sh"
 bash -n "$ROOT_DIR/scripts/test-codex-install.sh"
+bash -n "$ROOT_DIR/scripts/test-sync-remote.sh"
 
 python3 -m json.tool "$ROOT_DIR/claude/settings.json" >/dev/null
 "$PYTHON_TOML_BIN" -c 'import pathlib, tomllib, sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' "$ROOT_DIR/codex/config.toml"
 python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 "$ROOT_DIR/scripts/test-codex-install.sh"
+"$ROOT_DIR/scripts/test-sync-remote.sh"
 codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rules" -- \
   claude -p --permission-mode plan --output-format text review \
   | grep -F '"decision": "allow"' >/dev/null
