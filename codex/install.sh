@@ -9,8 +9,11 @@ ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
 CODEX_TARGET_DIR="$HOME/.codex"
 SKILLS_TARGET_DIR="$HOME/.agents/skills"
 
-CODEX_FILES=(
+CODEX_LINK_FILES=(
   AGENTS.md
+)
+
+CODEX_COPY_FILES=(
   rules/claude-review.rules
 )
 
@@ -68,6 +71,34 @@ link_file() {
 
   ln -s "$src" "$dst"
   echo "LINK $rel"
+}
+
+copy_file() {
+  local rel="$1"
+  local src="$REPO_DIR/$rel"
+  local dst="$CODEX_TARGET_DIR/$rel"
+
+  if [ ! -f "$src" ]; then
+    echo "SKIP $rel (source missing)"
+    return
+  fi
+
+  if [ -f "$dst" ] && [ ! -L "$dst" ] && cmp -s "$src" "$dst"; then
+    echo "  OK $rel"
+    return
+  fi
+
+  mkdir -p "$(dirname "$dst")"
+
+  if [ -L "$dst" ]; then
+    rm "$dst"
+  elif [ -f "$dst" ]; then
+    mv "$dst" "$dst.bak"
+    echo "BACK $rel -> $dst.bak"
+  fi
+
+  cp "$src" "$dst"
+  echo "COPY $rel"
 }
 
 install_config() {
@@ -142,8 +173,11 @@ cleanup_legacy_command() {
 echo "Installing Codex settings from $REPO_DIR -> $CODEX_TARGET_DIR"
 echo
 
-for f in "${CODEX_FILES[@]}"; do
+for f in "${CODEX_LINK_FILES[@]}"; do
   link_file "$f"
+done
+for f in "${CODEX_COPY_FILES[@]}"; do
+  copy_file "$f"
 done
 install_config
 

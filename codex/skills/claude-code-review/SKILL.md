@@ -47,9 +47,15 @@ Optional **`--focus <text>`** can be included in the prompt for any scope.
    - `-p` is required: it runs Claude non-interactively and prints the result.
    - `--permission-mode plan` is required: the reviewer must not edit files.
    - `--output-format text` keeps the captured answer easy to relay.
+   - Run the command with `sandbox_permissions="require_escalated"`: Claude's
+     API is outside the workspace network sandbox. Use the justification
+     "Run the user-authorized read-only Claude review, which transmits the
+     selected repository diff to the Anthropic Claude API?" The managed
+     `claude-review.rules` rule records this explicit external-transmission
+     authorization for future reviews.
    - Set the tool call's working directory to the worktree. Keep the `env` and `claude` argument prefix exact so the review uses the worktree environment and matches the managed rule. Shell variables, command substitutions, redirects, and wrapper scripts prevent the rule from matching.
-   - Set the initial command yield to 30 seconds. If the command is still running, poll its session with an empty `write_stdin` call that waits 60 seconds.
-   - A silent reviewer is normal. Do not poll faster than once per 60 seconds, inspect its PID, or launch parallel status checks. Each extra check adds tool and context overhead without making the review finish sooner.
+   - Set the initial command yield to 30 seconds. If the command is still running, poll its session with an empty `write_stdin` call that waits 60 seconds. Keep polling every 60 seconds until the process exits; a thorough review can legitimately take more than 10 minutes.
+   - Text output is buffered, so a silent reviewer is normal. Silence and elapsed time alone are never evidence that Claude is hung. Do not impose an arbitrary timeout, send `Ctrl-C`, terminate the process, inspect its PID, or launch parallel status checks while the session remains active. Give the user brief status updates and continue waiting.
    - Read only newly returned output. With text output, Claude prints the review result directly; temporary output and log files are unnecessary.
    - Do **not** background the call. It must finish this turn so findings can be acted on.
 
@@ -119,7 +125,8 @@ For `--uncommitted`, replace the diff commands with:
 ## Failure modes & guidance
 
 - **Nothing to review.** The selected scope has no diff. Pick the right selector.
-- **Claude hangs.** Kill the stuck process and report. Do not retry blindly or reintroduce a shell wrapper; diagnose the direct invocation first.
+- **Long-running or silent review.** Keep polling until the process exits, even after 10 minutes. Do not classify it as hung or terminate it based only on silence or elapsed time.
+- **Confirmed failure.** Treat the review as failed only when the process exits nonzero, the tool reports a hard timeout/error, the user asks to stop, or there is other concrete evidence that progress is impossible. Report the exact evidence; do not retry blindly or reintroduce a shell wrapper.
 - **Reviewer tries to edit files.** It must not; `--permission-mode plan` plus the prompt make the review read-only.
 - **Reviewer reports harness-only failures.** If its sandbox or permission mode blocks a command, note that as a review harness artifact and rely on local verification as authoritative.
 - **No findings.** Trust but spot-check the diff yourself before merging.

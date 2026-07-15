@@ -123,5 +123,7 @@ codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rul
   env -u PYTHONPATH -u VIRTUAL_ENV \
   claude -p --permission-mode plan --output-format text review \
   | grep -F '"decision": "allow"' >/dev/null
+grep -F 'transmit repository design documents and diffs to the Anthropic Claude API' \
+  "$ROOT_DIR/codex/rules/claude-review.rules" >/dev/null
 
 echo "Config repository validation passed."

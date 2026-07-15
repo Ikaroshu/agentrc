@@ -1,7 +1,7 @@
 prefix_rule(
     pattern = ["claude", "-p", "--permission-mode", "plan", "--output-format", "text"],
     decision = "allow",
-    justification = "Claude-backed Codex reviews are explicitly authorized to read repository context",
+    justification = "User explicitly authorizes read-only Codex review workflows to transmit repository design documents and diffs to the Anthropic Claude API",
     match = [
         "claude -p --permission-mode plan --output-format text review",
     ],
@@ -14,7 +14,7 @@ prefix_rule(
 prefix_rule(
     pattern = ["env", "-u", "PYTHONPATH", "-u", "VIRTUAL_ENV", "claude", "-p", "--permission-mode", "plan", "--output-format", "text"],
     decision = "allow",
-    justification = "Claude-backed Codex code reviews need the worktree environment isolated",
+    justification = "User explicitly authorizes read-only Codex code reviews to transmit repository diffs to the Anthropic Claude API with the worktree environment isolated",
     match = [
         "env -u PYTHONPATH -u VIRTUAL_ENV claude -p --permission-mode plan --output-format text review",
     ],

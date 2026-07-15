@@ -23,6 +23,7 @@ EOF
 cat >"$TEST_HOME/.codex/rules/default.rules" <<'EOF'
 prefix_rule(pattern=["existing"], decision="allow")
 EOF
+ln -s "$ROOT_DIR/codex/rules/claude-review.rules" "$TEST_HOME/.codex/rules/claude-review.rules"
 
 HOME="$TEST_HOME" "$ROOT_DIR/codex/install.sh" >/dev/null
 
@@ -36,12 +37,12 @@ grep -F 'machine_marker = true' "$TEST_HOME/.codex/config.toml" >/dev/null
 grep -F '[projects."/machine/project"]' "$TEST_HOME/.codex/config.toml" >/dev/null
 
 RULE_TARGET="$TEST_HOME/.codex/rules/claude-review.rules"
-if [ ! -L "$RULE_TARGET" ]; then
-  echo "Expected managed Codex rule symlink: $RULE_TARGET" >&2
+if [ ! -f "$RULE_TARGET" ] || [ -L "$RULE_TARGET" ]; then
+  echo "Expected managed Codex rule to be a regular file: $RULE_TARGET" >&2
   exit 1
 fi
-if [ "$(readlink "$RULE_TARGET")" != "$ROOT_DIR/codex/rules/claude-review.rules" ]; then
-  echo "Unexpected managed Codex rule target: $(readlink "$RULE_TARGET")" >&2
+if ! cmp -s "$RULE_TARGET" "$ROOT_DIR/codex/rules/claude-review.rules"; then
+  echo "Managed Codex rule does not match its source" >&2
   exit 1
 fi
 grep -F 'pattern=["existing"]' "$TEST_HOME/.codex/rules/default.rules" >/dev/null
