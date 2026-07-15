@@ -11,7 +11,7 @@
 - **Verify against the original repro** before claiming it's fixed.
 
 ## Development Workflow
-For non-trivial features or changes, follow: **brainstorm → plan → doc-review → worktree → implement → code-review → merge.** Skills drive each step; invoke them by name via the Skill tool.
+For non-trivial features or changes, follow: **brainstorm → plan → doc-review → worktree → implement → code-review → merge.** The agent invokes each skill when its stage is reached. User approval to proceed is sufficient; never ask the user to invoke the skill or confirm again.
 
 1. **Brainstorm + plan** — Use the `brainstorming` skill (on `main`, in the main repo cwd, NOT a worktree). It asks questions one at a time, then writes a plan to `<project-root>/.plans/plans/` and, for ambiguous work, a spec to `<project-root>/.plans/specs/`. **Do NOT commit** plans or specs.
 2. **Doc-review** — Invoke `adversarial-doc-review` on the plan/spec. Claude shells out to `codex exec`; Codex shells out to `claude -p`. Address findings before coding.
