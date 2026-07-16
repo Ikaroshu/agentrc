@@ -11,11 +11,11 @@
 - **Verify against the original repro** before claiming it's fixed.
 
 ## Development Workflow
-For non-trivial features or changes, follow: **brainstorm → plan → doc-review → worktree → implement → code-review → merge.** The agent invokes each skill when its stage is reached. User approval to proceed is sufficient; never ask the user to invoke the skill or confirm again.
+For non-trivial features or changes, follow: **brainstorm → plan → doc-review → worktree → implement → code-review → merge.** The agent invokes each skill when its stage is reached. After doc review findings are addressed, pause and ask the user for a final go/no-go on the reviewed plan and spec before creating a worktree or starting implementation. Once the user gives the go-ahead, proceed through the remaining stages without asking them to invoke skills or reconfirm.
 
 1. **Brainstorm + plan** — Use the `brainstorming` skill (on `main`, in the main repo cwd, NOT a worktree). It asks questions one at a time, then writes a plan to `<project-root>/.plans/plans/` and, for ambiguous work, a spec to `<project-root>/.plans/specs/`. **Do NOT commit** plans or specs.
 2. **Doc-review** — Invoke `adversarial-doc-review` on the plan/spec. Claude shells out to `codex exec`; Codex shells out to `claude -p`. Address findings before coding.
-3. **Worktree** — Create an isolated worktree for the implementation. Skip for small changes when `main` is clean.
+3. **Worktree** — Create an isolated worktree under `<project-root>/.worktrees/` for the implementation. Skip for small changes when `main` is clean.
 4. **Implement** — Use the `implement` skill: one fresh subagent per task, each running a full TDD RED→GREEN→verify cycle, with a review checkpoint between tasks.
 5. **Code-review** — After a development phase and before merging, run the cross-agent diff review: `codex-code-review` (Claude) or `claude-code-review` (Codex). For each finding, **verify it's real before acting** (reviewers misread context and hit sandbox artifacts), then fix it or push back with specific reasoning — never silently skip, never blindly implement.
 6. **Merge** — Use the `merge` skill.
