@@ -1,9 +1,9 @@
 ---
-name: auto-research
+name: general-auto-research
 description: Run an N-round autonomous research loop. Use when the user asks to auto-research a question, run iterative rounds, or explore a problem with multiple sequential agents. Sets up `auto_research/r<YYYYMMDD>_<short_title>/` with a prompt.md and optional auxiliary scripts, spawns one subagent per round sequentially (each working only in its own round_i folder), then synthesizes report.md covering the arc across rounds, top results, problems encountered, and recommendations.
 ---
 
-# Auto-Research
+# General Auto-Research
 
 Orchestrates iterative research. Each round is a fresh subagent that reads a shared `prompt.md`, forms ONE hypothesis, implements and evaluates it, and records findings that inform the next round. After all rounds, the orchestrator synthesizes a single report.
 

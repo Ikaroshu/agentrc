@@ -1,1 +1,0 @@
-../../../shared/skills/auto-research/SKILL.md

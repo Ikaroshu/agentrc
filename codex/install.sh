@@ -18,7 +18,7 @@ CODEX_COPY_FILES=(
 )
 
 SKILLS=(
-  auto-research
+  general-auto-research
   adversarial-doc-review
   brainstorming
   claude-code-review
@@ -30,7 +30,7 @@ SKILLS=(
 
 is_shared_skill() {
   case "$1" in
-    auto-research|brainstorming|commit|implement|merge|issue) return 0 ;;
+    general-auto-research|brainstorming|commit|implement|merge|issue) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -193,8 +193,8 @@ for skill in "${SKILLS[@]}"; do
   link_path "$(skill_source "$skill")" "$SKILLS_TARGET_DIR/$skill" "$skill"
 done
 
-# Drop legacy skill symlinks now replaced by the shared commit/merge skills
-for legacy in commit-workflow merge-workflow; do
+# Drop legacy skill symlinks replaced by renamed or shared skills
+for legacy in commit-workflow merge-workflow auto-research; do
   dst="$SKILLS_TARGET_DIR/$legacy"
   if [ -L "$dst" ]; then
     rm "$dst"

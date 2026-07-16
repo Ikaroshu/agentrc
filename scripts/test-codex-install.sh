@@ -58,7 +58,7 @@ fi
 
 grep -F 'model = "gpt-5.5"' "$MIGRATION_HOME/.codex/config.toml" >/dev/null
 
-for skill in auto-research commit merge issue; do
+for skill in general-auto-research commit merge issue; do
   target="$TEST_HOME/.agents/skills/$skill"
   expected="$ROOT_DIR/shared/skills/$skill"
 

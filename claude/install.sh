@@ -19,7 +19,7 @@ FILES=(
   CLAUDE.md
   file-suggestion.sh
   statusline-command.sh
-  skills/auto-research/SKILL.md
+  skills/general-auto-research/SKILL.md
   skills/brainstorming/SKILL.md
   skills/commit/SKILL.md
   skills/implement/SKILL.md
@@ -76,6 +76,14 @@ for legacy in commit merge issue; do
   fi
 done
 rmdir "$TARGET_DIR/commands" 2>/dev/null || true
+
+# Drop the old auto-research skill link, renamed to general-auto-research
+old_skill="$TARGET_DIR/skills/auto-research/SKILL.md"
+if [ -L "$old_skill" ] && [ "$(readlink "$old_skill")" = "$REPO_DIR/skills/auto-research/SKILL.md" ]; then
+  rm "$old_skill"
+  rmdir "$TARGET_DIR/skills/auto-research" 2>/dev/null || true
+  echo "DROP legacy skills/auto-research"
+fi
 
 # Ensure scripts are executable
 chmod +x "$REPO_DIR/file-suggestion.sh" 2>/dev/null || true
