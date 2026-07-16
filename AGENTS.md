@@ -78,3 +78,8 @@ Validate the repository after every config change:
 ## Testing
 
 There is no app test suite. The repo-level validation script is the required check. It verifies expected symlinks, executable bits, shell syntax, JSON/TOML syntax, and Codex config merge behavior.
+
+## Git Workflow
+
+- **Commit tests:** Run `./scripts/validate-config.sh` before committing.
+- **Post-commit deployment:** After a successful commit, run `./install.sh`, then `./sync-remote.sh mini`. Both commands must succeed before considering the commit workflow complete.
