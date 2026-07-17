@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Use to execute a written plan (from .plans/) task by task with test-driven development. Dispatches one fresh subagent per task to run a full RED→GREEN→verify cycle, and reviews the evidence between tasks. Replaces ad-hoc implementation.
+description: Use to execute a written plan (from .plans/) task by task with test-driven development. Dispatches one fresh task-owner subagent per task, permits nested delegation, and reviews the RED→GREEN→verify evidence between tasks. Replaces ad-hoc implementation.
 ---
 
 # Implement
@@ -19,7 +19,7 @@ Execute an agreed plan with TDD discipline and per-task context isolation. This 
 
 When the main model is Fable, dispatch every task subagent with `model: "opus"`. For any other main model, omit the model override and use the default.
 
-For **each** task, dispatch **one fresh subagent** (clean context) instructed to run the full cycle and report back:
+For **each** task, dispatch **one fresh task-owner subagent** (clean context) instructed to run the full cycle and report back:
 
 1. **RED** — write a failing test that captures the task's requirement. Run it; confirm it fails *for the right reason* (not a typo or import error).
 2. **GREEN** — write the minimal implementation to make the test pass. No extra scope.
@@ -28,6 +28,16 @@ For **each** task, dispatch **one fresh subagent** (clean context) instructed to
 When a unit test doesn't fit the task — config/infra changes, docs, pure refactors — keep the cycle but generalize "test" to the **verification gate**: the repo's validation script, lint/type-check, or a concrete manual check with expected output. Confirm it's red (failing or unmet), do the work, then show it green. Never fabricate a trivial test just to satisfy the ritual.
 
 The subagent's final message must include the real verification output.
+
+### Nested helpers
+
+The task owner may delegate work to nested helpers, and those helpers may
+delegate further, when useful. Keep the agent tree scoped to the current plan
+task.
+
+The task owner coordinates shared-worktree changes, reviews and integrates
+delegated work, and remains accountable for the task's final diff and complete
+RED→GREEN→verify evidence.
 
 ## Between tasks (orchestrator checkpoint)
 
@@ -40,7 +50,8 @@ After each subagent returns:
 
 ## Rules
 
-- **One task per subagent, fresh each time** — context isolation is the point; do not reuse a subagent across tasks.
+- **One fresh task owner per task** — context isolation is the point; do not
+  reuse a task owner across plan tasks.
 - **No faking green.** If a test will not pass after a genuine attempt, STOP and surface it to the user — do not skip the test, weaken the assertion, or mark the task done.
 - **Evidence over assertion.** Every "done" is backed by command output you have seen.
 

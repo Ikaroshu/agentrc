@@ -16,7 +16,7 @@ For non-trivial features or changes, follow: **brainstorm → plan → doc-revie
 1. **Brainstorm + plan** — Use the `brainstorming` skill (on `main`, in the main repo cwd, NOT a worktree). It asks questions one at a time, then writes a plan to `<project-root>/.plans/plans/` and, for ambiguous work, a spec to `<project-root>/.plans/specs/`. **Do NOT commit** plans or specs.
 2. **Doc-review** — Invoke `adversarial-doc-review` on the plan/spec. It uses the local read-only OMP review profile and OpenRouter Pareto routing, shared by Claude and Codex. Address findings before coding.
 3. **Worktree** — Create an isolated worktree under `<project-root>/.worktrees/` for the implementation. Skip for small changes when `main` is clean.
-4. **Implement** — Use the `implement` skill: one fresh subagent per task, each running a full TDD RED→GREEN→verify cycle, with a review checkpoint between tasks.
+4. **Implement** — Use the `implement` skill: one fresh task-owner subagent per task, each accountable for a full TDD RED→GREEN→verify cycle, with a review checkpoint between tasks. The task owner may delegate work to nested helpers while remaining accountable for the task result and verification.
 5. **Code-review** — After a development phase and before merging, invoke the shared `code-review` skill. It uses the local read-only OMP review profile and OpenRouter Pareto routing. For each finding, **verify it's real before acting** (reviewers misread context and hit sandbox artifacts), then fix it or push back with specific reasoning — never silently skip, never blindly implement.
 6. **Merge** — Use the `merge` skill.
 
