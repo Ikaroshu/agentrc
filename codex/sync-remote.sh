@@ -18,8 +18,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-SHARED_SKILLS=(general-auto-research brainstorming commit implement merge issue)
-# The OMP-backed review pilot is local-only. Do not add review skills here.
+SHARED_SKILLS=(general-auto-research brainstorming commit implement merge issue adversarial-doc-review code-review)
 
 ssh "$REMOTE" '
   rm -f ~/.codex/commands/commit.md ~/.codex/commands/merge.md
@@ -32,11 +31,14 @@ ssh "$REMOTE" '
     ~/.agents/skills/commit \
     ~/.agents/skills/implement \
     ~/.agents/skills/merge \
-    ~/.agents/skills/issue
+    ~/.agents/skills/issue \
+    ~/.agents/skills/adversarial-doc-review \
+    ~/.agents/skills/code-review
 '
 
-# Shared instructions and the OMP permission rule are part of the local-only
-# review pilot, so keep their remote copies unchanged until rollout approval.
+scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
+scp -q "$REPO_DIR/rules/omp-review.rules" "$REMOTE:~/.codex/rules/omp-review.rules"
+
 for skill in "${SHARED_SKILLS[@]}"; do
   scp -q "$ROOT_DIR/shared/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
 done

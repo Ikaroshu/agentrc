@@ -5,8 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 TEST_DIR="$(mktemp -d)"
 BIN_DIR="$TEST_DIR/bin"
-CLAUDE_LOG="$TEST_DIR/claude-scp.log"
-CODEX_LOG="$TEST_DIR/codex-scp.log"
+SCP_LOG="$TEST_DIR/scp.log"
 
 cleanup() {
   rm -rf "$TEST_DIR"
@@ -39,50 +38,32 @@ EOF
 
 chmod +x "$BIN_DIR/ssh" "$BIN_DIR/scp"
 
-PATH="$BIN_DIR:$PATH" SYNC_SCP_LOG="$CLAUDE_LOG" \
-  "$ROOT_DIR/claude/sync-remote.sh" test >/dev/null
-PATH="$BIN_DIR:$PATH" SYNC_SCP_LOG="$CODEX_LOG" \
-  "$ROOT_DIR/codex/sync-remote.sh" test >/dev/null
+PATH="$BIN_DIR:$PATH" SYNC_SCP_LOG="$SCP_LOG" \
+  "$ROOT_DIR/sync-remote.sh" test >/dev/null
 
 failed=0
 
-require_synced_skill() {
-  local log="$1"
-  local agent="$2"
-  local skill="$3"
+require_synced() {
+  local description="$1"
+  local pattern="$2"
 
-  if ! grep -Fq "/shared/skills/$skill/SKILL.md" "$log"; then
-    echo "$agent remote sync omitted shared skill: $skill" >&2
+  if ! grep -Fq "$pattern" "$SCP_LOG"; then
+    echo "Remote sync omitted $description: $pattern" >&2
     failed=1
   fi
 }
 
-require_not_synced() {
-  local log="$1"
-  local agent="$2"
-  local pattern="$3"
-
-  if grep -Fq "$pattern" "$log"; then
-    echo "$agent remote sync unexpectedly included local-only review pilot: $pattern" >&2
-    failed=1
-  fi
-}
-
-for skill in brainstorming implement; do
-  require_synced_skill "$CLAUDE_LOG" "Claude" "$skill"
-  require_synced_skill "$CODEX_LOG" "Codex" "$skill"
+for skill in brainstorming implement adversarial-doc-review code-review; do
+  require_synced "Claude skill $skill" "/shared/skills/$skill/SKILL.md test:~/.claude/skills/$skill/"
+  require_synced "Codex skill $skill" "/shared/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
 done
 
-for log_and_agent in "$CLAUDE_LOG:Claude" "$CODEX_LOG:Codex"; do
-  log="${log_and_agent%%:*}"
-  agent="${log_and_agent##*:}"
-  require_not_synced "$log" "$agent" "/shared/skills/adversarial-doc-review/"
-  require_not_synced "$log" "$agent" "/shared/skills/code-review/"
-  require_not_synced "$log" "$agent" "/omp/"
-  require_not_synced "$log" "$agent" "omp-review.rules"
-done
-require_not_synced "$CLAUDE_LOG" "Claude" "/claude/CLAUDE.md"
-require_not_synced "$CODEX_LOG" "Codex" "/codex/AGENTS.md"
+require_synced "Claude instructions" "/claude/CLAUDE.md"
+require_synced "Codex instructions" "/codex/AGENTS.md test:~/.codex/AGENTS.md"
+require_synced "Codex OMP review rule" "/codex/rules/omp-review.rules test:~/.codex/rules/omp-review.rules"
+require_synced "OMP review instructions" "/shared/AGENTS.md"
+require_synced "OMP review config" "/omp/config.yml"
+require_synced "OMP review models" "/omp/models.yml"
 
 if [ "$failed" -ne 0 ]; then
   exit 1

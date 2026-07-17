@@ -8,11 +8,12 @@ This repository tracks portable configuration for AI coding agents such as Claud
 - `CLAUDE.md -> AGENTS.md` — Claude compatibility symlink; edit `AGENTS.md`, not `CLAUDE.md`.
 - `shared/AGENTS.md` — canonical cross-project personal agent instructions.
 - `shared/skills/` — canonical shared skills used by more than one agent.
-- `omp/` — local-only normal OMP setup and review profile configuration.
+- `omp/` — normal OMP setup and isolated review profile configuration.
   - `AGENTS.md -> ../shared/AGENTS.md` — shared user instructions installed into the review profile.
   - `config.yml` — isolates the reviewer's executable capabilities while allowing native and standalone project context discovery.
   - `models.yml` — easy, medium, and hard OpenRouter review models; contains no API key.
   - `install.sh` — enables normal OMP's native Claude/Codex/Agents discovery with `write` approval, installs the review profile under `~/.omp/profiles/review/agent/`, and links its env to machine-local `~/.omp/agent/.env`.
+  - `sync-remote.sh` — deploys the review profile and normal OMP settings while requiring a machine-local remote API key.
 - `claude/` — files installed into `~/.claude/`.
   - `CLAUDE.md -> ../shared/AGENTS.md`
   - `settings.json`
@@ -61,6 +62,7 @@ Use tool-specific scripts when only one agent needs to change:
 ./omp/install.sh
 ./claude/sync-remote.sh <ssh-host>
 ./codex/sync-remote.sh <ssh-host>
+./omp/sync-remote.sh <ssh-host>
 ```
 
 Validate the repository after every config change:
@@ -73,7 +75,7 @@ Validate the repository after every config change:
 
 - Keep behavioral instructions in `shared/AGENTS.md` unless the instruction is only about maintaining this repository.
 - Keep skills shared by Claude and Codex in `shared/skills/`; point tool-specific skill paths at the shared source.
-- Keep the OMP review pilot local-only: do not add its profile, permission rule, shared review skills, or updated shared instructions to either remote sync script until the pilot is explicitly approved for remote deployment.
+- Keep OpenRouter credentials machine-local. Remote OMP sync requires OMP and `OPENROUTER_API_KEY` in `~/.omp/agent/.env` on the target; it never copies credentials.
 - Keep repo maintenance instructions in root `AGENTS.md`.
 - Do not edit symlink targets through the compatibility symlink paths when the canonical path is clearer.
 - Preserve machine-specific settings during remote syncs:

@@ -9,3 +9,5 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 "$ROOT_DIR/claude/sync-remote.sh" "$REMOTE"
 echo
 "$ROOT_DIR/codex/sync-remote.sh" "$REMOTE"
+echo
+"$ROOT_DIR/omp/sync-remote.sh" "$REMOTE"
