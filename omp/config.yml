@@ -1,0 +1,16 @@
+disabledProviders:
+  - agents
+  - claude
+  - codex
+  - cursor
+  - gemini
+  - github
+  - mcp-json
+  - opencode
+  - ssh
+  - vscode
+  - windsurf
+mcp:
+  enableProjectConfig: false
+skills:
+  enabled: false

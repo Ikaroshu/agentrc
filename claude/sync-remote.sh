@@ -14,6 +14,7 @@ REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
 
 SHARED_SKILLS=(general-auto-research brainstorming commit implement merge issue)
+# The OMP-backed review pilot is local-only. Do not add review skills here.
 
 # Directories to ensure exist on remote; drop legacy command files now migrated to skills
 ssh "$REMOTE" '
@@ -30,9 +31,9 @@ ssh "$REMOTE" '
     ~/.claude/skills/issue
 '
 
-# Sync non-settings files
+# Shared instructions mention the local-only OMP review pilot, so keep the
+# remote CLAUDE.md unchanged until that pilot is approved for remote rollout.
 scp -q \
-  "$REPO_DIR/CLAUDE.md" \
   "$REPO_DIR/file-suggestion.sh" \
   "$REPO_DIR/statusline-command.sh" \
   "$REMOTE:~/.claude/"

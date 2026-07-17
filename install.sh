@@ -5,6 +5,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+"$ROOT_DIR/omp/install.sh"
+echo
 "$ROOT_DIR/claude/install.sh"
 echo
 "$ROOT_DIR/codex/install.sh"

@@ -26,7 +26,7 @@ FILES=(
   skills/merge/SKILL.md
   skills/issue/SKILL.md
   skills/adversarial-doc-review/SKILL.md
-  skills/codex-code-review/SKILL.md
+  skills/code-review/SKILL.md
 )
 
 link_file() {
@@ -83,6 +83,13 @@ if [ -L "$old_skill" ] && [ "$(readlink "$old_skill")" = "$REPO_DIR/skills/auto-
   rm "$old_skill"
   rmdir "$TARGET_DIR/skills/auto-research" 2>/dev/null || true
   echo "DROP legacy skills/auto-research"
+fi
+
+old_review_skill="$TARGET_DIR/skills/codex-code-review/SKILL.md"
+if [ -L "$old_review_skill" ]; then
+  rm "$old_review_skill"
+  rmdir "$TARGET_DIR/skills/codex-code-review" 2>/dev/null || true
+  echo "DROP legacy skills/codex-code-review"
 fi
 
 # Ensure scripts are executable

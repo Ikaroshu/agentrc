@@ -14,13 +14,13 @@
 For non-trivial features or changes, follow: **brainstorm → plan → doc-review → worktree → implement → code-review → merge.** The agent invokes each skill when its stage is reached. After doc review findings are addressed, pause and ask the user for a go/no-go on the reviewed plan and spec before creating a worktree or starting implementation. After code review findings are addressed, pause again and ask the user for a final go/no-go before merging. Outside these two approval checkpoints, proceed without asking the user to invoke skills or reconfirm.
 
 1. **Brainstorm + plan** — Use the `brainstorming` skill (on `main`, in the main repo cwd, NOT a worktree). It asks questions one at a time, then writes a plan to `<project-root>/.plans/plans/` and, for ambiguous work, a spec to `<project-root>/.plans/specs/`. **Do NOT commit** plans or specs.
-2. **Doc-review** — Invoke `adversarial-doc-review` on the plan/spec. Claude shells out to `codex exec`; Codex shells out to `claude -p`. Address findings before coding.
+2. **Doc-review** — Invoke `adversarial-doc-review` on the plan/spec. It uses the local read-only OMP review profile and OpenRouter Pareto routing, shared by Claude and Codex. Address findings before coding.
 3. **Worktree** — Create an isolated worktree under `<project-root>/.worktrees/` for the implementation. Skip for small changes when `main` is clean.
 4. **Implement** — Use the `implement` skill: one fresh subagent per task, each running a full TDD RED→GREEN→verify cycle, with a review checkpoint between tasks.
-5. **Code-review** — After a development phase and before merging, run the cross-agent diff review: `codex-code-review` (Claude) or `claude-code-review` (Codex). For each finding, **verify it's real before acting** (reviewers misread context and hit sandbox artifacts), then fix it or push back with specific reasoning — never silently skip, never blindly implement.
+5. **Code-review** — After a development phase and before merging, invoke the shared `code-review` skill. It uses the local read-only OMP review profile and OpenRouter Pareto routing. For each finding, **verify it's real before acting** (reviewers misread context and hit sandbox artifacts), then fix it or push back with specific reasoning — never silently skip, never blindly implement.
 6. **Merge** — Use the `merge` skill.
 
-- **Cap `adversarial-doc-review` and the cross-agent code review at TWO invocations per session** (initial review plus at most one re-review). Do not run a third on your own initiative — if a third pass seems warranted, ask the user first.
+- **Cap `adversarial-doc-review` and `code-review` at TWO invocations per session** (initial review plus at most one re-review). Do not run a third on your own initiative — if a third pass seems warranted, ask the user first.
 - Trivial changes may skip the ceremony entirely. Use judgment about scope.
 
 ## GitHub Issues

@@ -19,7 +19,7 @@ cleanup() {
 trap cleanup EXIT
 
 SHARED_SKILLS=(general-auto-research brainstorming commit implement merge issue)
-CODEX_SKILLS=(adversarial-doc-review claude-code-review)
+# The OMP-backed review pilot is local-only. Do not add review skills here.
 
 ssh "$REMOTE" '
   rm -f ~/.codex/commands/commit.md ~/.codex/commands/merge.md
@@ -28,25 +28,18 @@ ssh "$REMOTE" '
   mkdir -p ~/.codex/rules
   mkdir -p \
     ~/.agents/skills/general-auto-research \
-    ~/.agents/skills/adversarial-doc-review \
     ~/.agents/skills/brainstorming \
-    ~/.agents/skills/claude-code-review \
     ~/.agents/skills/commit \
     ~/.agents/skills/implement \
     ~/.agents/skills/merge \
     ~/.agents/skills/issue
 '
 
-# AGENTS.md: always overwrite (no machine-specific content)
-scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
-scp -q "$REPO_DIR/rules/claude-review.rules" "$REMOTE:~/.codex/rules/claude-review.rules"
+# Shared instructions and the OMP permission rule are part of the local-only
+# review pilot, so keep their remote copies unchanged until rollout approval.
 for skill in "${SHARED_SKILLS[@]}"; do
   scp -q "$ROOT_DIR/shared/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
 done
-for skill in "${CODEX_SKILLS[@]}"; do
-  scp -q "$REPO_DIR/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
-done
-
 # config.toml: merge shared repo settings while preserving remote machine-specific
 # sections such as project trust, notices, marketplaces, and skill path entries.
 ssh "$REMOTE" 'cat ~/.codex/config.toml 2>/dev/null || true' > "$REMOTE_CONFIG_FILE"

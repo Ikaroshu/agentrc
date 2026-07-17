@@ -13,6 +13,8 @@ trap cleanup EXIT
 
 mkdir -p "$TEST_HOME/.codex"
 mkdir -p "$TEST_HOME/.codex/rules"
+mkdir -p "$TEST_HOME/.agents/skills"
+ln -s "$ROOT_DIR/codex/skills/claude-code-review" "$TEST_HOME/.agents/skills/claude-code-review"
 cat >"$TEST_HOME/.codex/config.toml" <<'EOF'
 model = "machine-model"
 machine_marker = true
@@ -23,7 +25,9 @@ EOF
 cat >"$TEST_HOME/.codex/rules/default.rules" <<'EOF'
 prefix_rule(pattern=["existing"], decision="allow")
 EOF
-ln -s "$ROOT_DIR/codex/rules/claude-review.rules" "$TEST_HOME/.codex/rules/claude-review.rules"
+cat >"$TEST_HOME/.codex/rules/claude-review.rules" <<'EOF'
+User explicitly authorizes read-only Codex review workflows to transmit repository design documents and diffs to the Anthropic Claude API
+EOF
 
 HOME="$TEST_HOME" "$ROOT_DIR/codex/install.sh" >/dev/null
 
@@ -36,16 +40,24 @@ grep -F 'model = "gpt-5.5"' "$TEST_HOME/.codex/config.toml" >/dev/null
 grep -F 'machine_marker = true' "$TEST_HOME/.codex/config.toml" >/dev/null
 grep -F '[projects."/machine/project"]' "$TEST_HOME/.codex/config.toml" >/dev/null
 
-RULE_TARGET="$TEST_HOME/.codex/rules/claude-review.rules"
+RULE_TARGET="$TEST_HOME/.codex/rules/omp-review.rules"
 if [ ! -f "$RULE_TARGET" ] || [ -L "$RULE_TARGET" ]; then
   echo "Expected managed Codex rule to be a regular file: $RULE_TARGET" >&2
   exit 1
 fi
-if ! cmp -s "$RULE_TARGET" "$ROOT_DIR/codex/rules/claude-review.rules"; then
+if ! cmp -s "$RULE_TARGET" "$ROOT_DIR/codex/rules/omp-review.rules"; then
   echo "Managed Codex rule does not match its source" >&2
   exit 1
 fi
 grep -F 'pattern=["existing"]' "$TEST_HOME/.codex/rules/default.rules" >/dev/null
+if [ -e "$TEST_HOME/.codex/rules/claude-review.rules" ]; then
+  echo "Expected legacy Claude review rule to be removed" >&2
+  exit 1
+fi
+if [ -e "$TEST_HOME/.agents/skills/claude-code-review" ] || [ -L "$TEST_HOME/.agents/skills/claude-code-review" ]; then
+  echo "Expected legacy Claude code review skill to be removed" >&2
+  exit 1
+fi
 
 mkdir -p "$MIGRATION_HOME/.codex"
 ln -s "$ROOT_DIR/codex/config.toml" "$MIGRATION_HOME/.codex/config.toml"
@@ -58,7 +70,7 @@ fi
 
 grep -F 'model = "gpt-5.5"' "$MIGRATION_HOME/.codex/config.toml" >/dev/null
 
-for skill in general-auto-research commit merge issue; do
+for skill in general-auto-research adversarial-doc-review code-review commit merge issue; do
   target="$TEST_HOME/.agents/skills/$skill"
   expected="$ROOT_DIR/shared/skills/$skill"
 
@@ -69,22 +81,6 @@ for skill in general-auto-research commit merge issue; do
 
   if [ "$(readlink "$target")" != "$expected" ]; then
     echo "Unexpected shared skill target for $skill: $(readlink "$target")" >&2
-    echo "Expected: $expected" >&2
-    exit 1
-  fi
-done
-
-for skill in adversarial-doc-review claude-code-review; do
-  target="$TEST_HOME/.agents/skills/$skill"
-  expected="$ROOT_DIR/codex/skills/$skill"
-
-  if [ ! -L "$target" ]; then
-    echo "Expected Codex skill directory symlink: $target" >&2
-    exit 1
-  fi
-
-  if [ "$(readlink "$target")" != "$expected" ]; then
-    echo "Unexpected Codex skill target for $skill: $(readlink "$target")" >&2
     echo "Expected: $expected" >&2
     exit 1
   fi

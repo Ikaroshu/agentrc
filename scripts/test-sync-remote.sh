@@ -57,10 +57,32 @@ require_synced_skill() {
   fi
 }
 
+require_not_synced() {
+  local log="$1"
+  local agent="$2"
+  local pattern="$3"
+
+  if grep -Fq "$pattern" "$log"; then
+    echo "$agent remote sync unexpectedly included local-only review pilot: $pattern" >&2
+    failed=1
+  fi
+}
+
 for skill in brainstorming implement; do
   require_synced_skill "$CLAUDE_LOG" "Claude" "$skill"
   require_synced_skill "$CODEX_LOG" "Codex" "$skill"
 done
+
+for log_and_agent in "$CLAUDE_LOG:Claude" "$CODEX_LOG:Codex"; do
+  log="${log_and_agent%%:*}"
+  agent="${log_and_agent##*:}"
+  require_not_synced "$log" "$agent" "/shared/skills/adversarial-doc-review/"
+  require_not_synced "$log" "$agent" "/shared/skills/code-review/"
+  require_not_synced "$log" "$agent" "/omp/"
+  require_not_synced "$log" "$agent" "omp-review.rules"
+done
+require_not_synced "$CLAUDE_LOG" "Claude" "/claude/CLAUDE.md"
+require_not_synced "$CODEX_LOG" "Codex" "/codex/AGENTS.md"
 
 if [ "$failed" -ne 0 ]; then
   exit 1

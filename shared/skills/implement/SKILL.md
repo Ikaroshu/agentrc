@@ -46,4 +46,4 @@ After each subagent returns:
 
 ## After all tasks
 
-Run a cross-agent code review of the full diff (`codex-code-review` for Claude, `claude-code-review` for Codex) before merging. Address each finding or push back with reasoning.
+Run the shared `code-review` skill on the full diff before merging. Address each finding or push back with reasoning.
