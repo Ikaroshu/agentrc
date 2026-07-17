@@ -11,6 +11,19 @@ prefix_rule(
     ],
 )
 prefix_rule(
+    pattern = ["omp", "--profile", "review", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-rules", "--no-lsp", "--tools", "read,grep,glob", "--approval-mode", "always-ask", "--model", "openrouter/z-ai/glm-5.2"],
+    decision = "allow",
+    justification = "User explicitly authorizes the isolated read-only OMP review profile to transmit supplied repository documents and diffs through OpenRouter and its selected model provider",
+    match = [
+        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob --approval-mode always-ask --model openrouter/z-ai/glm-5.2 review",
+    ],
+    not_match = [
+        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,edit --approval-mode always-ask --model openrouter/z-ai/glm-5.2 review",
+        "omp --profile review -p --no-session --model openrouter/z-ai/glm-5.2 review",
+    ],
+)
+
+prefix_rule(
     pattern = ["omp", "--profile", "review", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-rules", "--no-lsp", "--tools", "read,grep,glob", "--approval-mode", "always-ask", "--model", "openrouter/x-ai/grok-4.5"],
     decision = "allow",
     justification = "User explicitly authorizes the isolated read-only OMP review profile to transmit supplied repository documents and diffs through OpenRouter and its selected model provider",
@@ -18,20 +31,7 @@ prefix_rule(
         "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob --approval-mode always-ask --model openrouter/x-ai/grok-4.5 review",
     ],
     not_match = [
-        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,edit --approval-mode always-ask --model openrouter/x-ai/grok-4.5 review",
+        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,write --approval-mode always-ask --model openrouter/x-ai/grok-4.5 review",
         "omp --profile review -p --no-session --model openrouter/x-ai/grok-4.5 review",
-    ],
-)
-
-prefix_rule(
-    pattern = ["omp", "--profile", "review", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-rules", "--no-lsp", "--tools", "read,grep,glob", "--approval-mode", "always-ask", "--model", "openrouter/moonshotai/kimi-k3"],
-    decision = "allow",
-    justification = "User explicitly authorizes the isolated read-only OMP review profile to transmit supplied repository documents and diffs through OpenRouter and its selected model provider",
-    match = [
-        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob --approval-mode always-ask --model openrouter/moonshotai/kimi-k3 review",
-    ],
-    not_match = [
-        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,write --approval-mode always-ask --model openrouter/moonshotai/kimi-k3 review",
-        "omp --profile review -p --no-session --model openrouter/moonshotai/kimi-k3 review",
     ],
 )

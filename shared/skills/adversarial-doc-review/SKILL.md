@@ -36,8 +36,8 @@ Round upward when signals are mixed. Before invoking OMP, tell the user the sele
 Map tiers to models exactly:
 
 - easy: `openrouter/deepseek/deepseek-v4-pro`
-- medium: `openrouter/x-ai/grok-4.5`
-- hard: `openrouter/moonshotai/kimi-k3`
+- medium: `openrouter/z-ai/glm-5.2`
+- hard: `openrouter/x-ai/grok-4.5`
 
 ## Workflow
 
@@ -55,7 +55,7 @@ Map tiers to models exactly:
      --no-lsp \
      --tools read,grep,glob \
      --approval-mode always-ask \
-     --model openrouter/x-ai/grok-4.5 \
+     --model openrouter/z-ai/glm-5.2 \
      '<fully rendered prompt>'
    ```
 

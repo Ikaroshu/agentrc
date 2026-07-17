@@ -42,8 +42,8 @@ Round upward when signals are mixed. Tell the user the tier and one-sentence rat
 Map tiers exactly:
 
 - easy: `openrouter/deepseek/deepseek-v4-pro`
-- medium: `openrouter/x-ai/grok-4.5`
-- hard: `openrouter/moonshotai/kimi-k3`
+- medium: `openrouter/z-ai/glm-5.2`
+- hard: `openrouter/x-ai/grok-4.5`
 
 ## Build the review bundle
 
@@ -71,7 +71,7 @@ omp --profile review \
   --no-lsp \
   --tools read,grep,glob \
   --approval-mode always-ask \
-  --model openrouter/x-ai/grok-4.5 \
+  --model openrouter/z-ai/glm-5.2 \
   '<fully rendered prompt>'
 ```
 

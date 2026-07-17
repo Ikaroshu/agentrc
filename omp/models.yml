@@ -13,19 +13,19 @@ providers:
         maxTokens: 65536
         compat:
           thinkingFormat: openrouter
+      - id: z-ai/glm-5.2
+        name: GLM 5.2
+        reasoning: true
+        input: [text]
+        contextWindow: 1048576
+        maxTokens: 65536
+        compat:
+          thinkingFormat: openrouter
       - id: x-ai/grok-4.5
         name: Grok 4.5
         reasoning: true
         input: [text]
         contextWindow: 500000
-        maxTokens: 65536
-        compat:
-          thinkingFormat: openrouter
-      - id: moonshotai/kimi-k3
-        name: Kimi K3
-        reasoning: true
-        input: [text]
-        contextWindow: 1048576
         maxTokens: 65536
         compat:
           thinkingFormat: openrouter

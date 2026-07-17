@@ -137,8 +137,8 @@ python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 "$ROOT_DIR/scripts/test-sync-remote.sh"
 review_models=(
   "openrouter/deepseek/deepseek-v4-pro"
+  "openrouter/z-ai/glm-5.2"
   "openrouter/x-ai/grok-4.5"
-  "openrouter/moonshotai/kimi-k3"
 )
 for model in "${review_models[@]}"; do
   codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \
@@ -150,7 +150,7 @@ done
 if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \
   omp --profile review -p --no-session --no-extensions --no-skills --no-rules \
   --no-lsp --tools read,grep,glob,bash --approval-mode always-ask \
-  --model openrouter/moonshotai/kimi-k3 review \
+  --model openrouter/x-ai/grok-4.5 review \
   | grep -F '"decision": "allow"' >/dev/null; then
   echo "OMP review permission rule allowed a mutation-capable tool" >&2
   exit 1
