@@ -1,11 +1,11 @@
 ---
 name: code-review
-description: Run an OMP-backed review of a git diff through OpenRouter's Pareto coding router. Estimates an easy, medium, or hard tier, announces it transparently, and returns actionable findings for verification before merge.
+description: Run an OMP-backed review of a git diff through a tiered OpenRouter model. Estimates an easy, medium, or hard tier, announces it transparently, and returns actionable findings for verification before merge.
 ---
 
 # Code Review
 
-Use the local OMP `review` profile as a neutral third-party code reviewer. The profile routes through OpenRouter's Pareto coding router and exposes only `read`, `grep`, and `glob`; it cannot edit files or run commands.
+Use the local OMP `review` profile as a neutral third-party code reviewer. The profile selects an OpenRouter model by review tier and exposes only `read`, `grep`, and `glob`; it cannot edit files or run commands.
 
 ## Prerequisites
 
@@ -41,9 +41,9 @@ Round upward when signals are mixed. Tell the user the tier and one-sentence rat
 
 Map tiers exactly:
 
-- easy: `pareto-easy/openrouter/pareto-code`
-- medium: `pareto-medium/openrouter/pareto-code`
-- hard: `pareto-hard/openrouter/pareto-code`
+- easy: `openrouter/deepseek/deepseek-v4-pro`
+- medium: `openrouter/x-ai/grok-4.5`
+- hard: `openrouter/moonshotai/kimi-k3`
 
 ## Build the review bundle
 
@@ -71,7 +71,7 @@ omp --profile review \
   --no-lsp \
   --tools read,grep,glob \
   --approval-mode always-ask \
-  --model pareto-medium/openrouter/pareto-code \
+  --model openrouter/x-ai/grok-4.5 \
   '<fully rendered prompt>'
 ```
 

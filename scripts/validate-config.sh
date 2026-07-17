@@ -133,17 +133,22 @@ python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 "$ROOT_DIR/scripts/test-codex-install.sh"
 "$ROOT_DIR/scripts/test-omp-install.sh"
 "$ROOT_DIR/scripts/test-sync-remote.sh"
-for tier in easy medium hard; do
+review_models=(
+  "openrouter/deepseek/deepseek-v4-pro"
+  "openrouter/x-ai/grok-4.5"
+  "openrouter/moonshotai/kimi-k3"
+)
+for model in "${review_models[@]}"; do
   codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \
     omp --profile review -p --no-session --no-extensions --no-skills --no-rules \
     --no-lsp --tools read,grep,glob --approval-mode always-ask \
-    --model "pareto-$tier/openrouter/pareto-code" review \
+    --model "$model" review \
     | grep -F '"decision": "allow"' >/dev/null
 done
 if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \
   omp --profile review -p --no-session --no-extensions --no-skills --no-rules \
   --no-lsp --tools read,grep,glob,bash --approval-mode always-ask \
-  --model pareto-hard/openrouter/pareto-code review \
+  --model openrouter/moonshotai/kimi-k3 review \
   | grep -F '"decision": "allow"' >/dev/null; then
   echo "OMP review permission rule allowed a mutation-capable tool" >&2
   exit 1

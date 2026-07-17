@@ -1,37 +1,37 @@
 prefix_rule(
-    pattern = ["omp", "--profile", "review", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-rules", "--no-lsp", "--tools", "read,grep,glob", "--approval-mode", "always-ask", "--model", "pareto-easy/openrouter/pareto-code"],
+    pattern = ["omp", "--profile", "review", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-rules", "--no-lsp", "--tools", "read,grep,glob", "--approval-mode", "always-ask", "--model", "openrouter/deepseek/deepseek-v4-pro"],
     decision = "allow",
     justification = "User explicitly authorizes the isolated read-only OMP review profile to transmit supplied repository documents and diffs through OpenRouter and its selected model provider",
     match = [
-        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob --approval-mode always-ask --model pareto-easy/openrouter/pareto-code review",
+        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob --approval-mode always-ask --model openrouter/deepseek/deepseek-v4-pro review",
     ],
     not_match = [
-        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,bash --approval-mode always-ask --model pareto-easy/openrouter/pareto-code review",
-        "omp --profile review -p --no-session --model pareto-easy/openrouter/pareto-code review",
+        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,bash --approval-mode always-ask --model openrouter/deepseek/deepseek-v4-pro review",
+        "omp --profile review -p --no-session --model openrouter/deepseek/deepseek-v4-pro review",
     ],
 )
 prefix_rule(
-    pattern = ["omp", "--profile", "review", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-rules", "--no-lsp", "--tools", "read,grep,glob", "--approval-mode", "always-ask", "--model", "pareto-medium/openrouter/pareto-code"],
+    pattern = ["omp", "--profile", "review", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-rules", "--no-lsp", "--tools", "read,grep,glob", "--approval-mode", "always-ask", "--model", "openrouter/x-ai/grok-4.5"],
     decision = "allow",
     justification = "User explicitly authorizes the isolated read-only OMP review profile to transmit supplied repository documents and diffs through OpenRouter and its selected model provider",
     match = [
-        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob --approval-mode always-ask --model pareto-medium/openrouter/pareto-code review",
+        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob --approval-mode always-ask --model openrouter/x-ai/grok-4.5 review",
     ],
     not_match = [
-        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,edit --approval-mode always-ask --model pareto-medium/openrouter/pareto-code review",
-        "omp --profile review -p --no-session --model pareto-medium/openrouter/pareto-code review",
+        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,edit --approval-mode always-ask --model openrouter/x-ai/grok-4.5 review",
+        "omp --profile review -p --no-session --model openrouter/x-ai/grok-4.5 review",
     ],
 )
 
 prefix_rule(
-    pattern = ["omp", "--profile", "review", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-rules", "--no-lsp", "--tools", "read,grep,glob", "--approval-mode", "always-ask", "--model", "pareto-hard/openrouter/pareto-code"],
+    pattern = ["omp", "--profile", "review", "-p", "--no-session", "--no-extensions", "--no-skills", "--no-rules", "--no-lsp", "--tools", "read,grep,glob", "--approval-mode", "always-ask", "--model", "openrouter/moonshotai/kimi-k3"],
     decision = "allow",
     justification = "User explicitly authorizes the isolated read-only OMP review profile to transmit supplied repository documents and diffs through OpenRouter and its selected model provider",
     match = [
-        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob --approval-mode always-ask --model pareto-hard/openrouter/pareto-code review",
+        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob --approval-mode always-ask --model openrouter/moonshotai/kimi-k3 review",
     ],
     not_match = [
-        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,write --approval-mode always-ask --model pareto-hard/openrouter/pareto-code review",
-        "omp --profile review -p --no-session --model pareto-hard/openrouter/pareto-code review",
+        "omp --profile review -p --no-session --no-extensions --no-skills --no-rules --no-lsp --tools read,grep,glob,write --approval-mode always-ask --model openrouter/moonshotai/kimi-k3 review",
+        "omp --profile review -p --no-session --model openrouter/moonshotai/kimi-k3 review",
     ],
 )

@@ -1,55 +1,31 @@
 providers:
-  pareto-easy:
+  openrouter:
     baseUrl: https://openrouter.ai/api/v1
     apiKey: OPENROUTER_API_KEY
     api: openai-completions
     authHeader: true
     models:
-      - id: openrouter/pareto-code
-        name: Pareto Code Easy
+      - id: deepseek/deepseek-v4-pro
+        name: DeepSeek V4 Pro
         reasoning: true
         input: [text]
-        contextWindow: 1000000
+        contextWindow: 1048576
         maxTokens: 65536
         compat:
           thinkingFormat: openrouter
-          extraBody:
-            plugins:
-              - id: pareto-router
-                min_coding_score: 0.0
-  pareto-medium:
-    baseUrl: https://openrouter.ai/api/v1
-    apiKey: OPENROUTER_API_KEY
-    api: openai-completions
-    authHeader: true
-    models:
-      - id: openrouter/pareto-code
-        name: Pareto Code Medium
+      - id: x-ai/grok-4.5
+        name: Grok 4.5
         reasoning: true
         input: [text]
-        contextWindow: 1000000
+        contextWindow: 500000
         maxTokens: 65536
         compat:
           thinkingFormat: openrouter
-          extraBody:
-            plugins:
-              - id: pareto-router
-                min_coding_score: 0.5
-  pareto-hard:
-    baseUrl: https://openrouter.ai/api/v1
-    apiKey: OPENROUTER_API_KEY
-    api: openai-completions
-    authHeader: true
-    models:
-      - id: openrouter/pareto-code
-        name: Pareto Code Hard
+      - id: moonshotai/kimi-k3
+        name: Kimi K3
         reasoning: true
         input: [text]
-        contextWindow: 1000000
+        contextWindow: 1048576
         maxTokens: 65536
         compat:
           thinkingFormat: openrouter
-          extraBody:
-            plugins:
-              - id: pareto-router
-                min_coding_score: 0.8

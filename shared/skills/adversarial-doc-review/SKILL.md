@@ -1,11 +1,11 @@
 ---
 name: adversarial-doc-review
-description: Run an OMP-backed adversarial review of a spec and/or implementation plan through OpenRouter's Pareto coding router. Estimates an easy, medium, or hard tier, announces it transparently, and returns findings inline before implementation.
+description: Run an OMP-backed adversarial review of a spec and/or implementation plan through a tiered OpenRouter model. Estimates an easy, medium, or hard tier, announces it transparently, and returns findings inline before implementation.
 ---
 
 # Adversarial Doc Review
 
-Use the local OMP `review` profile as a neutral third-party reviewer for design documents. The profile routes through OpenRouter's Pareto coding router and exposes only `read`, `grep`, and `glob`; it cannot edit files or run commands.
+Use the local OMP `review` profile as a neutral third-party reviewer for design documents. The profile selects an OpenRouter model by review tier and exposes only `read`, `grep`, and `glob`; it cannot edit files or run commands.
 
 ## Prerequisites
 
@@ -35,9 +35,9 @@ Round upward when signals are mixed. Before invoking OMP, tell the user the sele
 
 Map tiers to models exactly:
 
-- easy: `pareto-easy/openrouter/pareto-code`
-- medium: `pareto-medium/openrouter/pareto-code`
-- hard: `pareto-hard/openrouter/pareto-code`
+- easy: `openrouter/deepseek/deepseek-v4-pro`
+- medium: `openrouter/x-ai/grok-4.5`
+- hard: `openrouter/moonshotai/kimi-k3`
 
 ## Workflow
 
@@ -55,7 +55,7 @@ Map tiers to models exactly:
      --no-lsp \
      --tools read,grep,glob \
      --approval-mode always-ask \
-     --model pareto-medium/openrouter/pareto-code \
+     --model openrouter/x-ai/grok-4.5 \
      '<fully rendered prompt>'
    ```
 

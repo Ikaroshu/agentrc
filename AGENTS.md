@@ -11,7 +11,7 @@ This repository tracks portable configuration for AI coding agents such as Claud
 - `omp/` — local-only normal OMP setup and review profile configuration.
   - `AGENTS.md -> ../shared/AGENTS.md` — shared user instructions installed into the review profile.
   - `config.yml` — isolates the reviewer's executable capabilities while allowing native and standalone project context discovery.
-  - `models.yml` — easy, medium, and hard OpenRouter Pareto aliases; contains no API key.
+  - `models.yml` — easy, medium, and hard OpenRouter review models; contains no API key.
   - `install.sh` — enables normal OMP's native Claude/Codex/Agents discovery with `write` approval, installs the review profile under `~/.omp/profiles/review/agent/`, and links its env to machine-local `~/.omp/agent/.env`.
 - `claude/` — files installed into `~/.claude/`.
   - `CLAUDE.md -> ../shared/AGENTS.md`
