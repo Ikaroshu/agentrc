@@ -18,7 +18,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-SHARED_SKILLS=(general-auto-research brainstorming commit implement merge issue adversarial-doc-review code-review)
+SHARED_SKILLS=(general-auto-research brainstorming planning commit implement merge issue adversarial-doc-review code-review)
 
 ssh "$REMOTE" '
   rm -f ~/.codex/commands/commit.md ~/.codex/commands/merge.md
@@ -28,6 +28,7 @@ ssh "$REMOTE" '
   mkdir -p \
     ~/.agents/skills/general-auto-research \
     ~/.agents/skills/brainstorming \
+    ~/.agents/skills/planning \
     ~/.agents/skills/commit \
     ~/.agents/skills/implement \
     ~/.agents/skills/merge \

@@ -19,6 +19,7 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `settings.json`
   - `skills/general-auto-research/SKILL.md -> ../../../shared/skills/general-auto-research/SKILL.md`
   - `skills/brainstorming/SKILL.md -> ../../../shared/skills/brainstorming/SKILL.md`
+  - `skills/planning/SKILL.md -> ../../../shared/skills/planning/SKILL.md`
   - `skills/commit/SKILL.md -> ../../../shared/skills/commit/SKILL.md`
   - `skills/implement/SKILL.md -> ../../../shared/skills/implement/SKILL.md`
   - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`
@@ -33,6 +34,7 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `rules/omp-review.rules` — narrowly allows the isolated read-only OMP review invocation used by the shared review skills.
   - `skills/general-auto-research/SKILL.md -> ../../../shared/skills/general-auto-research/SKILL.md`
   - `skills/brainstorming/SKILL.md -> ../../../shared/skills/brainstorming/SKILL.md`
+  - `skills/planning/SKILL.md -> ../../../shared/skills/planning/SKILL.md`
   - `skills/commit/SKILL.md -> ../../../shared/skills/commit/SKILL.md`
   - `skills/implement/SKILL.md -> ../../../shared/skills/implement/SKILL.md`
   - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`

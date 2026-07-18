@@ -21,6 +21,7 @@ SKILLS=(
   general-auto-research
   adversarial-doc-review
   brainstorming
+  planning
   code-review
   commit
   implement
@@ -30,7 +31,7 @@ SKILLS=(
 
 is_shared_skill() {
   case "$1" in
-    general-auto-research|adversarial-doc-review|brainstorming|code-review|commit|implement|merge|issue) return 0 ;;
+    general-auto-research|adversarial-doc-review|brainstorming|planning|code-review|commit|implement|merge|issue) return 0 ;;
     *) return 1 ;;
   esac
 }

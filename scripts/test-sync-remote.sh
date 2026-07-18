@@ -53,7 +53,7 @@ require_synced() {
   fi
 }
 
-for skill in brainstorming implement adversarial-doc-review code-review; do
+for skill in brainstorming planning implement adversarial-doc-review code-review; do
   require_synced "Claude skill $skill" "/shared/skills/$skill/SKILL.md test:~/.claude/skills/$skill/"
   require_synced "Codex skill $skill" "/shared/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
 done

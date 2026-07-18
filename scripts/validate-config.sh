@@ -66,6 +66,7 @@ require_file "AGENTS.md"
 require_file "shared/AGENTS.md"
 require_file "shared/skills/general-auto-research/SKILL.md"
 require_file "shared/skills/brainstorming/SKILL.md"
+require_file "shared/skills/planning/SKILL.md"
 require_file "shared/skills/adversarial-doc-review/SKILL.md"
 require_file "shared/skills/code-review/SKILL.md"
 require_file "shared/skills/commit/SKILL.md"
@@ -80,7 +81,7 @@ require_symlink "claude/CLAUDE.md" "../shared/AGENTS.md"
 require_symlink "codex/AGENTS.md" "../shared/AGENTS.md"
 require_symlink "claude/skills/general-auto-research/SKILL.md" "../../../shared/skills/general-auto-research/SKILL.md"
 require_symlink "codex/skills/general-auto-research/SKILL.md" "../../../shared/skills/general-auto-research/SKILL.md"
-for skill in brainstorming commit implement merge issue; do
+for skill in brainstorming planning commit implement merge issue; do
   require_symlink "claude/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
   require_symlink "codex/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
 done

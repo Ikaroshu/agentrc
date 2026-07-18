@@ -21,6 +21,7 @@ FILES=(
   statusline-command.sh
   skills/general-auto-research/SKILL.md
   skills/brainstorming/SKILL.md
+  skills/planning/SKILL.md
   skills/commit/SKILL.md
   skills/implement/SKILL.md
   skills/merge/SKILL.md

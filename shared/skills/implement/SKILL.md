@@ -1,11 +1,11 @@
 ---
 name: implement
-description: Use to execute a written plan (from .plans/) task by task with test-driven development. Dispatches one fresh task-owner subagent per task, permits nested delegation, and reviews the RED→GREEN→verify evidence between tasks. Replaces ad-hoc implementation.
+description: Use to execute a written plan (from .plans/) task by task with an implementation and testing sequence suited to each task. Dispatches one fresh task-owner subagent per task, permits nested delegation, and reviews verification evidence between tasks.
 ---
 
 # Implement
 
-Execute an agreed plan with TDD discipline and per-task context isolation. This is the implement step of the development workflow; run it after the plan exists and (for non-trivial work) inside an isolated worktree.
+Execute an agreed plan with per-task context isolation and evidence-backed verification. This is the implement step of the development workflow; run it after the plan exists and (for non-trivial work) inside an isolated worktree.
 
 **Announce at start:** "Using the implement skill to execute the plan task by task."
 
@@ -19,13 +19,13 @@ Execute an agreed plan with TDD discipline and per-task context isolation. This 
 
 When the main model is Fable, dispatch every task subagent with `model: "opus"`. For any other main model, omit the model override and use the default.
 
-For **each** task, dispatch **one fresh task-owner subagent** (clean context) instructed to run the full cycle and report back:
+For **each** task, dispatch **one fresh task-owner subagent** (clean context) accountable for choosing a suitable implementation and testing sequence and reporting back:
 
-1. **RED** — write a failing test that captures the task's requirement. Run it; confirm it fails *for the right reason* (not a typo or import error).
-2. **GREEN** — write the minimal implementation to make the test pass. No extra scope.
-3. **Verify** — run the test and the surrounding suite. Return the **actual command output** as evidence, plus a short summary of the diff.
+1. **Choose the sequence** — prefer test-first for bugs, behavior changes, and logic with a clear executable contract. Implementation-first is acceptable for refactors, configuration, infrastructure, exploratory integration work, or whenever it produces a clearer and more useful test. Briefly explain the choice when not using test-first.
+2. **Implement and test** — make the smallest change that completes the task, using the chosen sequence. No extra scope.
+3. **Verify** — run the focused tests or checks and the appropriate surrounding suite. Return the **actual command output** as evidence, plus a short summary of the diff.
 
-When a unit test doesn't fit the task — config/infra changes, docs, pure refactors — keep the cycle but generalize "test" to the **verification gate**: the repo's validation script, lint/type-check, or a concrete manual check with expected output. Confirm it's red (failing or unmet), do the work, then show it green. Never fabricate a trivial test just to satisfy the ritual.
+When a unit test does not fit the task, use an appropriate **verification gate**: the repo's validation script, lint/type-check, or a concrete manual check with expected output. Never fabricate a trivial test just to satisfy a process.
 
 The subagent's final message must include the real verification output.
 
@@ -37,7 +37,7 @@ task.
 
 The task owner coordinates shared-worktree changes, reviews and integrates
 delegated work, and remains accountable for the task's final diff and complete
-RED→GREEN→verify evidence.
+verification evidence.
 
 ## Between tasks (orchestrator checkpoint)
 
@@ -52,7 +52,7 @@ After each subagent returns:
 
 - **One fresh task owner per task** — context isolation is the point; do not
   reuse a task owner across plan tasks.
-- **No faking green.** If a test will not pass after a genuine attempt, STOP and surface it to the user — do not skip the test, weaken the assertion, or mark the task done.
+- **No faking verification.** If a required test or check will not pass after a genuine attempt, STOP and surface it to the user — do not skip it, weaken the assertion, or mark the task done.
 - **Evidence over assertion.** Every "done" is backed by command output you have seen.
 
 ## After all tasks

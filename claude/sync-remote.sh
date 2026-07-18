@@ -13,7 +13,7 @@ REMOTE="${1:?Usage: $0 <ssh-host>}"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
 
-SHARED_SKILLS=(general-auto-research brainstorming commit implement merge issue adversarial-doc-review code-review)
+SHARED_SKILLS=(general-auto-research brainstorming planning commit implement merge issue adversarial-doc-review code-review)
 
 # Directories to ensure exist on remote; drop legacy command files now migrated to skills
 ssh "$REMOTE" '
@@ -24,6 +24,7 @@ ssh "$REMOTE" '
   mkdir -p \
     ~/.claude/skills/general-auto-research \
     ~/.claude/skills/brainstorming \
+    ~/.claude/skills/planning \
     ~/.claude/skills/commit \
     ~/.claude/skills/implement \
     ~/.claude/skills/merge \

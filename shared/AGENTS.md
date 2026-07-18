@@ -11,17 +11,24 @@
 - **Verify against the original repro** before claiming it's fixed.
 
 ## Development Workflow
-For non-trivial features or changes, follow: **brainstorm → plan → doc-review → worktree → implement → code-review → merge.** The agent invokes each skill when its stage is reached. After doc review findings are addressed, pause and ask the user for a go/no-go on the reviewed plan and spec before creating a worktree or starting implementation. After code review findings are addressed, pause again and ask the user for a final go/no-go before merging. Outside these two approval checkpoints, proceed without asking the user to invoke skills or reconfirm.
+Choose the workflow based on scope:
 
-1. **Brainstorm + plan** — Use the `brainstorming` skill (on `main`, in the main repo cwd, NOT a worktree). It asks questions one at a time, then writes a plan to `<project-root>/.plans/plans/` and, for ambiguous work, a spec to `<project-root>/.plans/specs/`. **Do NOT commit** plans or specs.
-2. **Doc-review** — Invoke `adversarial-doc-review` on the plan/spec. It uses the local read-only OMP review profile and tiered OpenRouter models, shared by Claude and Codex. Address findings before coding.
-3. **Worktree** — Create an isolated worktree under `<project-root>/.worktrees/` for the implementation. Skip for small changes when `main` is clean.
-4. **Implement** — Use the `implement` skill: one fresh task-owner subagent per task, each accountable for a full TDD RED→GREEN→verify cycle, with a review checkpoint between tasks. The task owner may delegate work to nested helpers while remaining accountable for the task result and verification.
-5. **Code-review** — After a development phase and before merging, invoke the shared `code-review` skill. It uses the local read-only OMP review profile and tiered OpenRouter models. For each finding, **verify it's real before acting** (reviewers misread context and hit sandbox artifacts), then fix it or push back with specific reasoning — never silently skip, never blindly implement.
-6. **Merge** — Use the `merge` skill.
+- For small, clear, low-risk changes, implement and test directly.
+- When intent, requirements, or design choices are unclear, recommend brainstorming. If the change is also large, cross-cutting, or high-risk, recommend continuing through planning and doc review.
+- For large, cross-cutting, or high-risk changes whose requirements are already settled, recommend planning and doc review without requiring brainstorming first.
+- For borderline changes, briefly give your recommendation and let the user choose.
+
+Ask before invoking an optional workflow. When the user chooses planning, follow: **[brainstorm →] plan → doc-review → worktree → implement → code-review → merge.** The agent invokes each chosen skill when its stage is reached. During brainstorming, get approval on the design. After doc review findings are addressed, pause and ask the user for a go/no-go on the reviewed plan and spec before creating a worktree or starting implementation. After code review findings are addressed, pause again and ask the user for a final go/no-go before merging. Outside these required checkpoints, proceed without asking the user to invoke skills or reconfirm. Brainstorming may also be used alone for a small but ambiguous change; after the design is approved, implement and test directly.
+
+1. **Brainstorm (optional)** — Use the `brainstorming` skill to resolve unclear requirements and design choices. It asks questions one at a time, compares approaches, and produces an approved design. It does not write the implementation plan.
+2. **Plan** — Use the `planning` skill on `main`, in the main repo cwd, NOT a worktree. It turns settled requirements into an executable plan at `<project-root>/.plans/plans/`. Brainstorming may supply a spec at `<project-root>/.plans/specs/`. **Do NOT commit** plans or specs.
+3. **Doc-review** — Invoke `adversarial-doc-review` on the plan/spec. It uses the local read-only OMP review profile and tiered OpenRouter models, shared by Claude and Codex. Address findings before coding.
+4. **Worktree** — Create an isolated worktree under `<project-root>/.worktrees/` for the implementation. Skip for small changes when `main` is clean.
+5. **Implement** — Use the `implement` skill: one fresh task-owner subagent per task, each accountable for choosing an appropriate implementation and testing sequence and providing real verification evidence, with a review checkpoint between tasks. Prefer test-first for bugs, behavior changes, and logic with a clear executable contract. Implementation-first is acceptable when it better fits the work, but the task owner must briefly explain the choice and still test or otherwise verify the result before completion.
+6. **Code-review** — After a development phase and before merging, invoke the shared `code-review` skill. It uses the local read-only OMP review profile and tiered OpenRouter models. For each finding, **verify it's real before acting** (reviewers misread context and hit sandbox artifacts), then fix it or push back with specific reasoning — never silently skip, never blindly implement.
+7. **Merge** — Use the `merge` skill.
 
 - **Cap `adversarial-doc-review` and `code-review` at TWO invocations per session** (initial review plus at most one re-review). Do not run a third on your own initiative — if a third pass seems warranted, ask the user first.
-- Trivial changes may skip the ceremony entirely. Use judgment about scope.
 
 ## GitHub Issues
 - Issue bodies describe the problem and context only — no proposed fixes, suggested approaches, design sketches, or acceptance criteria. The author often doesn't fully understand the problem; prescribing a solution biases whoever picks it up later.

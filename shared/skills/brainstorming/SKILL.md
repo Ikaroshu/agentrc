@@ -1,47 +1,31 @@
 ---
 name: brainstorming
-description: Use before any non-trivial feature, change, or design work — explores intent, requirements, and design through one-question-at-a-time dialogue, then writes a plan (and optional spec) to .plans/. Replaces jumping straight to code.
+description: Use after the user chooses brainstorming to resolve unclear intent, requirements, scope, or design choices before planning or implementation. Explore project context, ask one focused question at a time, compare approaches, and produce an approved design. Do not write an implementation plan.
 ---
 
 # Brainstorming
 
-Turn a vague request into an agreed, written plan before any code is written. This is the brainstorm + doc step of the development workflow.
+Turn an unclear request into an agreed design before planning or implementation. Use this optional step only after the user agrees that brainstorming fits the scope.
 
-**Announce at start:** "Using the brainstorming skill to scope this before we plan."
+**Announce at start:** "Using the brainstorming skill to clarify requirements and settle the design."
 
 ## Principles
 
-- **No code yet.** Read and explore freely, but do not edit or write implementation files during this skill.
+- **No implementation yet.** Read and explore freely, but do not edit implementation files or write the implementation plan during this skill.
 - **One question at a time.** Ask a single focused question, wait for the answer, then ask the next. Never dump a wall of questions.
 - **Dig for intent.** Understand *why* before *what*. Surface the real problem, not just the requested solution.
+- **Keep scope honest.** Separate independent subsystems before refining details. Avoid unrelated improvements.
 
 ## Steps
 
-1. **Understand the request.** Read the relevant code and docs to ground yourself. Identify what is ambiguous.
-2. **Interview the user, one question at a time.** Cover, as needed:
+1. **Explore context.** Read the relevant code, docs, and recent history before proposing a design. Follow established project patterns.
+2. **Check scope.** If the request spans independent subsystems, propose a decomposition and brainstorm one focused piece at a time.
+3. **Interview the user, one question at a time.** Cover only what the design needs:
    - Intent — what problem are we actually solving, and for whom?
    - Requirements — what must be true when this is done? What is explicitly out of scope?
    - Constraints — existing patterns, dependencies, performance, compatibility.
-   - Design options — present 2-3 approaches with tradeoffs; get a decision.
-3. **Reflect understanding back.** Summarize the agreed problem and approach in a few sentences. Get explicit agreement before writing anything.
-4. **Write the plan.** Always write a plan; write a spec only when the problem itself is ambiguous (novel feature, unclear requirements).
-   - Plan path: `<project-root>/.plans/plans/<YYYYMMDD>_<short_title>.md`
-   - Spec path: `<project-root>/.plans/specs/<YYYYMMDD>_<short_title>.md`
-   - Write from the **main repo cwd on `main`**, NOT a worktree — these paths must stay stable for doc-review. Do not create a worktree yet.
-   - **Do NOT commit** plan or spec files.
-5. **Hand off.** Tell the user the files are ready and recommend running `adversarial-doc-review` next.
-
-## Plan structure
-
-Write the plan for a **fresh engineer with zero context** — the `implement` skill dispatches a clean-context subagent per task, so the plan must stand on its own.
-
-A good `plan.md`:
-
-- **Goal** — one sentence.
-- **Context** — the few facts (files, patterns, constraints) the executor needs but can't infer.
-- **Phases** — ordered; each an independently testable task that leaves the system working (green). For each phase, name the **concrete files/functions** to change and state how it's verified (the exact test or command + expected result). Right-size each phase to execute and review in one pass.
-- **Out of scope** — what NOT to touch, to fence off scope creep.
-
-Resolve open decisions during brainstorming — the plan should be executable without further choices. Note genuine residual **risks**, but not unresolved questions.
-
-When written, keep the spec to: problem, requirements, non-goals.
+4. **Compare approaches.** Present 2-3 viable approaches with tradeoffs. Lead with your recommendation and explain why it fits.
+5. **Present the design.** Scale the detail to the problem. Cover relevant boundaries, interfaces, data flow, error behavior, and verification strategy. Get explicit user approval; revise if needed.
+6. **Self-review.** Check the approved design for missing requirements, contradictions, unresolved ambiguity, and accidental scope growth. Fix issues inline with the user.
+7. **Record it when useful.** For a substantial design that needs a durable artifact, write `<project-root>/.plans/specs/<YYYYMMDD>_<short_title>.md` from the main repo cwd on `main`. Keep it to problem, requirements, design, and non-goals. **Do not commit it.** Skip the file for a small design that can be carried directly into implementation.
+8. **Hand off appropriately.** If planning was chosen, invoke `planning`. If the approved design is small and planning was not chosen, proceed to implementation. If planning now appears valuable but was not agreed, recommend it and ask once.
