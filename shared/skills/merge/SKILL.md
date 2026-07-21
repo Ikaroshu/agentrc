@@ -30,11 +30,13 @@ Run the project's test command (from `## Git Workflow` in the repo instructions 
 
 ## Step 3: Merge
 
+Do not rebase the feature branch unless the user explicitly requests it. Preserve the branch history through a merge.
+
 ### Local Merge
 ```bash
 git checkout main
 git pull --ff-only
-git merge <feature-branch>
+git merge --no-ff <feature-branch>
 ```
 
 ### PR Merge
@@ -94,7 +96,7 @@ If multiple distinct issues are referenced, close each. If none is referenced, s
 | Step | Local Merge | PR Merge |
 |------|-------------|----------|
 | Test branch | yes | yes |
-| Merge | `git merge` | `gh pr merge` |
+| Merge | `git merge --no-ff` | `gh pr merge --merge` |
 | Test main | yes | yes |
 | Push main | yes | automatic |
 | Delete local branch | yes | yes |
