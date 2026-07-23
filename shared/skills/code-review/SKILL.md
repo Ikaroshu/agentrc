@@ -1,18 +1,17 @@
 ---
 name: code-review
-description: Run an OMP-backed review of a git diff through a tiered OpenRouter model. Estimates an easy, medium, or hard tier, announces it transparently, and returns actionable findings for verification before merge.
+description: Run a Codex-backed review of a git diff before merge. Routes non-hard reviews to GPT-5.6 Sol at high effort and hard reviews to GPT-5.6 Sol at max effort, then returns actionable findings for verification.
 ---
 
 # Code Review
 
-Use the local OMP `review` profile as a neutral third-party code reviewer. The profile selects an OpenRouter model by review tier and exposes only `read`, `grep`, and `glob`; it cannot edit files or run commands.
+Use a nested, read-only Codex CLI session as a neutral third-party code reviewer. Keep the reviewer's normal Codex tools, MCP servers, plugins, and repository context available; disable only the two workflow review skills in the nested session to prevent recursive review invocation.
 
 ## Prerequisites
 
-- `omp` is on `PATH`.
-- The OMP `review` profile is installed by `agentrc/omp/install.sh`.
-- `~/.omp/agent/.env` contains `OPENROUTER_API_KEY`.
+- Require `codex` on `PATH` with working authentication.
 - Run from the working tree containing the changes.
+- Unset `PYTHONPATH` and `VIRTUAL_ENV` for the reviewer so a main-repo environment cannot leak into a worktree.
 
 ## Arguments and scope
 
@@ -22,80 +21,71 @@ Choose exactly one scope:
 - `--commit <sha>`: one commit.
 - `--uncommitted`: staged, unstaged, and untracked work.
 
-Optional arguments:
-
-- `--focus <text>`: review emphasis.
-- `--difficulty <easy|medium|hard>`: explicit tier override.
-
-Confirm the selected scope contains changes before invoking OMP.
+Accept optional `--focus <text>` and `--difficulty <non-hard|hard>`. Confirm the selected scope contains changes before invoking Codex.
 
 ## Select the review tier
 
-Honor an explicit `--difficulty`. Otherwise estimate from the diff and affected contracts:
+Honor an explicit `--difficulty`. Otherwise classify the diff and affected contracts:
 
-- **Easy**: small, localized, familiar change with no public contract, persistent state, concurrency, security, or data-loss implications.
-- **Medium**: multi-file behavior or a meaningful contract/state change whose blast radius remains localized.
-- **Hard**: architecture or cross-system work; public APIs or schemas; migrations; concurrency; security; data-loss risk; high blast radius; or substantial ambiguity.
+- **Non-hard / high effort**: localized or familiar work whose contracts and blast radius remain bounded, including ordinary multi-file changes.
+- **Hard / max effort**: architecture or cross-system work; public APIs or schemas; migrations; concurrency; security; data-loss risk; high blast radius; or substantial ambiguity.
 
-Round upward when signals are mixed. Tell the user the tier and one-sentence rationale, then proceed immediately unless the user objects or supplied an override.
+Classify as hard when any hard signal materially affects the change. Tell the user the selected tier and one-sentence rationale, then proceed immediately unless the user objects or supplied an override.
 
-Map tiers exactly:
+Use this exact mapping:
 
-- easy: `openrouter/deepseek/deepseek-v4-pro`
-- medium: `openrouter/z-ai/glm-5.2`
-- hard: `openrouter/x-ai/grok-4.5`
+- non-hard: `gpt-5.6-sol`, `high`
+- hard: `gpt-5.6-sol`, `max`
 
-## Build the review bundle
+## Workflow
 
-Create a unique file with `mktemp /private/tmp/omp-code-review.XXXXXX.diff` in one command, then use its returned literal path in later commands.
+1. Render the matching prompt below with the selected scope, optional focus, and tier.
+2. Resolve the absolute paths of this skill and the sibling `adversarial-doc-review/SKILL.md`. Render them into the `skills.config` override so the nested Codex session cannot invoke either workflow review skill recursively.
+3. Invoke Codex directly from the working tree with the fully rendered prompt as one literal argument, substituting only the effort, the two skill paths, and the prompt:
 
-Write the relevant status, summary, and patch into that file:
+   ```bash
+   env -u PYTHONPATH -u VIRTUAL_ENV \
+     codex exec \
+     --ephemeral \
+     --model gpt-5.6-sol \
+     --config 'model_reasoning_effort="{{EFFORT}}"' \
+     --sandbox read-only \
+     --color never \
+     --config 'skills.config=[{path="{{DOC_SKILL_PATH}}",enabled=false},{path="{{CODE_SKILL_PATH}}",enabled=false}]' \
+     '<fully rendered prompt>'
+   ```
 
-- `--base`: `git status --short`, `git diff --stat <base>...HEAD`, and `git diff --find-renames --binary <base>...HEAD`.
-- `--commit`: `git status --short`, `git show --stat --find-renames <sha>`, and `git show --find-renames --binary <sha>`.
-- `--uncommitted`: `git status --short`, `git diff --stat HEAD`, and `git diff --find-renames --binary HEAD`.
+   Keep this argument order. Do not add `--ignore-user-config`, `--ignore-rules`, tool restrictions, MCP restrictions, shell wrappers, redirects, or backgrounding. The nested reviewer should inherit the normal Codex tool surface and local configuration while remaining filesystem read-only.
 
-For uncommitted work, untracked files appear only in the status section; the prompt requires OMP to read each listed untracked file directly. Keep bundle creation separate from the OMP invocation so the permission rule sees a literal command prefix.
+   When the caller is Codex, run with `sandbox_permissions="require_escalated"` and the justification: "Run the user-authorized nested read-only Codex code review?" The managed `codex-review.rules` rule records this exact read-only command prefix. Other callers should use their normal mechanism for running the command.
 
-## Run OMP
-
-Render the prompt below with the literal bundle path, scope, focus, and tier. Use this exact argument order, substituting only the model and final prompt:
-
-```bash
-omp --profile review \
-  -p \
-  --no-session \
-  --no-extensions \
-  --no-skills \
-  --no-rules \
-  --no-lsp \
-  --tools read,grep,glob \
-  --approval-mode always-ask \
-  --model openrouter/z-ai/glm-5.2 \
-  '<fully rendered prompt>'
-```
-
-Pass the prompt as one literal argument. Do not add shell wrappers, environment prefixes, redirects, extra tools, extensions, skills, rules, or MCP configuration. Codex's managed permission rule matches this fixed read-only command shape.
-
-Start with a 30-second yield. If OMP is still running, poll every 60 seconds until it exits; silence alone is not a failure. Remove the temporary bundle after the review process exits.
+4. Start with a 30-second yield. If the process remains active, poll every 60 seconds until it exits. Do not treat elapsed time or a quiet interval as a hang, impose an arbitrary timeout, interrupt it, inspect its PID, or launch parallel status checks. Give the user brief progress updates while waiting.
+5. Relay the review summary. Verify each finding against the cited code, call sites, tests, contracts, and relevant history; reproduce the reported behavior when feasible. Classify it as confirmed, rejected with specific reasoning, or needing clarification. Fix only confirmed findings.
+6. When a re-review is warranted, use `--commit <fix-sha>` or `--uncommitted` and tell the reviewer which prior findings it is confirming.
 
 ## Prompt template
 
-```text
-You are a senior code reviewer. Review tier: {{TIER}}.
-Review scope: {{SCOPE}}.
-The prepared status, summary, and patch are in {{BUNDLE_PATH}}.
+For `--base <branch>`:
 
-Read the bundle in full, then inspect the changed files and relevant surrounding
-repository code with read, grep, and glob. For uncommitted scope, read every
-untracked file named in the status section. Do not edit files and do not run commands.
+```text
+You are the inner reviewer process for a code review. Review tier: {{TIER}}.
+Perform the review directly. Do not invoke any review skill or launch another
+Codex, Claude, or OMP process.
+
+Review the current branch against {{BASE_BRANCH}}. Run and inspect:
+- git status --short
+- git diff --stat {{BASE_BRANCH}}...HEAD
+- git diff --find-renames {{BASE_BRANCH}}...HEAD
+
+Use your available read-only tools to inspect changed files, call sites, tests,
+contracts, and relevant history. Do not edit files.
 
 {{FOCUS_BLOCK}}
 
 Find only actionable issues: correctness bugs, regressions, broken contracts,
 missing tests for changed behavior, security or data-loss risks, and
 maintainability problems that materially affect this change. Do not flag style
-preferences. Do not claim tests passed because you cannot run commands.
+preferences or claim tests passed unless you actually ran them successfully.
 
 Output these exact sections:
 
@@ -109,18 +99,37 @@ Important missing verification, or "None.".
 ## Residual risk
 One short paragraph.
 
-Read relevant changed files before finalizing. Do not approve by default and do
-not manufacture findings.
+Read relevant changed files before finalizing. Do not approve by default or
+manufacture findings.
 ```
 
-## Handle findings
+For `--commit <sha>`, replace the scope and commands with:
 
-Relay the review summary. Before any edit, verify each finding against the code and original change intent. Classify it as confirmed, rejected with specific reasoning, or needing clarification. Fix only confirmed findings, and never silently ignore feedback.
+```text
+Review commit {{COMMIT_SHA}}. Run and inspect:
+- git status --short
+- git show --stat --find-renames {{COMMIT_SHA}}
+- git show --find-renames {{COMMIT_SHA}}
+```
+
+For `--uncommitted`, replace the scope and commands with:
+
+```text
+Review staged, unstaged, and untracked work. Run and inspect:
+- git status --short
+- git diff --stat HEAD
+- git diff --find-renames HEAD
+
+Read every untracked file named by `git status --short`; `git diff HEAD` does not include them.
+```
+
+Omit the focus block instead of leaving a placeholder.
 
 ## Failure handling
 
 - Empty scope: choose the correct selector or stop.
-- Missing OMP profile or API key: report the missing prerequisite without printing secret values.
-- Nonzero OMP exit: report the exit status and returned error; diagnose before retrying.
-- Harness limitation: OMP cannot run tests in this profile; local validation remains authoritative.
+- Missing Codex CLI or authentication: stop and report the missing prerequisite without exposing credentials.
+- Nonzero Codex exit: report the exit status and returned error; diagnose before retrying.
+- Long run: keep polling until exit, a concrete hard error, impossible progress, or a user request to stop.
+- Harness-only failures: verify locally; local validation remains authoritative.
 - No findings: spot-check the diff yourself before merging.

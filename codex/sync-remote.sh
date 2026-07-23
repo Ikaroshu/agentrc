@@ -19,6 +19,7 @@ cleanup() {
 trap cleanup EXIT
 
 SHARED_SKILLS=(general-auto-research brainstorming planning commit implement merge issue adversarial-doc-review code-review)
+CODEX_SKILLS=(claude-doc-review claude-code-review)
 
 ssh "$REMOTE" '
   rm -f ~/.codex/commands/commit.md ~/.codex/commands/merge.md
@@ -28,6 +29,8 @@ ssh "$REMOTE" '
   mkdir -p \
     ~/.agents/skills/general-auto-research \
     ~/.agents/skills/brainstorming \
+    ~/.agents/skills/claude-code-review \
+    ~/.agents/skills/claude-doc-review \
     ~/.agents/skills/planning \
     ~/.agents/skills/commit \
     ~/.agents/skills/implement \
@@ -38,10 +41,15 @@ ssh "$REMOTE" '
 '
 
 scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
+scp -q "$REPO_DIR/rules/claude-review.rules" "$REMOTE:~/.codex/rules/claude-review.rules"
+scp -q "$REPO_DIR/rules/codex-review.rules" "$REMOTE:~/.codex/rules/codex-review.rules"
 scp -q "$REPO_DIR/rules/omp-review.rules" "$REMOTE:~/.codex/rules/omp-review.rules"
 
 for skill in "${SHARED_SKILLS[@]}"; do
   scp -q "$ROOT_DIR/shared/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
+done
+for skill in "${CODEX_SKILLS[@]}"; do
+  scp -q "$REPO_DIR/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
 done
 # config.toml: merge shared repo settings while preserving remote machine-specific
 # sections such as project trust, notices, marketplaces, and skill path entries.

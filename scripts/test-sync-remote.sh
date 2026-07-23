@@ -58,9 +58,15 @@ for skill in brainstorming planning implement adversarial-doc-review code-review
   require_synced "Codex skill $skill" "/shared/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
 done
 
+for skill in claude-doc-review claude-code-review; do
+  require_synced "Codex skill $skill" "/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
+done
+
 require_synced "Claude instructions" "/claude/CLAUDE.md"
 require_synced "Codex instructions" "/codex/AGENTS.md test:~/.codex/AGENTS.md"
+require_synced "Codex nested review rule" "/codex/rules/codex-review.rules test:~/.codex/rules/codex-review.rules"
 require_synced "Codex OMP review rule" "/codex/rules/omp-review.rules test:~/.codex/rules/omp-review.rules"
+require_synced "Codex Claude review rule" "/codex/rules/claude-review.rules test:~/.codex/rules/claude-review.rules"
 require_synced "OMP review instructions" "/shared/AGENTS.md"
 require_synced "OMP review config" "/omp/config.yml"
 require_synced "OMP review models" "/omp/models.yml"

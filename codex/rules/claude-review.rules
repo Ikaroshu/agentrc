@@ -1,0 +1,25 @@
+prefix_rule(
+    pattern = ["claude", "-p", "--permission-mode", "plan", "--output-format", "text"],
+    decision = "allow",
+    justification = "User explicitly authorizes read-only Claude review skills to transmit supplied repository documents to the Anthropic Claude API",
+    match = [
+        "claude -p --permission-mode plan --output-format text review",
+    ],
+    not_match = [
+        "claude -p review",
+        "claude --permission-mode plan --output-format text review",
+    ],
+)
+
+prefix_rule(
+    pattern = ["env", "-u", "PYTHONPATH", "-u", "VIRTUAL_ENV", "claude", "-p", "--permission-mode", "plan", "--output-format", "text"],
+    decision = "allow",
+    justification = "User explicitly authorizes read-only Claude code review skills to transmit repository diffs to the Anthropic Claude API with the worktree environment isolated",
+    match = [
+        "env -u PYTHONPATH -u VIRTUAL_ENV claude -p --permission-mode plan --output-format text review",
+    ],
+    not_match = [
+        "env -u PYTHONPATH claude -p --permission-mode plan --output-format text review",
+        "env -u PYTHONPATH -u VIRTUAL_ENV claude -p review",
+    ],
+)

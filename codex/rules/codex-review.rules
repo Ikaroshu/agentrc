@@ -1,0 +1,51 @@
+prefix_rule(
+    pattern = ["codex", "exec", "--ephemeral", "--model", "gpt-5.6-sol", "--config", "model_reasoning_effort=\"high\"", "--sandbox", "read-only", "--color", "never"],
+    decision = "allow",
+    justification = "User explicitly authorizes nested read-only Codex workflow reviews with GPT-5.6 Sol at high effort",
+    match = [
+        "codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"high\"' --sandbox read-only --color never review",
+    ],
+    not_match = [
+        "codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"high\"' --sandbox workspace-write --color never review",
+        "codex exec --ephemeral --model gpt-5.6-terra --config 'model_reasoning_effort=\"high\"' --sandbox read-only --color never review",
+    ],
+)
+
+prefix_rule(
+    pattern = ["codex", "exec", "--ephemeral", "--model", "gpt-5.6-sol", "--config", "model_reasoning_effort=\"max\"", "--sandbox", "read-only", "--color", "never"],
+    decision = "allow",
+    justification = "User explicitly authorizes nested read-only Codex workflow reviews with GPT-5.6 Sol at max effort",
+    match = [
+        "codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"max\"' --sandbox read-only --color never review",
+    ],
+    not_match = [
+        "codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"max\"' --sandbox workspace-write --color never review",
+        "codex exec --ephemeral --model gpt-5.6-terra --config 'model_reasoning_effort=\"max\"' --sandbox read-only --color never review",
+    ],
+)
+
+prefix_rule(
+    pattern = ["env", "-u", "PYTHONPATH", "-u", "VIRTUAL_ENV", "codex", "exec", "--ephemeral", "--model", "gpt-5.6-sol", "--config", "model_reasoning_effort=\"high\"", "--sandbox", "read-only", "--color", "never"],
+    decision = "allow",
+    justification = "User explicitly authorizes nested read-only Codex code reviews with GPT-5.6 Sol at high effort and the worktree environment isolated",
+    match = [
+        "env -u PYTHONPATH -u VIRTUAL_ENV codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"high\"' --sandbox read-only --color never review",
+    ],
+    not_match = [
+        "env -u PYTHONPATH codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"high\"' --sandbox read-only --color never review",
+        "env -u PYTHONPATH -u VIRTUAL_ENV codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"high\"' --sandbox workspace-write --color never review",
+    ],
+)
+
+prefix_rule(
+    pattern = ["env", "-u", "PYTHONPATH", "-u", "VIRTUAL_ENV", "codex", "exec", "--ephemeral", "--model", "gpt-5.6-sol", "--config", "model_reasoning_effort=\"max\"", "--sandbox", "read-only", "--color", "never"],
+    decision = "allow",
+    justification = "User explicitly authorizes nested read-only Codex code reviews with GPT-5.6 Sol at max effort and the worktree environment isolated",
+    match = [
+        "env -u PYTHONPATH -u VIRTUAL_ENV codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"max\"' --sandbox read-only --color never review",
+    ],
+    not_match = [
+        "env -u PYTHONPATH codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"max\"' --sandbox read-only --color never review",
+        "env -u PYTHONPATH -u VIRTUAL_ENV codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort=\"max\"' --sandbox workspace-write --color never review",
+    ],
+)

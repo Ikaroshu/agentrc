@@ -31,7 +31,8 @@ This repository tracks portable configuration for AI coding agents such as Claud
 - `codex/` — files installed into `~/.codex/`.
   - `AGENTS.md -> ../shared/AGENTS.md`
   - `config.toml` — portable baseline merged into the machine-local config during install/sync.
-  - `rules/omp-review.rules` — narrowly allows the isolated read-only OMP review invocation used by the shared review skills.
+  - `rules/codex-review.rules` — narrowly allows the nested read-only Codex invocation used by the shared workflow review skills.
+  - `rules/omp-review.rules` — narrowly allows the optional isolated read-only OMP review profile.
   - `skills/general-auto-research/SKILL.md -> ../../../shared/skills/general-auto-research/SKILL.md`
   - `skills/brainstorming/SKILL.md -> ../../../shared/skills/brainstorming/SKILL.md`
   - `skills/planning/SKILL.md -> ../../../shared/skills/planning/SKILL.md`

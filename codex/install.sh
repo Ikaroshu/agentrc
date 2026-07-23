@@ -14,6 +14,8 @@ CODEX_LINK_FILES=(
 )
 
 CODEX_COPY_FILES=(
+  rules/claude-review.rules
+  rules/codex-review.rules
   rules/omp-review.rules
 )
 
@@ -21,6 +23,8 @@ SKILLS=(
   general-auto-research
   adversarial-doc-review
   brainstorming
+  claude-code-review
+  claude-doc-review
   planning
   code-review
   commit
@@ -171,15 +175,6 @@ cleanup_legacy_command() {
   fi
 }
 
-cleanup_legacy_rule() {
-  local dst="$CODEX_TARGET_DIR/rules/claude-review.rules"
-
-  if [ -L "$dst" ] || { [ -f "$dst" ] && grep -Fq 'transmit repository design documents and diffs to the Anthropic Claude API' "$dst"; }; then
-    rm "$dst"
-    echo "DROP legacy rules/claude-review.rules"
-  fi
-}
-
 echo "Installing Codex settings from $REPO_DIR -> $CODEX_TARGET_DIR"
 echo
 
@@ -193,7 +188,6 @@ install_config
 
 cleanup_legacy_command "commands/commit.md"
 cleanup_legacy_command "commands/merge.md"
-cleanup_legacy_rule
 rmdir "$CODEX_TARGET_DIR/commands" 2>/dev/null || true
 
 echo
@@ -205,7 +199,7 @@ for skill in "${SKILLS[@]}"; do
 done
 
 # Drop legacy skill symlinks replaced by renamed or shared skills
-for legacy in commit-workflow merge-workflow auto-research claude-code-review; do
+for legacy in commit-workflow merge-workflow auto-research; do
   dst="$SKILLS_TARGET_DIR/$legacy"
   if [ -L "$dst" ]; then
     rm "$dst"

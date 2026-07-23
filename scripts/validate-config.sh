@@ -73,6 +73,8 @@ require_file "shared/skills/commit/SKILL.md"
 require_file "shared/skills/implement/SKILL.md"
 require_file "shared/skills/merge/SKILL.md"
 require_file "shared/skills/issue/SKILL.md"
+require_file "codex/skills/claude-doc-review/SKILL.md"
+require_file "codex/skills/claude-code-review/SKILL.md"
 require_symlink "omp/AGENTS.md" "../shared/AGENTS.md"
 require_file "omp/config.yml"
 require_file "omp/models.yml"
@@ -92,6 +94,8 @@ done
 
 require_file "claude/settings.json"
 require_file "codex/config.toml"
+require_file "codex/rules/claude-review.rules"
+require_file "codex/rules/codex-review.rules"
 require_file "codex/rules/omp-review.rules"
 
 require_executable "install.sh"
@@ -148,6 +152,29 @@ for model in "${review_models[@]}"; do
     --model "$model" review \
     | grep -F '"decision": "allow"' >/dev/null
 done
+codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rules" -- \
+  claude -p --permission-mode plan --output-format text review \
+  | grep -F '"decision": "allow"' >/dev/null
+codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rules" -- \
+  env -u PYTHONPATH -u VIRTUAL_ENV claude -p --permission-mode plan --output-format text review \
+  | grep -F '"decision": "allow"' >/dev/null
+for effort in high max; do
+  codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
+    codex exec --ephemeral --model gpt-5.6-sol --config "model_reasoning_effort=\"$effort\"" \
+    --sandbox read-only --color never review \
+    | grep -F '"decision": "allow"' >/dev/null
+  codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
+    env -u PYTHONPATH -u VIRTUAL_ENV codex exec --ephemeral --model gpt-5.6-sol \
+    --config "model_reasoning_effort=\"$effort\"" --sandbox read-only --color never review \
+    | grep -F '"decision": "allow"' >/dev/null
+done
+if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
+  codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort="max"' \
+  --sandbox workspace-write --color never review \
+  | grep -F '"decision": "allow"' >/dev/null; then
+  echo "Codex review permission rule allowed a write-capable sandbox" >&2
+  exit 1
+fi
 if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \
   omp --profile review -p --no-session --no-extensions --no-skills --no-rules \
   --no-lsp --tools read,grep,glob,bash --approval-mode always-ask \
