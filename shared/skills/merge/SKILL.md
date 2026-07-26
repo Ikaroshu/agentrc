@@ -1,6 +1,6 @@
 ---
 name: merge
-description: Run Shu's merge workflow for a branch or pull request. Use when the user asks to merge, finish a branch, merge a PR, or clean up after merging. Always confirms the exact PR or branch, tests before and after merge, cleans up local and remote branches and worktrees, and closes the linked issue.
+description: Run Shu's merge workflow for a branch or pull request. Use when the user asks to merge, finish a branch, merge a PR, or clean up after merging. Reads the project's Git Workflow for tests and additional requirements, confirms the exact PR or branch, tests before and after merge, cleans up local and remote branches and worktrees, and closes the linked issue.
 ---
 
 # Merge Workflow
@@ -9,7 +9,13 @@ Test, merge, test again, and clean up. Handles both local merges and PR merges.
 
 **Announce at start:** "Running merge workflow."
 
-## Step 1: Confirm What to Merge
+## Step 1: Read Project Config
+
+Read the repository instructions — prefer `AGENTS.md`; if absent, read `CLAUDE.md`. Read the full `## Git Workflow` (or equivalent) section before acting. Capture the test command and every applicable project-specific requirement, including pre-merge checks, merge or push rules, post-merge deployment or sync commands, and verification steps.
+
+Treat those requirements as part of this workflow and run them at the stage the project specifies. If no such section exists, use the defaults below.
+
+## Step 2: Confirm What to Merge
 
 **Always ask the user to confirm which PR or branch to merge.** Never auto-merge whatever branch happens to exist on the remote. List open PRs (`gh pr list`) and ask explicitly.
 
@@ -20,15 +26,15 @@ Two modes:
 
 If already on main with no feature branch, inform the user and stop.
 
-## Step 2: Test on Feature Branch
+## Step 3: Test on Feature Branch
 
-Run the project's test command (from `## Git Workflow` in the repo instructions — `AGENTS.md`, falling back to `CLAUDE.md` — or `pytest` by default).
+Run the configured test command, or `pytest` by default.
 
 **If no automated tests exist:** actually start the app, exercise the changed functionality, and verify it works end-to-end. If you can't fully verify (e.g., UI changes, auth flows), **ask the user to manually test before proceeding**. Do not skip testing just because there's no test suite.
 
 **If tests fail, stop.** Do not proceed with merge.
 
-## Step 3: Merge
+## Step 4: Merge
 
 Do not rebase the feature branch unless the user explicitly requests it. Preserve the branch history through a merge.
 
@@ -44,19 +50,25 @@ git merge --no-ff <feature-branch>
 gh pr merge --merge
 ```
 
-## Step 4: Test on Main
+## Step 5: Test on Main
 
 After merging, run the same test command on main.
 
 **If tests fail:** report immediately. Do NOT push. The user decides how to proceed.
 
-## Step 5: Push
+## Step 6: Push
 
 ```bash
 git push origin main
 ```
 
-## Step 6: Clean Up
+## Step 7: Run Project-Specific Follow-up
+
+Run every remaining requirement from the project's Git Workflow, such as deployment, remote sync, smoke checks, or live verification. Do not consider the merge complete until these commands succeed.
+
+**If a required follow-up fails:** stop before cleanup and issue closure, preserve the evidence, and report the failure.
+
+## Step 8: Clean Up
 
 Delete the feature branch:
 
@@ -79,7 +91,7 @@ If the feature branch had a worktree, remove it (only after confirming it belong
 git worktree remove <worktree-path>
 ```
 
-## Step 7: Close the Linked Issue
+## Step 9: Close the Linked Issue
 
 After the merge is pushed, close any GitHub issue the merged work resolves — do this automatically, without being asked.
 
@@ -99,6 +111,7 @@ If multiple distinct issues are referenced, close each. If none is referenced, s
 | Merge | `git merge --no-ff` | `gh pr merge --merge` |
 | Test main | yes | yes |
 | Push main | yes | automatic |
+| Project follow-up | if configured | if configured |
 | Delete local branch | yes | yes |
 | Delete remote branch | yes | automatic |
 | Remove worktree | if exists | if exists |
