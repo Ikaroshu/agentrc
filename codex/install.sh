@@ -137,6 +137,33 @@ install_config() {
   echo "MERGE config.toml"
 }
 
+install_review_runner() {
+  local source="$1"
+  local target="$2"
+  local name
+  name="$(basename "$target")"
+  mkdir -p "$(dirname "$target")"
+
+  if [ -f "$target" ] &&
+     [ ! -L "$target" ] &&
+     cmp -s "$source" "$target"; then
+    chmod +x "$target"
+    echo "  OK $name"
+    return
+  fi
+
+  if [ -L "$target" ]; then
+    rm "$target"
+  elif [ -f "$target" ]; then
+    mv "$target" "$target.bak"
+    echo "BACK $name -> $target.bak"
+  fi
+
+  cp "$source" "$target"
+  chmod +x "$target"
+  echo "COPY $name"
+}
+
 link_path() {
   local src="$1"
   local dst="$2"
@@ -185,6 +212,12 @@ for f in "${CODEX_COPY_FILES[@]}"; do
   copy_file "$f"
 done
 install_config
+install_review_runner \
+  "$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review" \
+  "$HOME/.local/bin/agentrc-codex-doc-review"
+install_review_runner \
+  "$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review" \
+  "$HOME/.local/bin/agentrc-codex-code-review"
 
 cleanup_legacy_command "commands/commit.md"
 cleanup_legacy_command "commands/merge.md"

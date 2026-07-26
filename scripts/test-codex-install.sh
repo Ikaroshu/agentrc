@@ -47,6 +47,17 @@ for rule in claude-review.rules codex-review.rules omp-review.rules; do
   fi
 done
 grep -F 'pattern=["existing"]' "$TEST_HOME/.codex/rules/default.rules" >/dev/null
+for runner in \
+  "adversarial-doc-review/scripts/agentrc-codex-doc-review" \
+  "code-review/scripts/agentrc-codex-code-review"; do
+  runner_name="$(basename "$runner")"
+  runner_target="$TEST_HOME/.local/bin/$runner_name"
+  if [ ! -f "$runner_target" ] || [ -L "$runner_target" ] || [ ! -x "$runner_target" ]; then
+    echo "Expected managed Codex review runner: $runner_target" >&2
+    exit 1
+  fi
+  cmp -s "$runner_target" "$ROOT_DIR/shared/skills/$runner"
+done
 
 mkdir -p "$MIGRATION_HOME/.codex"
 ln -s "$ROOT_DIR/codex/config.toml" "$MIGRATION_HOME/.codex/config.toml"

@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+usage() {
+  echo "Usage: agentrc-codex-code-review <high|max> <skill-path> <prompt>" >&2
+}
+
+if [ "$#" -ne 3 ]; then
+  usage
+  exit 2
+fi
+
+effort="$1"
+skill_path="$2"
+prompt="$3"
+
+case "$effort" in
+  high|max) ;;
+  *)
+    usage
+    exit 2
+    ;;
+esac
+
+if [ ! -f "$skill_path" ]; then
+  echo "Missing code-review skill: $skill_path" >&2
+  exit 2
+fi
+if [ -z "$prompt" ]; then
+  echo "Review prompt must not be empty" >&2
+  exit 2
+fi
+
+skills_config="skills.config=[{path=\"$skill_path\",enabled=false}]"
+codex_args=(
+  exec
+  review
+  --ephemeral
+  --model gpt-5.6-sol
+  --config "model_reasoning_effort=\"$effort\""
+  --config 'sandbox_mode="read-only"'
+  --json
+  --config "$skills_config"
+  "$prompt"
+)
+
+run_codex() {
+  env -u PYTHONPATH -u VIRTUAL_ENV RUST_LOG=off codex "${codex_args[@]}" </dev/null
+}
+
+stderr_file="$(mktemp)"
+cleanup() {
+  rm -f "$stderr_file"
+}
+trap cleanup EXIT
+
+if run_codex 2>"$stderr_file" |
+  jq --null-input --raw-input --raw-output --exit-status '
+      reduce inputs as $line (
+        {final: null, errors: []};
+        ($line | fromjson) as $event
+        | if $event.type == "item.completed" and $event.item.type == "agent_message"
+          then .final = $event.item.text
+          elif $event.type == "error"
+          then .errors += [$event.message]
+          elif $event.type == "turn.failed"
+          then .errors += [$event.error.message]
+          else .
+          end
+      )
+      | if (.errors | length) > 0
+        then error(.errors | join("\n"))
+        elif .final != null
+        then .final
+        else error("Codex produced no final agent message")
+        end
+    '; then
+  exit 0
+else
+  status="$?"
+fi
+
+cat "$stderr_file" >&2
+exit "$status"

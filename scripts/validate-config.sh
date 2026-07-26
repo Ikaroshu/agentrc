@@ -68,7 +68,9 @@ require_file "shared/skills/general-auto-research/SKILL.md"
 require_file "shared/skills/brainstorming/SKILL.md"
 require_file "shared/skills/planning/SKILL.md"
 require_file "shared/skills/adversarial-doc-review/SKILL.md"
+require_file "shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review"
 require_file "shared/skills/code-review/SKILL.md"
+require_file "shared/skills/code-review/scripts/agentrc-codex-code-review"
 require_file "shared/skills/commit/SKILL.md"
 require_file "shared/skills/implement/SKILL.md"
 require_file "shared/skills/merge/SKILL.md"
@@ -108,10 +110,13 @@ require_executable "omp/install.sh"
 require_executable "omp/sync-remote.sh"
 require_executable "scripts/validate-config.sh"
 require_executable "scripts/test-codex-install.sh"
+require_executable "scripts/test-codex-review-runners.sh"
 require_executable "scripts/test-omp-install.sh"
 require_executable "scripts/merge-codex-config.py"
 require_executable "scripts/test-merge-codex-config.py"
 require_executable "scripts/test-sync-remote.sh"
+require_executable "shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review"
+require_executable "shared/skills/code-review/scripts/agentrc-codex-code-review"
 
 bash -n "$ROOT_DIR/install.sh"
 bash -n "$ROOT_DIR/sync-remote.sh"
@@ -123,6 +128,7 @@ bash -n "$ROOT_DIR/omp/install.sh"
 bash -n "$ROOT_DIR/omp/sync-remote.sh"
 bash -n "$ROOT_DIR/scripts/validate-config.sh"
 bash -n "$ROOT_DIR/scripts/test-codex-install.sh"
+bash -n "$ROOT_DIR/scripts/test-codex-review-runners.sh"
 bash -n "$ROOT_DIR/scripts/test-omp-install.sh"
 bash -n "$ROOT_DIR/scripts/test-sync-remote.sh"
 
@@ -138,6 +144,7 @@ fi
 python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 "$ROOT_DIR/scripts/test-codex-install.sh"
+"$ROOT_DIR/scripts/test-codex-review-runners.sh"
 "$ROOT_DIR/scripts/test-omp-install.sh"
 "$ROOT_DIR/scripts/test-sync-remote.sh"
 review_models=(
@@ -160,19 +167,23 @@ codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rul
   | grep -F '"decision": "allow"' >/dev/null
 for effort in high max; do
   codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
-    codex exec --ephemeral --model gpt-5.6-sol --config "model_reasoning_effort=\"$effort\"" \
-    --sandbox read-only --color never review \
+    agentrc-codex-doc-review "$effort" /skills/doc/SKILL.md review \
     | grep -F '"decision": "allow"' >/dev/null
   codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
-    env -u PYTHONPATH -u VIRTUAL_ENV codex exec --ephemeral --model gpt-5.6-sol \
-    --config "model_reasoning_effort=\"$effort\"" --sandbox read-only --color never review \
+    agentrc-codex-code-review "$effort" /skills/code/SKILL.md review \
     | grep -F '"decision": "allow"' >/dev/null
 done
 if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
-  codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort="max"' \
-  --sandbox workspace-write --color never review \
+  agentrc-codex-doc-review medium /skills/doc/SKILL.md review \
   | grep -F '"decision": "allow"' >/dev/null; then
-  echo "Codex review permission rule allowed a write-capable sandbox" >&2
+  echo "Codex review permission rule allowed an unsupported effort" >&2
+  exit 1
+fi
+if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
+  codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort="max"' \
+  --sandbox read-only --color never review \
+  | grep -F '"decision": "allow"' >/dev/null; then
+  echo "Codex review permission rule allowed the unmanaged command" >&2
   exit 1
 fi
 if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \

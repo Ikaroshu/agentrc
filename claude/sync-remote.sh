@@ -21,6 +21,7 @@ ssh "$REMOTE" '
         ~/.claude/commands/commit.md.bak ~/.claude/commands/merge.md.bak ~/.claude/commands/issue.md.bak
   rmdir ~/.claude/commands 2>/dev/null || true
   rm -rf ~/.claude/skills/auto-research
+  mkdir -p ~/.local/bin
   mkdir -p \
     ~/.claude/skills/general-auto-research \
     ~/.claude/skills/brainstorming \
@@ -38,6 +39,10 @@ scp -q \
   "$REPO_DIR/file-suggestion.sh" \
   "$REPO_DIR/statusline-command.sh" \
   "$REMOTE:~/.claude/"
+scp -q "$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review" \
+  "$REMOTE:~/.local/bin/agentrc-codex-doc-review"
+scp -q "$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review" \
+  "$REMOTE:~/.local/bin/agentrc-codex-code-review"
 
 for skill in "${SHARED_SKILLS[@]}"; do
   scp -q "$ROOT_DIR/shared/skills/$skill/SKILL.md" "$REMOTE:~/.claude/skills/$skill/"
@@ -69,6 +74,7 @@ print(json.dumps(remote, indent=2))
 echo "$MERGED" | ssh "$REMOTE" 'cat > ~/.claude/settings.json'
 
 # Fix permissions on remote
-ssh "$REMOTE" 'chmod +x ~/.claude/file-suggestion.sh ~/.claude/statusline-command.sh 2>/dev/null'
+ssh "$REMOTE" \
+  'chmod +x ~/.claude/file-suggestion.sh ~/.claude/statusline-command.sh ~/.local/bin/agentrc-codex-doc-review ~/.local/bin/agentrc-codex-code-review 2>/dev/null'
 
 echo "Sync complete → $REMOTE"

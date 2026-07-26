@@ -26,6 +26,7 @@ ssh "$REMOTE" '
   rmdir ~/.codex/commands 2>/dev/null || true
   rm -rf ~/.agents/skills/commit-workflow ~/.agents/skills/merge-workflow ~/.agents/skills/auto-research
   mkdir -p ~/.codex/rules
+  mkdir -p ~/.local/bin
   mkdir -p \
     ~/.agents/skills/general-auto-research \
     ~/.agents/skills/brainstorming \
@@ -44,6 +45,10 @@ scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
 scp -q "$REPO_DIR/rules/claude-review.rules" "$REMOTE:~/.codex/rules/claude-review.rules"
 scp -q "$REPO_DIR/rules/codex-review.rules" "$REMOTE:~/.codex/rules/codex-review.rules"
 scp -q "$REPO_DIR/rules/omp-review.rules" "$REMOTE:~/.codex/rules/omp-review.rules"
+scp -q "$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review" \
+  "$REMOTE:~/.local/bin/agentrc-codex-doc-review"
+scp -q "$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review" \
+  "$REMOTE:~/.local/bin/agentrc-codex-code-review"
 
 for skill in "${SHARED_SKILLS[@]}"; do
   scp -q "$ROOT_DIR/shared/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
@@ -51,6 +56,7 @@ done
 for skill in "${CODEX_SKILLS[@]}"; do
   scp -q "$REPO_DIR/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
 done
+ssh "$REMOTE" 'chmod +x ~/.local/bin/agentrc-codex-doc-review ~/.local/bin/agentrc-codex-code-review'
 # config.toml: merge shared repo settings while preserving remote machine-specific
 # sections such as project trust, notices, marketplaces, and skill path entries.
 ssh "$REMOTE" 'cat ~/.codex/config.toml 2>/dev/null || true' > "$REMOTE_CONFIG_FILE"

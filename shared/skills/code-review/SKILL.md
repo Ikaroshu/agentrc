@@ -9,8 +9,8 @@ Use a nested, read-only Codex CLI session as a neutral third-party code reviewer
 
 ## Prerequisites
 
-- Require `codex` on `PATH` with working authentication.
-- Require `jq` on `PATH`.
+- Require `agentrc-codex-code-review` on `PATH`; the agentrc installer provides it.
+- Require `codex` and `jq` on `PATH` with working Codex authentication.
 - Run from the working tree containing the changes.
 - Unset `PYTHONPATH` and `VIRTUAL_ENV` for the reviewer so a main-repo environment cannot leak into a worktree.
 
@@ -43,30 +43,21 @@ Use this exact mapping:
 ## Workflow
 
 1. Render the matching prompt below with the selected scope and optional distilled focus.
-2. Resolve the absolute paths of this skill and the sibling `adversarial-doc-review/SKILL.md`. Render them into the `skills.config` override so the nested Codex session cannot invoke either workflow review skill recursively.
-3. Enable `pipefail`, then invoke Codex from the working tree with JSONL output and filter the completed stream down to its final agent message. Substitute only the effort, the two skill paths, and the prompt:
+2. Resolve this skill's absolute `SKILL.md` path so the nested Codex session cannot invoke the code-review workflow recursively.
+3. Invoke the managed review runner from the working tree. Substitute only the effort, skill path, and prompt:
 
    ```bash
-   set -o pipefail
-   env -u PYTHONPATH -u VIRTUAL_ENV \
-     codex exec \
-     --ephemeral \
-     --model gpt-5.6-sol \
-     --config 'model_reasoning_effort="{{EFFORT}}"' \
-     --sandbox read-only \
-     --color never \
-     --json \
-     --config 'skills.config=[{path="{{DOC_SKILL_PATH}}",enabled=false},{path="{{CODE_SKILL_PATH}}",enabled=false}]' \
-     '<fully rendered prompt>' |
-     jq --slurp --raw-output --exit-status \
-       'map(select(.type == "item.completed" and .item.type == "agent_message")) | last | .item.text'
+   agentrc-codex-code-review \
+     "{{EFFORT}}" \
+     "{{CODE_SKILL_PATH}}" \
+     '<fully rendered prompt>'
    ```
 
-   Keep this argument order and the fixed `jq` filter. `jq` buffers the JSONL event stream and emits only the final completed agent message, so intermediate review activity does not enter the caller's context. `pipefail` preserves a nonzero Codex exit even when the filter succeeds. Do not add `--ignore-user-config`, `--ignore-rules`, tool restrictions, MCP restrictions, shell wrappers, redirects, backgrounding, or additional pipeline stages. The nested reviewer should inherit the normal Codex tool surface and local configuration while remaining filesystem read-only.
+   Keep this argument order and do not reconstruct or extend the underlying `codex exec review` pipeline. The runner uses Codex's dedicated code-review mode, fixes the model and read-only sandbox, unsets `PYTHONPATH` and `VIRTUAL_ENV`, disables recursive review skills, closes stdin, suppresses trace diagnostics, discards intermediate JSONL events, emits only the final agent message, and preserves failures. The nested reviewer inherits the normal Codex tool surface and local configuration.
 
    When the caller is Codex, run with `sandbox_permissions="require_escalated"` and the justification: "Run the user-authorized nested read-only Codex code review?" The managed `codex-review.rules` rule records this exact read-only command prefix. Other callers should use their normal mechanism for running the command.
 
-4. Start with a 30-second yield. If still running, poll every 60 seconds until exit and briefly update the user. Because `jq` buffers output until completion, silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
+4. Start with a 30-second yield. If still running, poll every 60 seconds until exit and briefly update the user. The runner emits nothing before completion, so silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
 5. Relay the review summary. Verify each finding against the cited code, call sites, tests, contracts, and relevant history; reproduce the reported behavior when feasible. Classify it as confirmed, rejected with specific reasoning, or needing clarification. Fix only confirmed findings.
 6. When a re-review is warranted, use `--commit <fix-sha>` or `--uncommitted` and tell the reviewer which prior findings it is confirming.
 

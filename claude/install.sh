@@ -11,6 +11,7 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
 TARGET_DIR="$HOME/.claude"
 
 # Files to symlink (relative to claude/ in the repo and ~/.claude/)
@@ -61,12 +62,45 @@ link_file() {
   echo "LINK $rel"
 }
 
+install_review_runner() {
+  local source="$1"
+  local target="$2"
+  local name
+  name="$(basename "$target")"
+  mkdir -p "$(dirname "$target")"
+
+  if [ -f "$target" ] &&
+     [ ! -L "$target" ] &&
+     cmp -s "$source" "$target"; then
+    chmod +x "$target"
+    echo "  OK $name"
+    return
+  fi
+
+  if [ -L "$target" ]; then
+    rm "$target"
+  elif [ -f "$target" ]; then
+    mv "$target" "$target.bak"
+    echo "BACK $name -> $target.bak"
+  fi
+
+  cp "$source" "$target"
+  chmod +x "$target"
+  echo "COPY $name"
+}
+
 echo "Installing Claude settings from $REPO_DIR → $TARGET_DIR"
 echo
 
 for f in "${FILES[@]}"; do
   link_file "$f"
 done
+install_review_runner \
+  "$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review" \
+  "$HOME/.local/bin/agentrc-codex-doc-review"
+install_review_runner \
+  "$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review" \
+  "$HOME/.local/bin/agentrc-codex-code-review"
 
 # Drop legacy command symlinks now migrated to shared skills
 for legacy in commit merge issue; do
