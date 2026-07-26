@@ -16,13 +16,15 @@ Use the local Claude CLI as a read-only third-party reviewer for design document
 
 - `--spec <path>`: optional spec path.
 - `--plan <path>`: optional plan path.
-- `--focus <text>`: optional review emphasis.
+- `--focus <text>`: optional concern to emphasize without narrowing the review.
 
 Require at least one of `--spec` or `--plan`. Resolve every supplied path to an absolute path and verify it is a regular file. Never auto-discover a substitute.
 
+If focus is supplied, prefer to keep the distilled emphasis within 80 words. Exceed that only when necessary to preserve materially distinct concerns, and briefly justify the extra detail. Do not pass scope exclusions, required conclusions, or instructions to omit review dimensions.
+
 ## Workflow
 
-1. Render the prompt below with the supplied paths and optional focus.
+1. Render the prompt below with the supplied paths and optional distilled focus.
 2. Invoke Claude directly with the fully rendered prompt as one literal argument:
 
    ```bash
@@ -33,7 +35,7 @@ Require at least one of `--spec` or `--plan`. Resolve every supplied path to an 
 
    Keep the exact argument prefix. Do not use shell variables, command substitutions, redirects, wrappers, or backgrounding; these prevent the managed permission rule from matching.
 
-3. Start with a 30-second yield. If the process remains active, poll with an empty `write_stdin` call every 60 seconds until it exits. Text output is buffered, so silence and elapsed time alone are not evidence of a hang. Do not impose an arbitrary timeout, interrupt the process, inspect its PID, or launch parallel status checks while it remains active. Give the user brief status updates while waiting.
+3. Start with a 30-second yield. If still running, poll with an empty `write_stdin` call every 60 seconds until exit and briefly update the user. Because text output is buffered, silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
 4. Relay the verdict and findings. Verify every finding against the documents and repository context before editing. Classify each as confirmed, rejected with specific reasoning, or needing clarification. Never blindly implement or silently skip feedback.
 
 ## Prompt template
@@ -50,7 +52,8 @@ Files to review:
 Read every supplied file in full from disk before responding. You may inspect
 relevant repository context, but do not edit files.
 
-{{FOCUS_BLOCK}}
+Additional emphasis only; this does not narrow the review or suppress findings:
+{{FOCUS_EMPHASIS}}
 
 Evaluate, in order:
 1. Correctness and completeness: gaps, contradictions, unstated assumptions,
@@ -79,7 +82,7 @@ Numbered questions required for approval. Write "None." if empty.
 Be specific, do not flatter or restate the documents, and do not manufacture findings.
 ```
 
-Omit absent file lines and the focus block instead of leaving placeholders.
+Omit absent file lines and the additional-emphasis lines instead of leaving placeholders.
 
 ## Failure handling
 

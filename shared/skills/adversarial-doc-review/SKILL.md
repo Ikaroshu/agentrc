@@ -10,16 +10,19 @@ Use a nested, read-only Codex CLI session as a neutral third-party reviewer. Kee
 ## Prerequisites
 
 - Require `codex` on `PATH` with working authentication.
+- Require `jq` on `PATH`.
 - Run from the main repository cwd on the main branch, not from a worktree.
 
 ## Arguments
 
 - `--spec <path>`: optional spec path.
 - `--plan <path>`: optional plan path.
-- `--focus <text>`: optional review emphasis.
+- `--focus <text>`: optional concern to emphasize without narrowing the review.
 - `--difficulty <non-hard|hard>`: optional explicit tier override.
 
 Require at least one of `--spec` or `--plan`. Resolve every supplied document and both shared review `SKILL.md` files to absolute paths. Validate document paths as regular files; never auto-discover substitutes.
+
+If focus is supplied, prefer to keep the distilled emphasis within 80 words. Exceed that only when necessary to preserve materially distinct concerns, and briefly justify the extra detail. Do not pass scope exclusions, required conclusions, or instructions to omit review dimensions.
 
 ## Select the review tier
 
@@ -37,34 +40,38 @@ Use this exact mapping:
 
 ## Workflow
 
-1. Render the prompt below with the supplied paths, optional focus, and selected tier.
+1. Render the prompt below with the supplied paths and optional distilled focus.
 2. Resolve the absolute paths of this skill and the sibling `code-review/SKILL.md`. Render them into the `skills.config` override so the nested Codex session cannot invoke either workflow review skill recursively.
-3. Invoke Codex directly with the fully rendered prompt as one literal argument, substituting only the effort, the two skill paths, and the prompt:
+3. Enable `pipefail`, then invoke Codex with JSONL output and filter the completed stream down to its final agent message. Substitute only the effort, the two skill paths, and the prompt:
 
    ```bash
+   set -o pipefail
    codex exec \
      --ephemeral \
      --model gpt-5.6-sol \
      --config 'model_reasoning_effort="{{EFFORT}}"' \
      --sandbox read-only \
      --color never \
+     --json \
      --config 'skills.config=[{path="{{DOC_SKILL_PATH}}",enabled=false},{path="{{CODE_SKILL_PATH}}",enabled=false}]' \
-     '<fully rendered prompt>'
+     '<fully rendered prompt>' |
+     jq --slurp --raw-output --exit-status \
+       'map(select(.type == "item.completed" and .item.type == "agent_message")) | last | .item.text'
    ```
 
-   Keep this argument order. Do not add `--ignore-user-config`, `--ignore-rules`, tool restrictions, MCP restrictions, shell wrappers, redirects, or backgrounding. The nested reviewer should inherit the normal Codex tool surface and local configuration while remaining filesystem read-only.
+   Keep this argument order and the fixed `jq` filter. `jq` buffers the JSONL event stream and emits only the final completed agent message, so intermediate review activity does not enter the caller's context. `pipefail` preserves a nonzero Codex exit even when the filter succeeds. Do not add `--ignore-user-config`, `--ignore-rules`, tool restrictions, MCP restrictions, shell wrappers, redirects, backgrounding, or additional pipeline stages. The nested reviewer should inherit the normal Codex tool surface and local configuration while remaining filesystem read-only.
 
    When the caller is Codex, run with `sandbox_permissions="require_escalated"` and the justification: "Run the user-authorized nested read-only Codex document review?" The managed `codex-review.rules` rule records this exact read-only command prefix. Other callers should use their normal mechanism for running the command.
 
-4. Start with a 30-second yield. If the process remains active, poll every 60 seconds until it exits. Do not treat elapsed time or a quiet interval as a hang, impose an arbitrary timeout, interrupt it, inspect its PID, or launch parallel status checks. Give the user brief progress updates while waiting.
+4. Start with a 30-second yield. If still running, poll every 60 seconds until exit and briefly update the user. Because `jq` buffers output until completion, silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
 5. Relay the verdict and findings. Verify each finding against the documents and repository context before editing. Classify it as confirmed, rejected with specific reasoning, or needing clarification. Never blindly implement or silently skip feedback.
 
 ## Prompt template
 
 ```text
 You are the inner reviewer process for an adversarial design-document review.
-Review tier: {{TIER}}. Perform the review directly. Do not invoke any review
-skill or launch another Codex, Claude, or OMP process.
+Perform the review directly. Do not invoke any review skill or launch another
+Codex, Claude, or OMP process.
 
 Files to review:
 - Spec: {{SPEC_PATH}}
@@ -73,7 +80,8 @@ Files to review:
 Read every supplied file in full. Use your available read-only tools and
 repository context where useful. Do not edit files.
 
-{{FOCUS_BLOCK}}
+Additional emphasis only; this does not narrow the review or suppress findings:
+{{FOCUS_EMPHASIS}}
 
 Evaluate, in order:
 1. Correctness and completeness: gaps, contradictions, unstated assumptions,
@@ -102,7 +110,7 @@ Numbered questions required for approval. Write "None." if empty.
 Be specific, do not flatter or restate the documents, and do not manufacture findings.
 ```
 
-Omit absent file lines and the focus block instead of leaving placeholders.
+Omit absent file lines and the additional-emphasis lines instead of leaving placeholders.
 
 ## Failure handling
 

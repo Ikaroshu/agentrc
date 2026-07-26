@@ -21,11 +21,13 @@ Choose exactly one scope:
 - `--commit <sha>`: one commit.
 - `--uncommitted`: staged, unstaged, and untracked work.
 
-Accept optional `--focus <text>`. Confirm the selected scope contains changes before invoking Claude.
+Accept optional `--focus <text>` as a concern to emphasize without narrowing the review. Confirm the selected scope contains changes before invoking Claude.
+
+If focus is supplied, prefer to keep the distilled emphasis within 80 words. Exceed that only when necessary to preserve materially distinct concerns, and briefly justify the extra detail. Do not pass scope exclusions, required conclusions, or instructions to omit review dimensions.
 
 ## Workflow
 
-1. Render the matching prompt below with the selected scope and optional focus.
+1. Render the matching prompt below with the selected scope and optional distilled focus.
 2. Invoke Claude directly from the working tree with the fully rendered prompt as one literal argument:
 
    ```bash
@@ -37,7 +39,7 @@ Accept optional `--focus <text>`. Confirm the selected scope contains changes be
 
    Keep the exact `env` and `claude` argument prefix. Do not use shell variables, command substitutions, redirects, wrappers, or backgrounding; these prevent the managed permission rule from matching.
 
-3. Start with a 30-second yield. If the process remains active, poll with an empty `write_stdin` call every 60 seconds until it exits. Text output is buffered, so silence and elapsed time alone are not evidence of a hang. Do not impose an arbitrary timeout, interrupt the process, inspect its PID, or launch parallel status checks while it remains active. Give the user brief status updates while waiting.
+3. Start with a 30-second yield. If still running, poll with an empty `write_stdin` call every 60 seconds until exit and briefly update the user. Because text output is buffered, silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
 4. Relay the summary. Verify every finding against the cited code, call sites, tests, contracts, and relevant history; reproduce the reported behavior when feasible. Classify each as confirmed, rejected with specific reasoning, or needing clarification. Fix only confirmed findings.
 5. When a re-review is warranted, use `--commit <fix-sha>` or `--uncommitted` and tell Claude which prior findings it is confirming.
 
@@ -54,7 +56,8 @@ Run and inspect:
 - git diff --stat {{BASE_BRANCH}}...HEAD
 - git diff --find-renames {{BASE_BRANCH}}...HEAD
 
-{{FOCUS_BLOCK}}
+Additional emphasis only; this does not narrow the review or suppress findings:
+{{FOCUS_EMPHASIS}}
 
 Find only actionable issues: correctness bugs, regressions, broken contracts,
 missing tests for changed behavior, security or data-loss risks, and
@@ -94,7 +97,7 @@ For `--uncommitted`, replace the commands with:
 - git diff --find-renames HEAD
 ```
 
-Omit the focus block instead of leaving a placeholder.
+Omit the additional-emphasis lines instead of leaving a placeholder.
 
 ## Failure handling
 
