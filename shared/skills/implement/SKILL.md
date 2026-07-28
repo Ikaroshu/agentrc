@@ -39,6 +39,19 @@ The task owner coordinates shared-worktree changes, reviews and integrates
 delegated work, and remains accountable for the task's final diff and complete
 verification evidence.
 
+### Quiet supervision
+
+After dispatching a task owner, wait passively for its completion or messages
+using the platform's longest practical blocking or event-driven wait.
+
+- Do not poll agent status, inspect partial transcripts or shared-worktree
+  changes, or send progress check-ins while the agent is running.
+- Resume supervision only when the agent completes, raises a blocker or
+  question, a concrete failure or deadline signal appears, or the user
+  interrupts.
+- Apply this recursively when task owners coordinate nested helpers.
+- Begin evidence and diff review only after the task owner returns.
+
 ## Between tasks (orchestrator checkpoint)
 
 After each subagent returns:

@@ -1,6 +1,6 @@
 ---
 name: general-auto-research
-description: Run an N-round autonomous research loop. Use when the user asks to auto-research a question, run iterative rounds, or explore a problem with multiple sequential agents. Sets up `auto_research/r<YYYYMMDD>_<short_title>/` with a prompt.md and optional auxiliary scripts, spawns one subagent per round sequentially (each working only in its own round_i folder), then synthesizes report.md covering the arc across rounds, top results, problems encountered, and recommendations.
+description: Run an N-round autonomous research loop. Use when the user asks to auto-research a question, run iterative rounds, or explore a problem with multiple sequential agents. Sets up a dated `auto_research` workspace with a prompt.md and optional auxiliary scripts, spawns one subagent per round sequentially (each working only in its own round_i folder), then synthesizes report.md covering the arc across rounds, top results, problems encountered, and recommendations.
 ---
 
 # General Auto-Research
@@ -191,6 +191,7 @@ structure. Examples:
 ## Orchestrator guidelines
 
 - **Never spawn rounds in parallel.** Each round depends on the accumulated findings in prompt.md that earlier rounds wrote.
+- **Wait quietly for each round.** After dispatch, use the platform's longest practical blocking or event-driven wait. Do not poll agent status, inspect partial transcripts or live round files, or send progress check-ins while the round is running. Resume only when the agent completes, raises a blocker or question, a concrete failure or deadline signal appears, or the user interrupts. Perform the required artifact checks and R1 spot-check only after the agent returns. Apply the same rule to any nested helpers.
 - **Don't steer subagents.** Your dispatch prompt is identical across rounds (verbatim from Phase 2 step 8). Do not inline prior-round numbers, hints, "consider X", "watch for Y", or "R{j} suggested Z" into the dispatch — the subagent reads prompt.md and forms its own hypothesis. If you find yourself wanting to add a hint mid-arc, that's a signal the **prompt.md template** needs updating (and only if the hint applies to all future rounds, not just the next one).
 - **Don't do the research yourself.** Your job is setup → dispatch → synthesize. The subagent is the researcher for its round, end-to-end. If the subagent returns without a `findings.md`, **retry the round once** with a fresh subagent; if the retry also fails, ask the user whether to skip or abort — but **do not write the findings yourself**; you did not see the experiments run.
   - Exception for one specific failure mode: if the subagent's `Write` tool was blocked but it produced all numerical outputs (grid_results.json present, full findings narrative in its return message and/or in the `## Round {i}` summary), you may dispatch a **backfill subagent** with a narrow prompt that only writes findings.md from the existing artifacts. This is not "writing the findings yourself" — it's persisting the original subagent's authored content to disk.
@@ -209,7 +210,7 @@ structure. Examples:
 - **Trusting the subagent's return message over the disk state.** The subagent may report "findings.md written" while the file is missing (Write-tool blocks happen). After every round, `ls round_{i}/findings.md` and `tail prompt.md` to verify both are present and non-trivial. Only then dispatch the next round.
 - **Skipping the R1 baseline spot-check.** R1's headline number anchors every subsequent round. If it's wrong (e.g. mean Sharpe mis-labelled as P10 Sharpe), the entire arc rationalises against the wrong bar. Independently re-derive R1's primary number from its saved JSON before dispatching R2.
 - **Writing report.md while rounds are still pending.** Report comes after ALL rounds complete.
-- **Subagent uses `run_in_background=true`.** Subagent-launched bg jobs are orphaned when the turn ends (`claude-code#17764`). The execution rules in prompt.md tell the subagent to use foreground Bash + checkpoint-and-resume; this pitfall is just "watch for it in the log — symptoms are a task-output file stuck after the first few lines".
+- **Subagent uses `run_in_background=true`.** Subagent-launched bg jobs are orphaned when the turn ends (`claude-code#17764`). The execution rules in prompt.md tell the subagent to use foreground Bash + checkpoint-and-resume. Diagnose this from the completed return or a concrete failure signal, not by watching the live log.
 
 ## Example invocations
 
