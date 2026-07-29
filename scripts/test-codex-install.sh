@@ -31,7 +31,8 @@ if [ -L "$TEST_HOME/.codex/config.toml" ]; then
   exit 1
 fi
 
-grep -F 'model = "gpt-5.5"' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F 'model = "gpt-5.6-sol"' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F 'model_reasoning_effort = "xhigh"' "$TEST_HOME/.codex/config.toml" >/dev/null
 grep -F 'machine_marker = true' "$TEST_HOME/.codex/config.toml" >/dev/null
 grep -F '[projects."/machine/project"]' "$TEST_HOME/.codex/config.toml" >/dev/null
 
@@ -68,7 +69,8 @@ if [ -L "$MIGRATION_HOME/.codex/config.toml" ]; then
   exit 1
 fi
 
-grep -F 'model = "gpt-5.5"' "$MIGRATION_HOME/.codex/config.toml" >/dev/null
+grep -F 'model = "gpt-5.6-sol"' "$MIGRATION_HOME/.codex/config.toml" >/dev/null
+grep -F 'model_reasoning_effort = "xhigh"' "$MIGRATION_HOME/.codex/config.toml" >/dev/null
 
 for skill in general-auto-research adversarial-doc-review code-review commit merge issue; do
   target="$TEST_HOME/.agents/skills/$skill"
