@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: Use automatically when a discussion or request has material uncertainty about intent, requirements, scope, assumptions, or design choices that could change the outcome. Explore project context, conduct a bounded dialectical dialogue, compare approaches, and produce an approved design before planning or implementation. Do not use for clear factual questions, well-scoped tasks, or details discoverable from project context. Do not write an implementation plan.
+description: Use automatically when a discussion or request has material uncertainty about intent, requirements, scope, assumptions, or design choices that could change the outcome. Explore project context, discuss meaningful design tensions with the user, compare approaches, and produce an approved design before planning or implementation. Do not use for clear factual questions, well-scoped tasks, or details discoverable from project context. Do not write an implementation plan.
 ---
 
 # Brainstorming
@@ -12,7 +12,7 @@ Turn material uncertainty into an agreed design before planning or implementatio
 ## Principles
 
 - **No implementation yet.** Read and explore freely, but do not edit implementation files or write the implementation plan during this skill.
-- **Be dialectical, not reflexively contrarian.** State the working view and its assumptions, develop the strongest relevant counterview, test the tension, and seek a better synthesis.
+- **Keep the user inside the reasoning.** Surface the working view and any genuinely relevant alternative or concern, then give the user room to challenge, extend, or redirect the thinking before settling the design. Never complete a meaningful design debate entirely with yourself and present only the conclusion.
 - **One question at a time.** Ask a single focused question, wait for the answer, then ask the next. Never dump a wall of questions.
 - **Keep dialogue bounded.** Ask only questions whose answers could materially change the design. Stop when it is decision-ready. If discussion stops producing new information, state the remaining tension, recommend a resolution, and seek approval.
 - **Dig for intent.** Understand *why* before *what*. Surface the real problem, not just the requested solution.
@@ -23,7 +23,7 @@ Turn material uncertainty into an agreed design before planning or implementatio
 1. **Explore context.** Read the relevant code, docs, and recent history before proposing a design. Follow established project patterns.
 2. **Confirm brainstorming is necessary.** If exploration resolves the uncertainty, exit the skill and continue normally. Do not manufacture design choices.
 3. **Check scope.** If the request spans independent subsystems, propose a decomposition and brainstorm one focused piece at a time.
-4. **Interview dialectically, one question at a time.** Surface the current view, the strongest relevant challenge, and a possible synthesis. Cover only what the design needs:
+4. **Discuss the design, one question at a time.** Surface the current view and any genuinely relevant challenge, then invite the user to challenge, extend, or redirect the thinking before settling it. Cover only what the design needs:
    - Intent — what problem are we actually solving, and for whom?
    - Requirements — what must be true when this is done? What is explicitly out of scope?
    - Constraints — existing patterns, dependencies, performance, compatibility.
