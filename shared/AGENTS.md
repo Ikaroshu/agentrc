@@ -9,8 +9,7 @@
 - **One change at a time** — if a fix doesn't work, revert it before trying the next. Don't stack speculative patches.
 - Search online for solutions after 3 assumptions have been falsified.
 - **Verify against the original repro** before claiming it's fixed.
-- **Escalate Git metadata writes immediately in Codex** — the `workspace-write` sandbox protects `.git` as read-only. For commands that write Git metadata (for example, branch/worktree creation, staging, committing, merging, switching, or updating refs), request narrowly scoped sandbox escalation on the first invocation instead of waiting for a sandbox failure.
-- **Prove Git ref conflicts exactly** — do not infer a ref-layout conflict from a generic `unable to create directory` error. Verify the blocking parent ref with `git show-ref --verify <ref>`; if no such ref exists, treat the failure as a permission boundary and retry the identical command with the required access.
+- **Escalate Git metadata writes in Codex** — because `workspace-write` protects `.git`, request scoped escalation on the first invocation.
 
 ## Development Workflow
 Choose the workflow based on scope:
