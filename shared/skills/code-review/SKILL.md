@@ -57,7 +57,7 @@ Use this exact mapping:
 
    When the caller is Codex, run with `sandbox_permissions="require_escalated"` and the justification: "Run the user-authorized nested read-only Codex code review?" The managed `codex-review.rules` rule records this exact read-only command prefix. Other callers should use their normal mechanism for running the command.
 
-4. Start with a 30-second yield. If still running, poll every 60 seconds until exit and briefly update the user. The runner emits nothing before completion, so silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
+4. Start with a 60-second yield. If still running, poll every 120 seconds until exit and briefly update the user. The runner emits nothing before completion, so silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
 5. Relay the review summary. Verify each finding against the cited code, call sites, tests, contracts, and relevant history; reproduce the reported behavior when feasible. Classify it as confirmed, rejected with specific reasoning, or needing clarification. Fix only confirmed findings.
 6. When a re-review is warranted, use `--commit <fix-sha>` or `--uncommitted` and tell the reviewer which prior findings it is confirming.
 

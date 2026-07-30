@@ -39,7 +39,7 @@ If focus is supplied, prefer to keep the distilled emphasis within 80 words. Exc
 
    Keep the exact `env` and `claude` argument prefix. Do not use shell variables, command substitutions, redirects, wrappers, or backgrounding; these prevent the managed permission rule from matching.
 
-3. Start with a 30-second yield. If still running, poll with an empty `write_stdin` call every 60 seconds until exit and briefly update the user. Because text output is buffered, silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
+3. Start with a 60-second yield. If still running, poll every 120 seconds until exit and briefly update the user. Because text output is buffered, silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
 4. Relay the summary. Verify every finding against the cited code, call sites, tests, contracts, and relevant history; reproduce the reported behavior when feasible. Classify each as confirmed, rejected with specific reasoning, or needing clarification. Fix only confirmed findings.
 5. When a re-review is warranted, use `--commit <fix-sha>` or `--uncommitted` and tell Claude which prior findings it is confirming.
 

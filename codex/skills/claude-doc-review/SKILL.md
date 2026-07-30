@@ -35,7 +35,7 @@ If focus is supplied, prefer to keep the distilled emphasis within 80 words. Exc
 
    Keep the exact argument prefix. Do not use shell variables, command substitutions, redirects, wrappers, or backgrounding; these prevent the managed permission rule from matching.
 
-3. Start with a 30-second yield. If still running, poll with an empty `write_stdin` call every 60 seconds until exit and briefly update the user. Because text output is buffered, silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
+3. Start with a 60-second yield. If still running, poll every 120 seconds until exit and briefly update the user. Because text output is buffered, silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
 4. Relay the verdict and findings. Verify every finding against the documents and repository context before editing. Classify each as confirmed, rejected with specific reasoning, or needing clarification. Never blindly implement or silently skip feedback.
 
 ## Prompt template
@@ -56,19 +56,29 @@ Additional emphasis only; this does not narrow the review or suppress findings:
 {{FOCUS_EMPHASIS}}
 
 Evaluate, in order:
-1. Correctness and completeness: gaps, contradictions, unstated assumptions,
+1. Problem validity and proportionality: whether the motivating problem is
+   supported by realistic scenarios or evidence and is worth solving now.
+   Distinguish likely real-world cases from speculative or extremely rare edge
+   cases. Challenge designs whose complexity, maintenance burden, or risk
+   outweighs the expected benefit, and identify when documentation, an
+   operational workaround, or accepting the limitation would be preferable.
+2. Correctness and completeness: gaps, contradictions, unstated assumptions,
    and ignored edge cases.
-2. Risk and blast radius: data loss, security, migrations, partial failure,
+3. Risk and blast radius: data loss, security, migrations, partial failure,
    reversibility, concurrency, and external contracts.
-3. Design and alternatives: unnecessary complexity, premature abstraction,
+4. Design and alternatives: unnecessary complexity, premature abstraction,
    or a simpler viable approach.
-4. Testability: exact verification, missing tests, and untestable claims.
-5. Process and scope: scope creep or requirements silently dropped.
+5. Testability: exact verification, missing tests, and untestable claims.
+6. Process and scope: scope creep or requirements silently dropped.
 
 Output these exact sections:
 
 ## Verdict
-APPROVE, APPROVE WITH CHANGES, or REWORK, followed by one sentence explaining why.
+APPROVE, APPROVE WITH CHANGES, or REWORK, followed by a concise rationale
+proportional to the verdict. For REWORK based on problem validity or
+proportionality, explain the real-world evidence or likelihood gap, why the
+design cost outweighs the expected benefit, and which simpler disposition
+should be considered.
 
 ## Blocking findings
 Numbered findings with file and line or section, problem, impact, and minimum fix. Write "None." if empty.
