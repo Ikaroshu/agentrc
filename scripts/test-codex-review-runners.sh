@@ -7,6 +7,8 @@ DOC_RUNNER="$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex
 CODE_RUNNER="$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review"
 TEST_DIR="$(mktemp -d)"
 BIN_DIR="$TEST_DIR/bin"
+FALLBACK_BIN_DIR="$TEST_DIR/fallback-bin"
+APP_RESOURCES_DIR="$TEST_DIR/app-resources"
 DOC_SKILL="$TEST_DIR/doc-SKILL.md"
 CODE_SKILL="$TEST_DIR/code-SKILL.md"
 
@@ -15,7 +17,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$BIN_DIR"
+mkdir -p "$BIN_DIR" "$FALLBACK_BIN_DIR" "$APP_RESOURCES_DIR"
 touch "$DOC_SKILL" "$CODE_SKILL"
 
 cat >"$BIN_DIR/codex" <<'EOF'
@@ -68,6 +70,18 @@ jq --null-input --compact-output --arg text "${EXPECTED_FINAL:-FINAL_ONLY}" \
 printf '%s\n' '{"type":"turn.completed"}'
 EOF
 chmod +x "$BIN_DIR/codex"
+touch "$BIN_DIR/codex-code-mode-host"
+chmod +x "$BIN_DIR/codex-code-mode-host"
+cp "$BIN_DIR/codex" "$APP_RESOURCES_DIR/codex"
+touch "$APP_RESOURCES_DIR/codex-code-mode-host"
+chmod +x "$APP_RESOURCES_DIR/codex" "$APP_RESOURCES_DIR/codex-code-mode-host"
+cat >"$FALLBACK_BIN_DIR/codex" <<'EOF'
+#!/usr/bin/env bash
+
+echo "PATH Codex without its sibling host should not run" >&2
+exit 1
+EOF
+chmod +x "$FALLBACK_BIN_DIR/codex"
 
 prompt=$'Review this precisely.\nPreserve '\''quotes'\'' and newlines.'
 output="$(
@@ -93,6 +107,28 @@ if [ "$output" != "FINAL_ONLY" ]; then
   echo "Unexpected isolated runner output: $output" >&2
   exit 1
 fi
+
+for runner in "$DOC_RUNNER" "$CODE_RUNNER"; do
+  review_mode=false
+  if [ "$runner" = "$CODE_RUNNER" ]; then
+    review_mode=true
+    skill_path="$CODE_SKILL"
+  else
+    skill_path="$DOC_SKILL"
+  fi
+
+  output="$(
+    PATH="$FALLBACK_BIN_DIR:$PATH" \
+      AGENTRC_CODEX_APP_RESOURCES_DIR="$APP_RESOURCES_DIR" \
+      EXPECT_REVIEW_MODE="$review_mode" \
+      EXPECTED_PROMPT="$prompt" \
+      "$runner" high "$skill_path" "$prompt"
+  )"
+  if [ "$output" != "FINAL_ONLY" ]; then
+    echo "Runner did not select the app-bundled Codex fallback: $runner" >&2
+    exit 1
+  fi
+done
 
 large_final=$'## Verdict\nAPPROVE WITH CHANGES\n\nQuotes: "double" and '\''single'\''.\nUnicode: 測試 ✓'
 for index in {1..512}; do

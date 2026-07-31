@@ -1,7 +1,7 @@
 prefix_rule(
     pattern = ["agentrc-codex-doc-review", ["high", "max"]],
     decision = "allow",
-    justification = "User explicitly authorizes the managed read-only Codex document-review runner",
+    justification = "User explicitly authorizes the managed read-only Codex document-review runner to transmit supplied repository documents and relevant context to OpenAI Codex",
     match = [
         "agentrc-codex-doc-review high /skills/doc/SKILL.md review",
         "agentrc-codex-doc-review max /skills/doc/SKILL.md review",
@@ -15,7 +15,7 @@ prefix_rule(
 prefix_rule(
     pattern = ["agentrc-codex-code-review", ["high", "max"]],
     decision = "allow",
-    justification = "User explicitly authorizes the managed read-only Codex code-review runner with the Python environment isolated",
+    justification = "User explicitly authorizes the managed read-only Codex code-review runner to transmit supplied repository diffs and relevant source context to OpenAI Codex with the Python environment isolated",
     match = [
         "agentrc-codex-code-review high /skills/code/SKILL.md review",
         "agentrc-codex-code-review max /skills/code/SKILL.md review",

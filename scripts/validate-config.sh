@@ -186,6 +186,10 @@ if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.r
   echo "Codex review permission rule allowed the unmanaged command" >&2
   exit 1
 fi
+grep -F 'transmit supplied repository documents and relevant context to OpenAI Codex' \
+  "$ROOT_DIR/codex/rules/codex-review.rules" >/dev/null
+grep -F 'transmit supplied repository diffs and relevant source context to OpenAI Codex' \
+  "$ROOT_DIR/codex/rules/codex-review.rules" >/dev/null
 if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \
   omp --profile review -p --no-session --no-extensions --no-skills --no-rules \
   --no-lsp --tools read,grep,glob,bash --approval-mode always-ask \

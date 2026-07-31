@@ -2,6 +2,12 @@
 - **Comments & docstrings:** Prefer self-explanatory code (clear naming, simple structure) over comments. Add docstrings only to explain non-obvious logic, subtle gotchas, or important warnings.
 - **Fail out loud:** Don't add defensive code — error handling, input validation, fallbacks, or "just in case" guards for conditions that shouldn't happen given the surrounding contract. Don't silently swallow unexpected errors. Don't use `try/except` (or equivalent) for normal control flow. These turn loud failures into silent ones and hide real bugs. Let errors propagate so the actual cause is visible. Validate or catch only at true system boundaries (untrusted input, external APIs, user-facing entry points).
 
+## Compatibility Policy
+- Treat these as personal projects with no external customers. Prefer clean current code over backward compatibility for deprecated configuration, caches, reports, staging state, or run artifacts.
+- Do not add legacy readers, compatibility gates, migrations, aliases, shims, or version branches unless the user explicitly requests them. Intentional breaking changes may require clearing or rebuilding caches, regenerating reports or generations, and rerunning jobs.
+- Keep version fields only when the active generic storage or serialization protocol requires them or when they record external provider or normalization provenance. Do not use source revision, recipe version, or format version as a proxy for “current code”; record source revision as provenance when useful.
+- State destructive or expensive rebuild consequences before implementation, but do not preserve deprecated code solely to avoid them.
+
 ## Debugging Guidelines
 - **Reproduce first** — get a reliable repro and read the full error before theorizing. No repro yet means keep gathering evidence, not guessing.
 - Ask clarifying questions before suggesting fixes.

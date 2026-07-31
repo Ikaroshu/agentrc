@@ -51,7 +51,7 @@ Use this exact mapping:
      '<fully rendered prompt>'
    ```
 
-   Keep this argument order and do not reconstruct or extend the underlying `codex exec` pipeline. The runner fixes the model and read-only sandbox, disables recursive review skills, closes stdin, suppresses trace diagnostics, discards intermediate JSONL events, emits only the final agent message, and preserves failures. The nested reviewer inherits the normal Codex tool surface and local configuration.
+   Keep this argument order and do not reconstruct or extend the underlying `codex exec` pipeline. Invoke the runner directly without an `env` or `PATH` wrapper; on macOS it selects the ChatGPT app-bundled Codex when the `PATH` binary lacks its required sibling host, preserving the managed permission-rule match. The runner fixes the model and read-only sandbox, disables recursive review skills, closes stdin, suppresses trace diagnostics, discards intermediate JSONL events, emits only the final agent message, and preserves failures. The nested reviewer inherits the normal Codex tool surface and local configuration.
 
    When the caller is Codex, run with `sandbox_permissions="require_escalated"` and the justification: "Run the user-authorized nested read-only Codex document review?" The managed `codex-review.rules` rule records this exact read-only command prefix. Other callers should use their normal mechanism for running the command.
 
