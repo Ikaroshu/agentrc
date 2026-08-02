@@ -3,7 +3,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: agentrc-codex-code-review <high|max> <skill-path> <prompt>" >&2
+  echo "Usage: agentrc-codex-code-review <xhigh|max> <skill-path> <prompt>" >&2
 }
 
 if [ "$#" -ne 3 ]; then
@@ -16,7 +16,7 @@ skill_path="$2"
 prompt="$3"
 
 case "$effort" in
-  high|max) ;;
+  xhigh|max) ;;
   *)
     usage
     exit 2
@@ -58,10 +58,28 @@ run_codex() {
 }
 
 stderr_file="$(mktemp)"
+heartbeat_interval="${AGENTRC_REVIEW_HEARTBEAT_SECONDS:-900}"
+heartbeat_pid=""
+heartbeat() {
+  local sleep_pid=""
+  trap 'if [ -n "$sleep_pid" ]; then kill "$sleep_pid" 2>/dev/null || true; fi; exit 0' TERM
+  while true; do
+    sleep "$heartbeat_interval" &
+    sleep_pid="$!"
+    wait "$sleep_pid"
+    echo "Review still running; waiting for completion." >&2
+  done
+}
 cleanup() {
+  if [ -n "$heartbeat_pid" ]; then
+    kill "$heartbeat_pid" 2>/dev/null || true
+    wait "$heartbeat_pid" 2>/dev/null || true
+  fi
   rm -f "$stderr_file"
 }
 trap cleanup EXIT
+heartbeat &
+heartbeat_pid="$!"
 
 if run_codex 2>"$stderr_file" |
   jq --null-input --raw-input --raw-output --exit-status '

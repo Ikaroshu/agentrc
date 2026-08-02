@@ -51,6 +51,9 @@ if [ "${!#}" != "$EXPECTED_PROMPT" ]; then
   echo "Prompt argument was not preserved" >&2
   exit 1
 fi
+if [ -n "${FAKE_CODEX_DELAY_SECONDS:-}" ]; then
+  sleep "$FAKE_CODEX_DELAY_SECONDS"
+fi
 echo "DISCARD_SUCCESS_STDERR" >&2
 
 printf '%s\n' \
@@ -87,7 +90,7 @@ prompt=$'Review this precisely.\nPreserve '\''quotes'\'' and newlines.'
 output="$(
   PATH="$BIN_DIR:$PATH" \
     EXPECTED_PROMPT="$prompt" \
-    "$DOC_RUNNER" high "$DOC_SKILL" "$prompt"
+    "$DOC_RUNNER" xhigh "$DOC_SKILL" "$prompt"
 )"
 if [ "$output" != "FINAL_ONLY" ]; then
   echo "Unexpected runner output: $output" >&2
@@ -109,6 +112,39 @@ if [ "$output" != "FINAL_ONLY" ]; then
 fi
 
 for runner in "$DOC_RUNNER" "$CODE_RUNNER"; do
+  if "$runner" high "$DOC_SKILL" "$prompt" >/dev/null 2>&1; then
+    echo "Runner accepted the obsolete high effort: $runner" >&2
+    exit 1
+  fi
+done
+
+for runner in "$DOC_RUNNER" "$CODE_RUNNER"; do
+  heartbeat_log="$TEST_DIR/$(basename "$runner").heartbeat.log"
+  review_mode=false
+  if [ "$runner" = "$CODE_RUNNER" ]; then
+    review_mode=true
+    skill_path="$CODE_SKILL"
+  else
+    skill_path="$DOC_SKILL"
+  fi
+
+  output="$(
+    PATH="$BIN_DIR:$PATH" \
+      AGENTRC_REVIEW_HEARTBEAT_SECONDS=0.02 \
+      FAKE_CODEX_DELAY_SECONDS=0.08 \
+      EXPECT_REVIEW_MODE="$review_mode" \
+      EXPECTED_PROMPT="$prompt" \
+      "$runner" xhigh "$skill_path" "$prompt" \
+      2>"$heartbeat_log"
+  )"
+  if [ "$output" != "FINAL_ONLY" ]; then
+    echo "Heartbeat changed runner output: $runner" >&2
+    exit 1
+  fi
+  grep -F "Review still running; waiting for completion." "$heartbeat_log" >/dev/null
+done
+
+for runner in "$DOC_RUNNER" "$CODE_RUNNER"; do
   review_mode=false
   if [ "$runner" = "$CODE_RUNNER" ]; then
     review_mode=true
@@ -122,7 +158,7 @@ for runner in "$DOC_RUNNER" "$CODE_RUNNER"; do
       AGENTRC_CODEX_APP_RESOURCES_DIR="$APP_RESOURCES_DIR" \
       EXPECT_REVIEW_MODE="$review_mode" \
       EXPECTED_PROMPT="$prompt" \
-      "$runner" high "$skill_path" "$prompt"
+      "$runner" xhigh "$skill_path" "$prompt"
   )"
   if [ "$output" != "FINAL_ONLY" ]; then
     echo "Runner did not select the app-bundled Codex fallback: $runner" >&2
@@ -155,7 +191,7 @@ for runner in "$DOC_RUNNER" "$CODE_RUNNER"; do
       EXPECT_REVIEW_MODE="$review_mode" \
       EXPECTED_PROMPT="$prompt" \
       EXPECTED_FINAL="$large_final" \
-      "$runner" high "$skill_path" "$prompt"
+      "$runner" xhigh "$skill_path" "$prompt"
   )"
   if [ "$output" != "$large_final" ]; then
     echo "Runner truncated or changed the final message: $runner" >&2
@@ -179,7 +215,7 @@ for runner in "$DOC_RUNNER" "$CODE_RUNNER"; do
     FAKE_CODEX_MODE=error \
     EXPECT_REVIEW_MODE="$review_mode" \
     EXPECTED_PROMPT="$prompt" \
-    "$runner" high "$skill_path" "$prompt" \
+    "$runner" xhigh "$skill_path" "$prompt" \
     >"$error_output" 2>"$error_log"; then
     echo "Runner accepted a failed Codex invocation: $runner" >&2
     exit 1

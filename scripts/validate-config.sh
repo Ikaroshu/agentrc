@@ -165,7 +165,7 @@ codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rul
 codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rules" -- \
   env -u PYTHONPATH -u VIRTUAL_ENV claude -p --permission-mode plan --output-format text review \
   | grep -F '"decision": "allow"' >/dev/null
-for effort in high max; do
+for effort in xhigh max; do
   codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
     agentrc-codex-doc-review "$effort" /skills/doc/SKILL.md review \
     | grep -F '"decision": "allow"' >/dev/null
@@ -173,12 +173,14 @@ for effort in high max; do
     agentrc-codex-code-review "$effort" /skills/code/SKILL.md review \
     | grep -F '"decision": "allow"' >/dev/null
 done
-if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
-  agentrc-codex-doc-review medium /skills/doc/SKILL.md review \
-  | grep -F '"decision": "allow"' >/dev/null; then
-  echo "Codex review permission rule allowed an unsupported effort" >&2
-  exit 1
-fi
+for runner in agentrc-codex-doc-review agentrc-codex-code-review; do
+  if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
+    "$runner" high /skills/review/SKILL.md review \
+    | grep -F '"decision": "allow"' >/dev/null; then
+    echo "Codex review permission rule allowed an obsolete effort: $runner" >&2
+    exit 1
+  fi
+done
 if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
   codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort="max"' \
   --sandbox read-only --color never review \

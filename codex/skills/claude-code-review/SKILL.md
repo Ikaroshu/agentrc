@@ -39,7 +39,7 @@ If focus is supplied, prefer to keep the distilled emphasis within 80 words. Exc
 
    Keep the exact `env` and `claude` argument prefix. Do not use shell variables, command substitutions, redirects, wrappers, or backgrounding; these prevent the managed permission rule from matching.
 
-3. Start with a 60-second yield. If still running, poll every 120 seconds until exit and briefly update the user. Because text output is buffered, silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
+3. Treat the review as a long-running synchronous process. Wait passively until it exits and do not send periodic progress updates. Tool-level polling may be necessary to keep the session attached; perform it silently with the longest practical wait. After each 30 minutes of uninterrupted runtime, perform one bounded health guard that only confirms the session remains active and has reported no concrete error. If healthy, continue waiting silently. Notify the user only on completion, a concrete failure or blocker, an unhealthy guard, or a user status request. Because text output is buffered, silence is expected; do not interrupt, inspect partial output, or launch parallel status checks merely because it is quiet.
 4. Relay the summary. Verify every finding against the cited code, call sites, tests, contracts, and relevant history; reproduce the reported behavior when feasible. Classify each as confirmed, rejected with specific reasoning, or needing clarification. Fix only confirmed findings.
 5. When a re-review is warranted, use `--commit <fix-sha>` or `--uncommitted` and tell Claude which prior findings it is confirming.
 
@@ -104,6 +104,6 @@ Omit the additional-emphasis lines instead of leaving a placeholder.
 - Empty scope: choose the correct selector or stop.
 - Missing Claude CLI or authentication: stop and report the missing prerequisite without exposing credentials.
 - Nonzero Claude exit: report the exit status and returned error; diagnose before retrying.
-- Long silent run: keep polling until the process exits, the tool reports a hard error, the user asks to stop, or progress is concretely impossible.
+- Long silent run: keep waiting silently until exit; elapsed time and silence are not failures. React only to completion, a concrete hard error, an unhealthy 30-minute guard, impossible progress, or a user request.
 - Harness-only failures: verify locally; the local validation result is authoritative.
 - No findings: spot-check the diff yourself before merging.

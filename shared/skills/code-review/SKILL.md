@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: Run a Codex-backed review of a git diff before merge. Routes non-hard reviews to GPT-5.6 Sol at high effort and hard reviews to GPT-5.6 Sol at max effort, then returns actionable findings for verification.
+description: Run a Codex-backed review of a git diff before merge. Routes non-hard reviews to GPT-5.6 Sol at xhigh effort and hard reviews to GPT-5.6 Sol at max effort, then returns actionable findings for verification.
 ---
 
 # Code Review
@@ -30,14 +30,14 @@ If focus is supplied, prefer to keep the distilled emphasis within 80 words. Exc
 
 Honor an explicit `--difficulty`. Otherwise classify the diff and affected contracts:
 
-- **Non-hard / high effort**: localized or familiar work whose contracts and blast radius remain bounded, including ordinary multi-file changes.
-- **Hard / max effort**: architecture or cross-system work; public APIs or schemas; migrations; concurrency; security; data-loss risk; high blast radius; or substantial ambiguity.
+- **Non-hard / xhigh effort**: the change is straightforward, sufficiently specified, and follows established patterns with bounded interactions, including ordinary multi-file work and routine changes involving APIs, schemas, migrations, concurrency, or security.
+- **Hard / max effort**: the review requires deeper reasoning because of interacting systems or contracts, difficult-to-reverse consequences, novel concurrency or security concerns, broad blast radius, or substantial unresolved ambiguity.
 
-Classify as hard when any hard signal materially affects the change. Tell the user the selected tier and one-sentence rationale, then proceed immediately unless the user objects or supplied an override.
+Assess overall review difficulty rather than diff size or the presence of a category keyword. No individual category automatically makes a review hard; it must materially and non-routinely complicate the reasoning. A small diff may still be hard when that condition holds, while a straightforward change remains non-hard even if it touches one of these areas. Tell the user the selected tier and one-sentence rationale, then proceed immediately unless the user objects or supplied an override.
 
 Use this exact mapping:
 
-- non-hard: `gpt-5.6-sol`, `high`
+- non-hard: `gpt-5.6-sol`, `xhigh`
 - hard: `gpt-5.6-sol`, `max`
 
 ## Workflow
@@ -53,11 +53,11 @@ Use this exact mapping:
      '<fully rendered prompt>'
    ```
 
-   Keep this argument order and do not reconstruct or extend the underlying `codex exec review` pipeline. Invoke the runner directly without an `env` or `PATH` wrapper; on macOS it selects the ChatGPT app-bundled Codex when the `PATH` binary lacks its required sibling host, preserving the managed permission-rule match. The runner uses Codex's dedicated code-review mode, fixes the model and read-only sandbox, unsets `PYTHONPATH` and `VIRTUAL_ENV`, disables recursive review skills, closes stdin, suppresses trace diagnostics, discards intermediate JSONL events, emits only the final agent message, and preserves failures. The nested reviewer inherits the normal Codex tool surface and local configuration.
+   Keep this argument order and do not reconstruct or extend the underlying `codex exec review` pipeline. Invoke the runner directly without an `env` or `PATH` wrapper; on macOS it selects the ChatGPT app-bundled Codex when the `PATH` binary lacks its required sibling host, preserving the managed permission-rule match. The runner uses Codex's dedicated code-review mode, fixes the model and read-only sandbox, unsets `PYTHONPATH` and `VIRTUAL_ENV`, disables recursive review skills, closes stdin, suppresses trace diagnostics, discards intermediate JSONL events, emits only the final agent message on stdout plus one short status heartbeat on stderr every 15 minutes, and preserves failures. The nested reviewer inherits the normal Codex tool surface and local configuration.
 
    When the caller is Codex, run with `sandbox_permissions="require_escalated"` and the justification: "Run the user-authorized nested read-only Codex code review?" The managed `codex-review.rules` rule records this exact read-only command prefix. Other callers should use their normal mechanism for running the command.
 
-4. Start with a 60-second yield. If still running, poll every 120 seconds until exit and briefly update the user. The runner emits nothing before completion, so silence is expected; do not interrupt or launch parallel status checks without a concrete error or user request.
+4. Treat the review as a long-running synchronous process and wait passively until it exits. The runner emits a one-line heartbeat every 15 minutes; let that be the only progress update and do not duplicate it with commentary or manual status checks. Tool-level polling may be necessary to keep the session attached; perform it silently with the longest practical wait. Notify the user directly only on completion, a concrete failure or blocker, a missing heartbeat for 30 minutes, or a user status request. Silence before the first heartbeat is expected; do not interrupt, inspect partial output, or launch parallel checks merely because it is quiet.
 5. Relay the review summary. Verify each finding against the cited code, call sites, tests, contracts, and relevant history; reproduce the reported behavior when feasible. Classify it as confirmed, rejected with specific reasoning, or needing clarification. Fix only confirmed findings.
 6. When a re-review is warranted, use `--commit <fix-sha>` or `--uncommitted` and tell the reviewer which prior findings it is confirming.
 
@@ -129,6 +129,6 @@ Omit the additional-emphasis lines instead of leaving a placeholder.
 - Empty scope: choose the correct selector or stop.
 - Missing Codex CLI or authentication: stop and report the missing prerequisite without exposing credentials.
 - Nonzero Codex exit: report the exit status and returned error; diagnose before retrying.
-- Long run: keep polling until exit, a concrete hard error, impossible progress, or a user request to stop.
+- Long run: use the runner heartbeat as the liveness guard and keep waiting silently until exit. React only to completion, a concrete hard error, a missing heartbeat for 30 minutes, impossible progress, or a user request.
 - Harness-only failures: verify locally; local validation remains authoritative.
 - No findings: spot-check the diff yourself before merging.
