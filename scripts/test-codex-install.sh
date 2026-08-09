@@ -16,6 +16,10 @@ mkdir -p "$TEST_HOME/.codex/rules"
 cat >"$TEST_HOME/.codex/config.toml" <<'EOF'
 model = "machine-model"
 machine_marker = true
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = true
 
 [projects."/machine/project"]
 trust_level = "trusted"
@@ -34,7 +38,23 @@ fi
 grep -F 'model = "gpt-5.6-sol"' "$TEST_HOME/.codex/config.toml" >/dev/null
 grep -F 'model_reasoning_effort = "xhigh"' "$TEST_HOME/.codex/config.toml" >/dev/null
 grep -F 'machine_marker = true' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F 'default_permissions = "workspace-customized"' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F '"~/.cache/uv" = "write"' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F '"~/Projects/agentrc/.git" = "write"' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F '"~/Projects/Portseer/.git" = "write"' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F '[permissions.workspace-customized.filesystem.":workspace_roots"]' "$TEST_HOME/.codex/config.toml" >/dev/null
+grep -F '".git" = "write"' "$TEST_HOME/.codex/config.toml" >/dev/null
 grep -F '[projects."/machine/project"]' "$TEST_HOME/.codex/config.toml" >/dev/null
+
+if grep -F 'sandbox_mode = "workspace-write"' "$TEST_HOME/.codex/config.toml" >/dev/null; then
+  echo "Expected legacy sandbox_mode to be removed" >&2
+  exit 1
+fi
+
+if grep -F '[sandbox_workspace_write]' "$TEST_HOME/.codex/config.toml" >/dev/null; then
+  echo "Expected legacy sandbox_workspace_write table to be removed" >&2
+  exit 1
+fi
 
 for rule in claude-review.rules codex-review.rules omp-review.rules; do
   target="$TEST_HOME/.codex/rules/$rule"
