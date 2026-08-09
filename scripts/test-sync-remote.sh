@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 TEST_DIR="$(mktemp -d)"
 BIN_DIR="$TEST_DIR/bin"
 SCP_LOG="$TEST_DIR/scp.log"
+SSH_LOG="$TEST_DIR/ssh.log"
 
 cleanup() {
   rm -rf "$TEST_DIR"
@@ -20,6 +21,7 @@ cat >"$BIN_DIR/ssh" <<'EOF'
 set -euo pipefail
 
 command="${2:-}"
+printf '%s\n' "$*" >>"$SYNC_SSH_LOG"
 
 case "$command" in
   *"cat ~/.claude/settings.json"*) echo '{}' ;;
@@ -38,7 +40,7 @@ EOF
 
 chmod +x "$BIN_DIR/ssh" "$BIN_DIR/scp"
 
-PATH="$BIN_DIR:$PATH" SYNC_SCP_LOG="$SCP_LOG" \
+PATH="$BIN_DIR:$PATH" SYNC_SCP_LOG="$SCP_LOG" SYNC_SSH_LOG="$SSH_LOG" \
   "$ROOT_DIR/sync-remote.sh" test >/dev/null
 
 failed=0
@@ -48,6 +50,16 @@ require_synced() {
   local pattern="$2"
 
   if ! grep -Fq "$pattern" "$SCP_LOG"; then
+    echo "Remote sync omitted $description: $pattern" >&2
+    failed=1
+  fi
+}
+
+require_remote_command() {
+  local description="$1"
+  local pattern="$2"
+
+  if ! grep -Fq "$pattern" "$SSH_LOG"; then
     echo "Remote sync omitted $description: $pattern" >&2
     failed=1
   fi
@@ -64,6 +76,9 @@ done
 
 require_synced "Claude instructions" "/claude/CLAUDE.md"
 require_synced "Codex instructions" "/codex/AGENTS.md test:~/.codex/AGENTS.md"
+require_synced "Codex document-review role" "/codex/agents/doc_reviewer.toml test:~/.codex/agents/doc_reviewer.toml"
+require_synced "Codex code-review role" "/codex/agents/code_reviewer.toml test:~/.codex/agents/code_reviewer.toml"
+require_remote_command "Codex agents directory creation" "mkdir -p ~/.codex/agents"
 require_synced "Codex nested review rule" "/codex/rules/codex-review.rules test:~/.codex/rules/codex-review.rules"
 require_synced "Codex document-review runner" \
   "/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review test:~/.local/bin/agentrc-codex-doc-review"

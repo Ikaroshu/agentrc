@@ -31,6 +31,7 @@ This repository tracks portable configuration for AI coding agents such as Claud
 - `codex/` — files installed into `~/.codex/`.
   - `AGENTS.md -> ../shared/AGENTS.md`
   - `config.toml` — portable baseline merged into the machine-local config during install/sync.
+  - `agents/*.toml` — portable custom review roles copied as regular files into `~/.codex/agents/`.
   - `rules/codex-review.rules` — narrowly allows the nested read-only Codex invocation used by the shared workflow review skills.
   - `rules/omp-review.rules` — narrowly allows the optional isolated read-only OMP review profile.
   - `skills/general-auto-research/SKILL.md -> ../../../shared/skills/general-auto-research/SKILL.md`
@@ -94,4 +95,5 @@ There is no app test suite. The repo-level validation script is the required che
 ## Git Workflow
 
 - **Commit tests:** Run `./scripts/validate-config.sh` before committing.
-- **Post-commit deployment:** After a successful commit, run `./install.sh`, then `./sync-remote.sh mini`. Both commands must succeed before considering the commit workflow complete.
+- **Feature-worktree commits:** Run validation, but do not install or sync from a feature worktree.
+- **Post-merge deployment only:** From the main checkout on `main`, run `./install.sh` and `./sync-remote.sh mini`, verify the installed local and remote role files match the merged sources, and start a fresh global Codex task or process for the installed-role canary. If that canary fails, report the deployment failure and fix forward; do not leave installation pointed at a deleted worktree. A remote live-role canary is required only when that machine exposes the collaboration runtime.

@@ -77,6 +77,8 @@ require_file "shared/skills/merge/SKILL.md"
 require_file "shared/skills/issue/SKILL.md"
 require_file "codex/skills/claude-doc-review/SKILL.md"
 require_file "codex/skills/claude-code-review/SKILL.md"
+require_file "codex/agents/doc_reviewer.toml"
+require_file "codex/agents/code_reviewer.toml"
 require_symlink "omp/AGENTS.md" "../shared/AGENTS.md"
 require_file "omp/config.yml"
 require_file "omp/models.yml"
@@ -141,6 +143,78 @@ if grep -Eq 'sk-or-v1-|OPENROUTER_API_KEY=' "$ROOT_DIR/omp/config.yml" "$ROOT_DI
   exit 1
 fi
 "$PYTHON_TOML_BIN" -c 'import pathlib, tomllib, sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' "$ROOT_DIR/codex/config.toml"
+"$PYTHON_TOML_BIN" - "$ROOT_DIR" <<'PY'
+import pathlib
+import sys
+import tomllib
+
+root = pathlib.Path(sys.argv[1])
+review_skills = {
+    "adversarial-doc-review",
+    "code-review",
+    "claude-doc-review",
+    "claude-code-review",
+}
+routing_keys = {
+    "model",
+    "model_provider",
+    "model_providers",
+    "model_reasoning_effort",
+    "service_tier",
+}
+
+
+def load_role(filename: str, expected_name: str) -> dict[str, object]:
+    path = root / "codex" / "agents" / filename
+    with path.open("rb") as role_file:
+        role = tomllib.load(role_file)
+
+    if role.get("name") != expected_name:
+        raise SystemExit(f"{filename}: expected role name {expected_name!r}")
+    for field in ("description", "developer_instructions"):
+        value = role.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise SystemExit(f"{filename}: {field} must be a non-empty string")
+    if role.get("sandbox_mode") != "read-only":
+        raise SystemExit(f"{filename}: sandbox_mode must be 'read-only'")
+
+    present_routing_keys = sorted(routing_keys & role.keys())
+    if present_routing_keys:
+        raise SystemExit(
+            f"{filename}: role must not override caller routing: {present_routing_keys}"
+        )
+
+    skill_entries = role.get("skills", {}).get("config", [])
+    if not isinstance(skill_entries, list) or len(skill_entries) != len(review_skills):
+        raise SystemExit(f"{filename}: expected exactly four disabled review skills")
+    if any(set(entry) != {"name", "enabled"} for entry in skill_entries):
+        raise SystemExit(f"{filename}: review skills must use only name and enabled selectors")
+    if any(entry["enabled"] is not False for entry in skill_entries):
+        raise SystemExit(f"{filename}: every review skill must be disabled")
+    configured_names = {entry["name"] for entry in skill_entries}
+    if configured_names != review_skills:
+        raise SystemExit(
+            f"{filename}: unexpected disabled review skills: {sorted(configured_names)}"
+        )
+
+    return role
+
+
+doc_role = load_role("doc_reviewer.toml", "doc_reviewer")
+code_role = load_role("code_reviewer.toml", "code_reviewer")
+
+if "shell_environment_policy" in doc_role:
+    raise SystemExit("doc_reviewer.toml: document review must inherit the shell environment")
+
+code_shell_policy = code_role.get("shell_environment_policy")
+expected_filters = {"PYTHONPATH": "exclude", "VIRTUAL_ENV": "exclude"}
+if not isinstance(code_shell_policy, dict) or set(code_shell_policy) != {"filters"}:
+    raise SystemExit("code_reviewer.toml: expected only canonical shell filters")
+if code_shell_policy["filters"] != expected_filters:
+    raise SystemExit(
+        "code_reviewer.toml: expected exact PYTHONPATH and VIRTUAL_ENV exclusion filters"
+    )
+PY
 python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 "$ROOT_DIR/scripts/test-codex-install.sh"

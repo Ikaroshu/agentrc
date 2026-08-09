@@ -67,6 +67,17 @@ for rule in claude-review.rules codex-review.rules omp-review.rules; do
     exit 1
   fi
 done
+for role in doc_reviewer.toml code_reviewer.toml; do
+  target="$TEST_HOME/.codex/agents/$role"
+  if [ ! -f "$target" ] || [ -L "$target" ]; then
+    echo "Expected managed Codex role to be a regular file: $target" >&2
+    exit 1
+  fi
+  if ! cmp -s "$target" "$ROOT_DIR/codex/agents/$role"; then
+    echo "Managed Codex role does not match its source: $role" >&2
+    exit 1
+  fi
+done
 grep -F 'pattern=["existing"]' "$TEST_HOME/.codex/rules/default.rules" >/dev/null
 for runner in \
   "adversarial-doc-review/scripts/agentrc-codex-doc-review" \

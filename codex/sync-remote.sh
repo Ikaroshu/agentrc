@@ -25,6 +25,7 @@ ssh "$REMOTE" '
   rm -f ~/.codex/commands/commit.md ~/.codex/commands/merge.md
   rmdir ~/.codex/commands 2>/dev/null || true
   rm -rf ~/.agents/skills/commit-workflow ~/.agents/skills/merge-workflow ~/.agents/skills/auto-research
+  mkdir -p ~/.codex/agents
   mkdir -p ~/.codex/rules
   mkdir -p ~/.local/bin
   mkdir -p \
@@ -42,6 +43,8 @@ ssh "$REMOTE" '
 '
 
 scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
+scp -q "$REPO_DIR/agents/doc_reviewer.toml" "$REMOTE:~/.codex/agents/doc_reviewer.toml"
+scp -q "$REPO_DIR/agents/code_reviewer.toml" "$REMOTE:~/.codex/agents/code_reviewer.toml"
 scp -q "$REPO_DIR/rules/claude-review.rules" "$REMOTE:~/.codex/rules/claude-review.rules"
 scp -q "$REPO_DIR/rules/codex-review.rules" "$REMOTE:~/.codex/rules/codex-review.rules"
 scp -q "$REPO_DIR/rules/omp-review.rules" "$REMOTE:~/.codex/rules/omp-review.rules"

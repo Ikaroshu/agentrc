@@ -14,6 +14,8 @@ CODEX_LINK_FILES=(
 )
 
 CODEX_COPY_FILES=(
+  agents/doc_reviewer.toml
+  agents/code_reviewer.toml
   rules/claude-review.rules
   rules/codex-review.rules
   rules/omp-review.rules
