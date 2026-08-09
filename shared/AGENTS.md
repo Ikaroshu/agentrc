@@ -15,7 +15,7 @@
 - **One change at a time** — if a fix doesn't work, revert it before trying the next. Don't stack speculative patches.
 - Search online for solutions after 3 assumptions have been falsified.
 - **Verify against the original repro** before claiming it's fixed.
-- **Escalate Git metadata writes in Codex** — because `workspace-write` protects `.git`, request scoped escalation on the first invocation.
+- **Escalate external Git worktree metadata in Codex** — when a worktree's resolved Git directory is outside the active writable roots, request scoped escalation on the first invocation.
 
 ## Development Workflow
 Choose the workflow based on scope:

@@ -25,6 +25,10 @@ def main() -> None:
 model = "old-model"
 personality = "remote"
 notify = ["/machine/notifier", "turn-ended"]
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = true
 
 [projects."/remote/project"]
 trust_level = "trusted"
@@ -49,7 +53,21 @@ memories = false
             '''
 model = "gpt-5.4"
 personality = "pragmatic"
-sandbox_mode = "workspace-write"
+default_permissions = "workspace-customized"
+
+[permissions.workspace-customized]
+extends = ":workspace"
+
+[permissions.workspace-customized.filesystem]
+"~/.cache/uv" = "write"
+"~/Projects/agentrc/.git" = "write"
+"~/Projects/Portseer/.git" = "write"
+
+[permissions.workspace-customized.filesystem.":workspace_roots"]
+".git" = "write"
+
+[permissions.workspace-customized.network]
+enabled = true
 
 [projects."/repo/project"]
 trust_level = "trusted"
@@ -66,9 +84,6 @@ enabled = false
 
 [features]
 memories = true
-
-[sandbox_workspace_write]
-network_access = true
 '''.lstrip(),
         )
 
@@ -84,7 +99,15 @@ network_access = true
     assert 'model = "gpt-5.4"' in merged
     assert 'personality = "pragmatic"' in merged
     assert 'notify = ["/machine/notifier", "turn-ended"]' in merged
-    assert 'sandbox_mode = "workspace-write"' in merged
+    assert 'default_permissions = "workspace-customized"' in merged
+    assert 'sandbox_mode = "workspace-write"' not in merged
+    assert "[sandbox_workspace_write]" not in merged
+    assert "[permissions.workspace-customized]" in merged
+    assert '"~/.cache/uv" = "write"' in merged
+    assert '"~/Projects/agentrc/.git" = "write"' in merged
+    assert '"~/Projects/Portseer/.git" = "write"' in merged
+    assert '[permissions.workspace-customized.filesystem.":workspace_roots"]' in merged
+    assert '".git" = "write"' in merged
     assert '[plugins."github@openai-curated"]' in merged
     assert '[plugins."remote-only@example"]' in merged
     assert '[projects."/remote/project"]' in merged
@@ -94,7 +117,7 @@ network_access = true
     assert '/Users/shu/.codex/skills/doc/SKILL.md' not in merged
     assert '[marketplaces.openai-bundled]' not in merged
     assert "memories = true" in merged
-    assert "network_access = true" in merged
+    assert "enabled = true" in merged
 
 
 if __name__ == "__main__":
