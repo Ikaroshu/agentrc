@@ -7,7 +7,8 @@ This repository tracks portable configuration for AI coding agents such as Claud
 - `AGENTS.md` — canonical repo-level instructions for all agents working in this repository.
 - `CLAUDE.md -> AGENTS.md` — Claude compatibility symlink; edit `AGENTS.md`, not `CLAUDE.md`.
 - `shared/AGENTS.md` — canonical cross-project personal agent instructions.
-- `shared/skills/` — canonical shared skills used by more than one agent; its review-skill scripts provide the managed runner infrastructure for non-native harnesses.
+- `shared/skills/` — canonical workflow skills used by more than one agent.
+- `shared/review-runners/` — transport-neutral managed Codex runner executables used by Claude and callable directly by other harnesses.
 - `omp/` — normal OMP setup and isolated review profile configuration.
   - `AGENTS.md -> ../shared/AGENTS.md` — shared user instructions installed into the review profile.
   - `config.yml` — isolates the reviewer's executable capabilities while allowing native and standalone project context discovery.
@@ -24,10 +25,11 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `skills/implement/SKILL.md -> ../../../shared/skills/implement/SKILL.md`
   - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`
   - `skills/issue/SKILL.md -> ../../../shared/skills/issue/SKILL.md`
-  - `skills/adversarial-doc-review/SKILL.md -> ../../../shared/skills/adversarial-doc-review/SKILL.md`
-  - `skills/code-review/SKILL.md -> ../../../shared/skills/code-review/SKILL.md`
+  - `skills/adversarial-doc-review/SKILL.md` — Claude CLI-oriented document-review orchestration.
+  - `skills/code-review/SKILL.md` — Claude CLI-oriented code-review orchestration.
   - `install.sh`
   - `sync-remote.sh`
+  - The Claude install and sync scripts provision the two managed runners from `shared/review-runners/`.
 - `codex/` — files installed into `~/.codex/`.
   - `AGENTS.md -> ../shared/AGENTS.md`
   - `config.toml` — portable baseline merged into the machine-local config during install/sync.
@@ -77,7 +79,7 @@ Validate the repository after every config change:
 ## Editing Rules
 
 - Keep behavioral instructions in `shared/AGENTS.md` unless the instruction is only about maintaining this repository.
-- Keep skills shared by Claude and Codex in `shared/skills/`. Keep transport-specific review orchestration under the owning tool's `skills/` directory.
+- Keep skills shared by Claude and Codex in `shared/skills/`. Keep transport-specific review orchestration under the owning tool's `skills/` directory, and keep shared executable transport infrastructure under `shared/review-runners/`.
 - Keep OpenRouter credentials machine-local. Remote OMP sync requires OMP and `OPENROUTER_API_KEY` in `~/.omp/agent/.env` on the target; it never copies credentials.
 - Keep repo maintenance instructions in root `AGENTS.md`.
 - Do not edit symlink targets through the compatibility symlink paths when the canonical path is clearer.

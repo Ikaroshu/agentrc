@@ -13,7 +13,8 @@ REMOTE="${1:?Usage: $0 <ssh-host>}"
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
 
-SHARED_SKILLS=(general-auto-research brainstorming planning commit implement merge issue adversarial-doc-review code-review)
+SHARED_SKILLS=(general-auto-research brainstorming planning commit implement merge issue)
+CLAUDE_SKILLS=(adversarial-doc-review code-review)
 
 # Directories to ensure exist on remote; drop legacy command files now migrated to skills
 ssh "$REMOTE" '
@@ -39,13 +40,16 @@ scp -q \
   "$REPO_DIR/file-suggestion.sh" \
   "$REPO_DIR/statusline-command.sh" \
   "$REMOTE:~/.claude/"
-scp -q "$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review" \
+scp -q "$ROOT_DIR/shared/review-runners/agentrc-codex-doc-review" \
   "$REMOTE:~/.local/bin/agentrc-codex-doc-review"
-scp -q "$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review" \
+scp -q "$ROOT_DIR/shared/review-runners/agentrc-codex-code-review" \
   "$REMOTE:~/.local/bin/agentrc-codex-code-review"
 
 for skill in "${SHARED_SKILLS[@]}"; do
   scp -q "$ROOT_DIR/shared/skills/$skill/SKILL.md" "$REMOTE:~/.claude/skills/$skill/"
+done
+for skill in "${CLAUDE_SKILLS[@]}"; do
+  scp -q "$REPO_DIR/skills/$skill/SKILL.md" "$REMOTE:~/.claude/skills/$skill/"
 done
 
 # Merge settings.json: update shared keys, preserve machine-specific ones

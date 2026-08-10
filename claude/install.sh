@@ -96,10 +96,10 @@ for f in "${FILES[@]}"; do
   link_file "$f"
 done
 install_review_runner \
-  "$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review" \
+  "$ROOT_DIR/shared/review-runners/agentrc-codex-doc-review" \
   "$HOME/.local/bin/agentrc-codex-doc-review"
 install_review_runner \
-  "$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review" \
+  "$ROOT_DIR/shared/review-runners/agentrc-codex-code-review" \
   "$HOME/.local/bin/agentrc-codex-code-review"
 
 # Drop legacy command symlinks now migrated to shared skills

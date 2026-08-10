@@ -3,8 +3,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-DOC_RUNNER="$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review"
-CODE_RUNNER="$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review"
+DOC_RUNNER="$ROOT_DIR/shared/review-runners/agentrc-codex-doc-review"
+CODE_RUNNER="$ROOT_DIR/shared/review-runners/agentrc-codex-code-review"
 TEST_DIR="$(mktemp -d)"
 BIN_DIR="$TEST_DIR/bin"
 FALLBACK_BIN_DIR="$TEST_DIR/fallback-bin"

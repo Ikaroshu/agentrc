@@ -75,7 +75,7 @@ for skill in brainstorming planning implement; do
 done
 
 for skill in adversarial-doc-review code-review; do
-  require_synced "Claude skill $skill" "/shared/skills/$skill/SKILL.md test:~/.claude/skills/$skill/"
+  require_synced "Claude skill $skill" "/claude/skills/$skill/SKILL.md test:~/.claude/skills/$skill/"
   require_synced "Codex skill $skill" "/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
 done
 
@@ -90,9 +90,11 @@ require_synced "Codex code-review role" "/codex/agents/code_reviewer.toml test:~
 require_remote_command "Codex agents directory creation" "mkdir -p ~/.codex/agents"
 require_remote_command "obsolete Codex review rule removal" "rm -f ~/.codex/rules/codex-review.rules"
 require_synced "managed document-review runner" \
-  "/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review test:~/.local/bin/agentrc-codex-doc-review"
+  "/shared/review-runners/agentrc-codex-doc-review test:~/.local/bin/agentrc-codex-doc-review"
 require_synced "managed code-review runner" \
-  "/shared/skills/code-review/scripts/agentrc-codex-code-review test:~/.local/bin/agentrc-codex-code-review"
+  "/shared/review-runners/agentrc-codex-code-review test:~/.local/bin/agentrc-codex-code-review"
+require_remote_command "managed review runner executable modes" \
+  "chmod +x ~/.claude/file-suggestion.sh ~/.claude/statusline-command.sh ~/.local/bin/agentrc-codex-doc-review ~/.local/bin/agentrc-codex-code-review"
 require_synced "Codex OMP review rule" "/codex/rules/omp-review.rules test:~/.codex/rules/omp-review.rules"
 require_synced "Codex Claude review rule" "/codex/rules/claude-review.rules test:~/.codex/rules/claude-review.rules"
 require_synced "OMP review instructions" "/shared/AGENTS.md"

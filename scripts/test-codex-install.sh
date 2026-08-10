@@ -160,4 +160,22 @@ for skill in adversarial-doc-review code-review claude-doc-review claude-code-re
   fi
 done
 
+for skill in adversarial-doc-review code-review; do
+  claude_source="$ROOT_DIR/claude/skills/$skill/SKILL.md"
+  codex_source="$ROOT_DIR/codex/skills/$skill/SKILL.md"
+
+  if [ ! -f "$claude_source" ] || [ -L "$claude_source" ]; then
+    echo "Expected regular Claude-owned review skill source: $claude_source" >&2
+    exit 1
+  fi
+  if cmp -s "$claude_source" "$codex_source"; then
+    echo "Expected distinct Claude and Codex review transports: $skill" >&2
+    exit 1
+  fi
+  if [ -e "$ROOT_DIR/shared/skills/$skill" ] || [ -L "$ROOT_DIR/shared/skills/$skill" ]; then
+    echo "Expected obsolete shared review skill to be absent: $skill" >&2
+    exit 1
+  fi
+done
+
 echo "Codex installer test passed."

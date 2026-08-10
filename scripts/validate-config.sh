@@ -85,10 +85,12 @@ require_file "shared/AGENTS.md"
 require_file "shared/skills/general-auto-research/SKILL.md"
 require_file "shared/skills/brainstorming/SKILL.md"
 require_file "shared/skills/planning/SKILL.md"
-require_file "shared/skills/adversarial-doc-review/SKILL.md"
-require_file "shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review"
-require_file "shared/skills/code-review/SKILL.md"
-require_file "shared/skills/code-review/scripts/agentrc-codex-code-review"
+require_absent "shared/skills/adversarial-doc-review"
+require_absent "shared/skills/code-review"
+require_regular_file "claude/skills/adversarial-doc-review/SKILL.md"
+require_regular_file "claude/skills/code-review/SKILL.md"
+require_file "shared/review-runners/agentrc-codex-doc-review"
+require_file "shared/review-runners/agentrc-codex-code-review"
 require_file "shared/skills/commit/SKILL.md"
 require_file "shared/skills/implement/SKILL.md"
 require_file "shared/skills/merge/SKILL.md"
@@ -111,10 +113,6 @@ for skill in brainstorming planning commit implement merge issue; do
   require_symlink "claude/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
   require_symlink "codex/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
 done
-for skill in adversarial-doc-review code-review; do
-  require_symlink "claude/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
-done
-
 require_file "claude/settings.json"
 require_file "codex/config.toml"
 require_file "codex/rules/claude-review.rules"
@@ -130,14 +128,15 @@ require_executable "codex/sync-remote.sh"
 require_executable "omp/install.sh"
 require_executable "omp/sync-remote.sh"
 require_executable "scripts/validate-config.sh"
+require_executable "scripts/test-claude-install.sh"
 require_executable "scripts/test-codex-install.sh"
 require_executable "scripts/test-codex-review-runners.sh"
 require_executable "scripts/test-omp-install.sh"
 require_executable "scripts/merge-codex-config.py"
 require_executable "scripts/test-merge-codex-config.py"
 require_executable "scripts/test-sync-remote.sh"
-require_executable "shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review"
-require_executable "shared/skills/code-review/scripts/agentrc-codex-code-review"
+require_executable "shared/review-runners/agentrc-codex-doc-review"
+require_executable "shared/review-runners/agentrc-codex-code-review"
 
 bash -n "$ROOT_DIR/install.sh"
 bash -n "$ROOT_DIR/sync-remote.sh"
@@ -148,6 +147,7 @@ bash -n "$ROOT_DIR/codex/sync-remote.sh"
 bash -n "$ROOT_DIR/omp/install.sh"
 bash -n "$ROOT_DIR/omp/sync-remote.sh"
 bash -n "$ROOT_DIR/scripts/validate-config.sh"
+bash -n "$ROOT_DIR/scripts/test-claude-install.sh"
 bash -n "$ROOT_DIR/scripts/test-codex-install.sh"
 bash -n "$ROOT_DIR/scripts/test-codex-review-runners.sh"
 bash -n "$ROOT_DIR/scripts/test-omp-install.sh"
@@ -278,6 +278,14 @@ if code_shell_policy["filters"] != expected_filters:
     )
 PY
 for skill in adversarial-doc-review code-review; do
+  claude_skill_file="$ROOT_DIR/claude/skills/$skill/SKILL.md"
+  grep -F "agentrc-codex-" "$claude_skill_file" >/dev/null
+  grep -F 'three completed substantive reviewer turns' "$claude_skill_file" >/dev/null
+  if grep -Eq 'spawn_agent|agent_type|followup_task|fork_turns' "$claude_skill_file"; then
+    echo "Claude CLI skill contains native reviewer lifecycle text: $skill" >&2
+    exit 1
+  fi
+
   skill_file="$ROOT_DIR/codex/skills/$skill/SKILL.md"
   if grep -Eq 'agentrc-codex-|codex exec|managed runner|managed CLI' "$skill_file"; then
     echo "Codex-native skill contains managed runner plumbing: $skill" >&2
@@ -294,6 +302,7 @@ grep -F 'agent_type="code_reviewer"' \
   "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
+"$ROOT_DIR/scripts/test-claude-install.sh"
 "$ROOT_DIR/scripts/test-codex-install.sh"
 "$ROOT_DIR/scripts/test-codex-review-runners.sh"
 "$ROOT_DIR/scripts/test-omp-install.sh"
