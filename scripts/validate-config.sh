@@ -194,8 +194,8 @@ def load_role(filename: str, expected_name: str) -> dict[str, object]:
         value = role.get(field)
         if not isinstance(value, str) or not value.strip():
             raise SystemExit(f"{filename}: {field} must be a non-empty string")
-    if role.get("sandbox_mode") != "read-only":
-        raise SystemExit(f"{filename}: sandbox_mode must be 'read-only'")
+    if "sandbox_mode" in role:
+        raise SystemExit(f"{filename}: role must inherit the parent sandbox")
 
     present_routing_keys = sorted(routing_keys & role.keys())
     if present_routing_keys:
@@ -257,9 +257,10 @@ for filename, instructions in (
     ("code_reviewer.toml", code_instructions),
 ):
     for required_text in (
-        "Remain strictly read-only",
+        "non-modifying by default",
+        "main agent explicitly authorizes that exact action",
         "Do not delegate",
-        "request approvals or escalations",
+        "Do not request sandbox approvals or escalations",
         "launch Codex, Claude, OMP, a review runner",
     ):
         if required_text not in instructions:

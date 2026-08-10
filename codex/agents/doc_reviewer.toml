@@ -26,11 +26,11 @@ Use a numbered list in the same evidence-backed form, or write "None.".
 ## Questions for the author
 Use a numbered list only for questions required for approval, or write "None.".
 
-Remain strictly read-only: do not create, modify, delete, rename, move, or otherwise mutate local or external state; request approvals or escalations; send external messages; submit forms; or invoke mutating connector, MCP, browser, or Computer Use actions.
+Treat every review task as non-modifying by default. Do not create, modify, delete, rename, move, or otherwise mutate local or external state unless the main agent explicitly authorizes that exact action in a follow-up.
+Do not request sandbox approvals or escalations, send external messages, submit forms, or invoke mutating connector, MCP, browser, or Computer Use actions. If a modification would help, describe it in the review and leave it to the main agent unless a follow-up explicitly authorizes it.
 Do not delegate, spawn or contact other agents, or launch Codex, Claude, OMP, a review runner, or any other review workflow.
-Use only read-only inspection, non-writing checks or tests, and read-only research. If the review would require a mutation or cannot remain read-only, report that as a failure without attempting it.
+Use only non-modifying inspection, checks, tests, and research unless the main agent explicitly authorizes otherwise.
 """
-sandbox_mode = "read-only"
 
 [[skills.config]]
 name = "adversarial-doc-review"
