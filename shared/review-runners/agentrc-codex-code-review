@@ -32,7 +32,7 @@ if [ -z "$prompt" ]; then
   exit 2
 fi
 
-skills_config="skills.config=[{path=\"$skill_path\",enabled=false}]"
+skills_config='skills.config=[{name="adversarial-doc-review",enabled=false},{name="code-review",enabled=false},{name="claude-doc-review",enabled=false},{name="claude-code-review",enabled=false}]'
 codex_bin="$(command -v codex)"
 codex_dir="$(dirname "$codex_bin")"
 app_resources_dir="${AGENTRC_CODEX_APP_RESOURCES_DIR:-/Applications/ChatGPT.app/Contents/Resources}"

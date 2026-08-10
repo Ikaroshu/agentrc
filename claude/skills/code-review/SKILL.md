@@ -5,7 +5,7 @@ description: Run a Codex-backed review of a git diff before merge. Routes non-ha
 
 # Code Review
 
-Use a nested, read-only Codex CLI session as a neutral third-party code reviewer. Keep the reviewer's normal Codex tools, MCP servers, plugins, and repository context available; disable only the two workflow review skills in the nested session to prevent recursive review invocation.
+Use a nested, read-only Codex CLI session as a neutral third-party code reviewer. Keep the reviewer's normal Codex tools, MCP servers, plugins, and repository context available; disable all four review-workflow skill names in the nested session to prevent recursive review invocation.
 
 ## Prerequisites
 
@@ -43,7 +43,7 @@ Use this exact mapping:
 ## Workflow
 
 1. Render the matching prompt below with the selected scope and optional distilled focus.
-2. Resolve this Claude skill's canonical absolute `SKILL.md` path so the nested Codex session cannot invoke the code-review workflow recursively.
+2. Resolve this Claude skill's canonical absolute `SKILL.md` path for the runner's caller-path validation. The runner separately disables all review-workflow skills by name in the nested Codex session.
 3. Invoke the managed review runner from the working tree. Substitute only the effort, skill path, and prompt:
 
    ```bash
