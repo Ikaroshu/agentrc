@@ -13,6 +13,7 @@ trap cleanup EXIT
 
 mkdir -p "$TEST_HOME/.codex"
 mkdir -p "$TEST_HOME/.codex/rules"
+mkdir -p "$TEST_HOME/.local/bin"
 cat >"$TEST_HOME/.codex/config.toml" <<'EOF'
 model = "machine-model"
 machine_marker = true
@@ -27,6 +28,16 @@ EOF
 cat >"$TEST_HOME/.codex/rules/default.rules" <<'EOF'
 prefix_rule(pattern=["existing"], decision="allow")
 EOF
+cat >"$TEST_HOME/.codex/rules/custom.rules" <<'EOF'
+prefix_rule(pattern=["custom"], decision="allow")
+EOF
+cat >"$TEST_HOME/.codex/rules/codex-review.rules" <<'EOF'
+obsolete managed rule
+EOF
+for runner in agentrc-codex-doc-review agentrc-codex-code-review; do
+  printf 'owned outside Codex install: %s\n' "$runner" >"$TEST_HOME/.local/bin/$runner"
+  chmod 700 "$TEST_HOME/.local/bin/$runner"
+done
 ln -s "$ROOT_DIR/codex/rules/claude-review.rules" "$TEST_HOME/.codex/rules/claude-review.rules"
 HOME="$TEST_HOME" "$ROOT_DIR/codex/install.sh" >/dev/null
 
@@ -56,7 +67,7 @@ if grep -F '[sandbox_workspace_write]' "$TEST_HOME/.codex/config.toml" >/dev/nul
   exit 1
 fi
 
-for rule in claude-review.rules codex-review.rules omp-review.rules; do
+for rule in claude-review.rules omp-review.rules; do
   target="$TEST_HOME/.codex/rules/$rule"
   if [ ! -f "$target" ] || [ -L "$target" ]; then
     echo "Expected managed Codex rule to be a regular file: $target" >&2
@@ -67,6 +78,11 @@ for rule in claude-review.rules codex-review.rules omp-review.rules; do
     exit 1
   fi
 done
+if [ -e "$TEST_HOME/.codex/rules/codex-review.rules" ] ||
+   [ -L "$TEST_HOME/.codex/rules/codex-review.rules" ]; then
+  echo "Expected obsolete managed Codex review rule to be removed" >&2
+  exit 1
+fi
 for role in doc_reviewer.toml code_reviewer.toml; do
   target="$TEST_HOME/.codex/agents/$role"
   if [ ! -f "$target" ] || [ -L "$target" ]; then
@@ -79,16 +95,14 @@ for role in doc_reviewer.toml code_reviewer.toml; do
   fi
 done
 grep -F 'pattern=["existing"]' "$TEST_HOME/.codex/rules/default.rules" >/dev/null
-for runner in \
-  "adversarial-doc-review/scripts/agentrc-codex-doc-review" \
-  "code-review/scripts/agentrc-codex-code-review"; do
-  runner_name="$(basename "$runner")"
-  runner_target="$TEST_HOME/.local/bin/$runner_name"
+grep -F 'pattern=["custom"]' "$TEST_HOME/.codex/rules/custom.rules" >/dev/null
+for runner in agentrc-codex-doc-review agentrc-codex-code-review; do
+  runner_target="$TEST_HOME/.local/bin/$runner"
   if [ ! -f "$runner_target" ] || [ -L "$runner_target" ] || [ ! -x "$runner_target" ]; then
-    echo "Expected managed Codex review runner: $runner_target" >&2
+    echo "Expected externally owned review runner to remain untouched: $runner_target" >&2
     exit 1
   fi
-  cmp -s "$runner_target" "$ROOT_DIR/shared/skills/$runner"
+  grep -Fx "owned outside Codex install: $runner" "$runner_target" >/dev/null
 done
 
 mkdir -p "$MIGRATION_HOME/.codex"
@@ -102,8 +116,14 @@ fi
 
 grep -F 'model = "gpt-5.6-sol"' "$MIGRATION_HOME/.codex/config.toml" >/dev/null
 grep -F 'model_reasoning_effort = "xhigh"' "$MIGRATION_HOME/.codex/config.toml" >/dev/null
+for runner in agentrc-codex-doc-review agentrc-codex-code-review; do
+  if [ -e "$MIGRATION_HOME/.local/bin/$runner" ] || [ -L "$MIGRATION_HOME/.local/bin/$runner" ]; then
+    echo "Codex installer unexpectedly deployed review runner: $runner" >&2
+    exit 1
+  fi
+done
 
-for skill in general-auto-research adversarial-doc-review code-review commit merge issue; do
+for skill in general-auto-research brainstorming planning commit implement merge issue; do
   target="$TEST_HOME/.agents/skills/$skill"
   expected="$ROOT_DIR/shared/skills/$skill"
 
@@ -119,7 +139,7 @@ for skill in general-auto-research adversarial-doc-review code-review commit mer
   fi
 done
 
-for skill in claude-doc-review claude-code-review; do
+for skill in adversarial-doc-review code-review claude-doc-review claude-code-review; do
   target="$TEST_HOME/.agents/skills/$skill"
   expected="$ROOT_DIR/codex/skills/$skill"
 
@@ -131,6 +151,11 @@ for skill in claude-doc-review claude-code-review; do
   if [ "$(readlink "$target")" != "$expected" ]; then
     echo "Unexpected Codex skill target for $skill: $(readlink "$target")" >&2
     echo "Expected: $expected" >&2
+    exit 1
+  fi
+
+  if [ ! -f "$expected/SKILL.md" ] || [ -L "$expected/SKILL.md" ]; then
+    echo "Expected a regular Codex-owned skill source: $expected/SKILL.md" >&2
     exit 1
   fi
 done

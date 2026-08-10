@@ -17,7 +17,6 @@ CODEX_COPY_FILES=(
   agents/doc_reviewer.toml
   agents/code_reviewer.toml
   rules/claude-review.rules
-  rules/codex-review.rules
   rules/omp-review.rules
 )
 
@@ -37,7 +36,7 @@ SKILLS=(
 
 is_shared_skill() {
   case "$1" in
-    general-auto-research|adversarial-doc-review|brainstorming|planning|code-review|commit|implement|merge|issue) return 0 ;;
+    general-auto-research|brainstorming|planning|commit|implement|merge|issue) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -139,33 +138,6 @@ install_config() {
   echo "MERGE config.toml"
 }
 
-install_review_runner() {
-  local source="$1"
-  local target="$2"
-  local name
-  name="$(basename "$target")"
-  mkdir -p "$(dirname "$target")"
-
-  if [ -f "$target" ] &&
-     [ ! -L "$target" ] &&
-     cmp -s "$source" "$target"; then
-    chmod +x "$target"
-    echo "  OK $name"
-    return
-  fi
-
-  if [ -L "$target" ]; then
-    rm "$target"
-  elif [ -f "$target" ]; then
-    mv "$target" "$target.bak"
-    echo "BACK $name -> $target.bak"
-  fi
-
-  cp "$source" "$target"
-  chmod +x "$target"
-  echo "COPY $name"
-}
-
 link_path() {
   local src="$1"
   local dst="$2"
@@ -204,6 +176,15 @@ cleanup_legacy_command() {
   fi
 }
 
+remove_obsolete_rule() {
+  local dst="$CODEX_TARGET_DIR/rules/codex-review.rules"
+
+  if [ -e "$dst" ] || [ -L "$dst" ]; then
+    rm "$dst"
+    echo "DROP obsolete rules/codex-review.rules"
+  fi
+}
+
 echo "Installing Codex settings from $REPO_DIR -> $CODEX_TARGET_DIR"
 echo
 
@@ -214,12 +195,7 @@ for f in "${CODEX_COPY_FILES[@]}"; do
   copy_file "$f"
 done
 install_config
-install_review_runner \
-  "$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review" \
-  "$HOME/.local/bin/agentrc-codex-doc-review"
-install_review_runner \
-  "$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review" \
-  "$HOME/.local/bin/agentrc-codex-code-review"
+remove_obsolete_rule
 
 cleanup_legacy_command "commands/commit.md"
 cleanup_legacy_command "commands/merge.md"

@@ -15,6 +15,24 @@ require_file() {
   fi
 }
 
+require_regular_file() {
+  local path="$1"
+
+  if [ ! -f "$ROOT_DIR/$path" ] || [ -L "$ROOT_DIR/$path" ]; then
+    echo "Expected regular file: $path" >&2
+    return 1
+  fi
+}
+
+require_absent() {
+  local path="$1"
+
+  if [ -e "$ROOT_DIR/$path" ] || [ -L "$ROOT_DIR/$path" ]; then
+    echo "Expected obsolete path to be absent: $path" >&2
+    return 1
+  fi
+}
+
 require_symlink() {
   local path="$1"
   local expected="$2"
@@ -77,6 +95,8 @@ require_file "shared/skills/merge/SKILL.md"
 require_file "shared/skills/issue/SKILL.md"
 require_file "codex/skills/claude-doc-review/SKILL.md"
 require_file "codex/skills/claude-code-review/SKILL.md"
+require_regular_file "codex/skills/adversarial-doc-review/SKILL.md"
+require_regular_file "codex/skills/code-review/SKILL.md"
 require_file "codex/agents/doc_reviewer.toml"
 require_file "codex/agents/code_reviewer.toml"
 require_symlink "omp/AGENTS.md" "../shared/AGENTS.md"
@@ -93,14 +113,13 @@ for skill in brainstorming planning commit implement merge issue; do
 done
 for skill in adversarial-doc-review code-review; do
   require_symlink "claude/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
-  require_symlink "codex/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
 done
 
 require_file "claude/settings.json"
 require_file "codex/config.toml"
 require_file "codex/rules/claude-review.rules"
-require_file "codex/rules/codex-review.rules"
 require_file "codex/rules/omp-review.rules"
+require_absent "codex/rules/codex-review.rules"
 
 require_executable "install.sh"
 require_executable "sync-remote.sh"
@@ -203,6 +222,49 @@ def load_role(filename: str, expected_name: str) -> dict[str, object]:
 doc_role = load_role("doc_reviewer.toml", "doc_reviewer")
 code_role = load_role("code_reviewer.toml", "code_reviewer")
 
+doc_instructions = doc_role["developer_instructions"]
+for required_text in (
+    "Problem validity and proportionality",
+    "Correctness and completeness",
+    "Risk and blast radius",
+    "Design and alternatives",
+    "Testability",
+    "Process and scope",
+    "## Verdict",
+    "## Blocking findings",
+    "## Non-blocking suggestions",
+    "## Questions for the author",
+):
+    if required_text not in doc_instructions:
+        raise SystemExit(f"doc_reviewer.toml: missing stable contract text {required_text!r}")
+
+code_instructions = code_role["developer_instructions"]
+for required_text in (
+    "Correctness bugs, regressions",
+    "Security vulnerabilities, data-loss risks",
+    "Important missing tests",
+    "Maintainability problems",
+    "severity, confidence, file and line, problem, impact, and minimum fix",
+    "## Findings",
+    "## Test gaps",
+    "## Residual risk",
+):
+    if required_text not in code_instructions:
+        raise SystemExit(f"code_reviewer.toml: missing stable contract text {required_text!r}")
+
+for filename, instructions in (
+    ("doc_reviewer.toml", doc_instructions),
+    ("code_reviewer.toml", code_instructions),
+):
+    for required_text in (
+        "Remain strictly read-only",
+        "Do not delegate",
+        "request approvals or escalations",
+        "launch Codex, Claude, OMP, a review runner",
+    ):
+        if required_text not in instructions:
+            raise SystemExit(f"{filename}: missing no-side-effect contract {required_text!r}")
+
 if "shell_environment_policy" in doc_role:
     raise SystemExit("doc_reviewer.toml: document review must inherit the shell environment")
 
@@ -215,6 +277,21 @@ if code_shell_policy["filters"] != expected_filters:
         "code_reviewer.toml: expected exact PYTHONPATH and VIRTUAL_ENV exclusion filters"
     )
 PY
+for skill in adversarial-doc-review code-review; do
+  skill_file="$ROOT_DIR/codex/skills/$skill/SKILL.md"
+  if grep -Eq 'agentrc-codex-|codex exec|managed runner|managed CLI' "$skill_file"; then
+    echo "Codex-native skill contains managed runner plumbing: $skill" >&2
+    exit 1
+  fi
+  grep -F 'fork_turns="none"' "$skill_file" >/dev/null
+  grep -F 'model="gpt-5.6-sol"' "$skill_file" >/dev/null
+  grep -F 'reasoning_effort="xhigh"' "$skill_file" >/dev/null
+  grep -F 'reasoning_effort="max"' "$skill_file" >/dev/null
+done
+grep -F 'agent_type="doc_reviewer"' \
+  "$ROOT_DIR/codex/skills/adversarial-doc-review/SKILL.md" >/dev/null
+grep -F 'agent_type="code_reviewer"' \
+  "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 "$ROOT_DIR/scripts/test-codex-install.sh"
@@ -239,33 +316,6 @@ codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rul
 codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rules" -- \
   env -u PYTHONPATH -u VIRTUAL_ENV claude -p --permission-mode plan --output-format text review \
   | grep -F '"decision": "allow"' >/dev/null
-for effort in xhigh max; do
-  codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
-    agentrc-codex-doc-review "$effort" /skills/doc/SKILL.md review \
-    | grep -F '"decision": "allow"' >/dev/null
-  codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
-    agentrc-codex-code-review "$effort" /skills/code/SKILL.md review \
-    | grep -F '"decision": "allow"' >/dev/null
-done
-for runner in agentrc-codex-doc-review agentrc-codex-code-review; do
-  if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
-    "$runner" high /skills/review/SKILL.md review \
-    | grep -F '"decision": "allow"' >/dev/null; then
-    echo "Codex review permission rule allowed an obsolete effort: $runner" >&2
-    exit 1
-  fi
-done
-if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/codex-review.rules" -- \
-  codex exec --ephemeral --model gpt-5.6-sol --config 'model_reasoning_effort="max"' \
-  --sandbox read-only --color never review \
-  | grep -F '"decision": "allow"' >/dev/null; then
-  echo "Codex review permission rule allowed the unmanaged command" >&2
-  exit 1
-fi
-grep -F 'transmit supplied repository documents and relevant context to OpenAI Codex' \
-  "$ROOT_DIR/codex/rules/codex-review.rules" >/dev/null
-grep -F 'transmit supplied repository diffs and relevant source context to OpenAI Codex' \
-  "$ROOT_DIR/codex/rules/codex-review.rules" >/dev/null
 if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \
   omp --profile review -p --no-session --no-extensions --no-skills --no-rules \
   --no-lsp --tools read,grep,glob,bash --approval-mode always-ask \
