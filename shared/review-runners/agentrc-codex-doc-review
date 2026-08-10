@@ -3,7 +3,7 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: agentrc-codex-code-review <xhigh|max> <skill-path> <prompt>" >&2
+  echo "Usage: agentrc-codex-doc-review <xhigh|max> <skill-path> <prompt>" >&2
 }
 
 if [ "$#" -ne 3 ]; then
@@ -24,7 +24,7 @@ case "$effort" in
 esac
 
 if [ ! -f "$skill_path" ]; then
-  echo "Missing code-review skill: $skill_path" >&2
+  echo "Missing document-review skill: $skill_path" >&2
   exit 2
 fi
 if [ -z "$prompt" ]; then
@@ -32,7 +32,7 @@ if [ -z "$prompt" ]; then
   exit 2
 fi
 
-skills_config="skills.config=[{path=\"$skill_path\",enabled=false}]"
+skills_config='skills.config=[{name="adversarial-doc-review",enabled=false},{name="code-review",enabled=false},{name="claude-doc-review",enabled=false},{name="claude-code-review",enabled=false}]'
 codex_bin="$(command -v codex)"
 codex_dir="$(dirname "$codex_bin")"
 app_resources_dir="${AGENTRC_CODEX_APP_RESOURCES_DIR:-/Applications/ChatGPT.app/Contents/Resources}"
@@ -43,18 +43,18 @@ if [ ! -x "$codex_dir/codex-code-mode-host" ] &&
 fi
 codex_args=(
   exec
-  review
   --ephemeral
   --model gpt-5.6-sol
   --config "model_reasoning_effort=\"$effort\""
-  --config 'sandbox_mode="read-only"'
+  --sandbox read-only
+  --color never
   --json
   --config "$skills_config"
   "$prompt"
 )
 
 run_codex() {
-  env -u PYTHONPATH -u VIRTUAL_ENV RUST_LOG=off "$codex_bin" "${codex_args[@]}" </dev/null
+  env RUST_LOG=off "$codex_bin" "${codex_args[@]}" </dev/null
 }
 
 stderr_file="$(mktemp)"

@@ -3,14 +3,17 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-DOC_RUNNER="$ROOT_DIR/shared/skills/adversarial-doc-review/scripts/agentrc-codex-doc-review"
-CODE_RUNNER="$ROOT_DIR/shared/skills/code-review/scripts/agentrc-codex-code-review"
+DOC_RUNNER="$ROOT_DIR/shared/review-runners/agentrc-codex-doc-review"
+CODE_RUNNER="$ROOT_DIR/shared/review-runners/agentrc-codex-code-review"
 TEST_DIR="$(mktemp -d)"
 BIN_DIR="$TEST_DIR/bin"
 FALLBACK_BIN_DIR="$TEST_DIR/fallback-bin"
 APP_RESOURCES_DIR="$TEST_DIR/app-resources"
-DOC_SKILL="$TEST_DIR/doc-SKILL.md"
-CODE_SKILL="$TEST_DIR/code-SKILL.md"
+DOC_SKILL="$ROOT_DIR/claude/skills/adversarial-doc-review/SKILL.md"
+CODE_SKILL="$ROOT_DIR/claude/skills/code-review/SKILL.md"
+CODEX_DOC_SKILL="$ROOT_DIR/codex/skills/adversarial-doc-review/SKILL.md"
+CODEX_CODE_SKILL="$ROOT_DIR/codex/skills/code-review/SKILL.md"
+EXPECTED_SKILLS_CONFIG='skills.config=[{name="adversarial-doc-review",enabled=false},{name="code-review",enabled=false},{name="claude-doc-review",enabled=false},{name="claude-code-review",enabled=false}]'
 
 cleanup() {
   rm -rf "$TEST_DIR"
@@ -18,7 +21,20 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$BIN_DIR" "$FALLBACK_BIN_DIR" "$APP_RESOURCES_DIR"
-touch "$DOC_SKILL" "$CODE_SKILL"
+
+for skill_path in "$DOC_SKILL" "$CODE_SKILL" "$CODEX_DOC_SKILL" "$CODEX_CODE_SKILL"; do
+  if [ ! -f "$skill_path" ]; then
+    echo "Missing split review skill fixture: $skill_path" >&2
+    exit 1
+  fi
+done
+if [ "$DOC_SKILL" -ef "$CODEX_DOC_SKILL" ] ||
+   [ "$CODE_SKILL" -ef "$CODEX_CODE_SKILL" ]; then
+  echo "Expected distinct Claude and Codex review skill paths" >&2
+  exit 1
+fi
+
+export DOC_SKILL CODE_SKILL CODEX_DOC_SKILL CODEX_CODE_SKILL EXPECTED_SKILLS_CONFIG
 
 cat >"$BIN_DIR/codex" <<'EOF'
 #!/usr/bin/env bash
@@ -43,8 +59,40 @@ if [ "${EXPECT_REVIEW_MODE:-false}" = true ]; then
     echo "Code runner did not use Codex review mode" >&2
     exit 1
   fi
+  caller_skill_path="$CODE_SKILL"
+  installed_skill_path="$CODEX_CODE_SKILL"
 elif [ "${1:-}" != "exec" ] || [ "${2:-}" = "review" ]; then
   echo "Document runner did not use general Codex exec mode" >&2
+  exit 1
+else
+  caller_skill_path="$DOC_SKILL"
+  installed_skill_path="$CODEX_DOC_SKILL"
+fi
+if [ "$caller_skill_path" -ef "$installed_skill_path" ]; then
+  echo "Runner test did not exercise split Claude and Codex skill paths" >&2
+  exit 1
+fi
+
+skills_config_count=0
+previous_arg=""
+for arg in "$@"; do
+  case "$arg" in
+    skills.config=*)
+      skills_config_count=$((skills_config_count + 1))
+      if [ "$previous_arg" != "--config" ]; then
+        echo "Skills config was not passed through --config" >&2
+        exit 1
+      fi
+      if [ "$arg" != "$EXPECTED_SKILLS_CONFIG" ]; then
+        echo "Unexpected review-skill selector: $arg" >&2
+        exit 1
+      fi
+      ;;
+  esac
+  previous_arg="$arg"
+done
+if [ "$skills_config_count" -ne 1 ]; then
+  echo "Expected exactly one name-based review-skills config" >&2
   exit 1
 fi
 if [ "${!#}" != "$EXPECTED_PROMPT" ]; then

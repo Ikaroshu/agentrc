@@ -7,7 +7,8 @@ This repository tracks portable configuration for AI coding agents such as Claud
 - `AGENTS.md` — canonical repo-level instructions for all agents working in this repository.
 - `CLAUDE.md -> AGENTS.md` — Claude compatibility symlink; edit `AGENTS.md`, not `CLAUDE.md`.
 - `shared/AGENTS.md` — canonical cross-project personal agent instructions.
-- `shared/skills/` — canonical shared skills used by more than one agent.
+- `shared/skills/` — canonical workflow skills used by more than one agent.
+- `shared/review-runners/` — transport-neutral managed Codex runner executables used by Claude and callable directly by other harnesses.
 - `omp/` — normal OMP setup and isolated review profile configuration.
   - `AGENTS.md -> ../shared/AGENTS.md` — shared user instructions installed into the review profile.
   - `config.yml` — isolates the reviewer's executable capabilities while allowing native and standalone project context discovery.
@@ -24,14 +25,15 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `skills/implement/SKILL.md -> ../../../shared/skills/implement/SKILL.md`
   - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`
   - `skills/issue/SKILL.md -> ../../../shared/skills/issue/SKILL.md`
-  - `skills/adversarial-doc-review/SKILL.md -> ../../../shared/skills/adversarial-doc-review/SKILL.md`
-  - `skills/code-review/SKILL.md -> ../../../shared/skills/code-review/SKILL.md`
+  - `skills/adversarial-doc-review/SKILL.md` — Claude CLI-oriented document-review orchestration.
+  - `skills/code-review/SKILL.md` — Claude CLI-oriented code-review orchestration.
   - `install.sh`
   - `sync-remote.sh`
+  - The Claude install and sync scripts provision the two managed runners from `shared/review-runners/`.
 - `codex/` — files installed into `~/.codex/`.
   - `AGENTS.md -> ../shared/AGENTS.md`
   - `config.toml` — portable baseline merged into the machine-local config during install/sync.
-  - `rules/codex-review.rules` — narrowly allows the nested read-only Codex invocation used by the shared workflow review skills.
+  - `agents/*.toml` — portable self-contained native review roles copied as regular files into `~/.codex/agents/`.
   - `rules/omp-review.rules` — narrowly allows the optional isolated read-only OMP review profile.
   - `skills/general-auto-research/SKILL.md -> ../../../shared/skills/general-auto-research/SKILL.md`
   - `skills/brainstorming/SKILL.md -> ../../../shared/skills/brainstorming/SKILL.md`
@@ -40,8 +42,8 @@ This repository tracks portable configuration for AI coding agents such as Claud
   - `skills/implement/SKILL.md -> ../../../shared/skills/implement/SKILL.md`
   - `skills/merge/SKILL.md -> ../../../shared/skills/merge/SKILL.md`
   - `skills/issue/SKILL.md -> ../../../shared/skills/issue/SKILL.md`
-  - `skills/adversarial-doc-review/SKILL.md -> ../../../shared/skills/adversarial-doc-review/SKILL.md`
-  - `skills/code-review/SKILL.md -> ../../../shared/skills/code-review/SKILL.md`
+  - `skills/adversarial-doc-review/SKILL.md` — Codex-native document-review orchestration.
+  - `skills/code-review/SKILL.md` — Codex-native code-review orchestration.
   - `install.sh`
   - `sync-remote.sh`
 - Codex skills are installed into `~/.agents/skills/`.
@@ -77,7 +79,7 @@ Validate the repository after every config change:
 ## Editing Rules
 
 - Keep behavioral instructions in `shared/AGENTS.md` unless the instruction is only about maintaining this repository.
-- Keep skills shared by Claude and Codex in `shared/skills/`; point tool-specific skill paths at the shared source.
+- Keep skills shared by Claude and Codex in `shared/skills/`. Keep transport-specific review orchestration under the owning tool's `skills/` directory, and keep shared executable transport infrastructure under `shared/review-runners/`.
 - Keep OpenRouter credentials machine-local. Remote OMP sync requires OMP and `OPENROUTER_API_KEY` in `~/.omp/agent/.env` on the target; it never copies credentials.
 - Keep repo maintenance instructions in root `AGENTS.md`.
 - Do not edit symlink targets through the compatibility symlink paths when the canonical path is clearer.
@@ -94,4 +96,5 @@ There is no app test suite. The repo-level validation script is the required che
 ## Git Workflow
 
 - **Commit tests:** Run `./scripts/validate-config.sh` before committing.
-- **Post-commit deployment:** After a successful commit, run `./install.sh`, then `./sync-remote.sh mini`. Both commands must succeed before considering the commit workflow complete.
+- **Feature-worktree commits:** Run validation, but do not install or sync from a feature worktree.
+- **Post-merge deployment only:** From the main checkout on `main`, run `./install.sh` and `./sync-remote.sh mini`, verify the installed local and remote role files match the merged sources, and start a fresh global Codex task or process for the installed-role canary. If that canary fails, report the deployment failure and fix forward; do not leave installation pointed at a deleted worktree. A remote live-role canary is required only when that machine exposes the collaboration runtime.
