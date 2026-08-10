@@ -267,6 +267,11 @@ for filename, instructions in (
 
 if "shell_environment_policy" in doc_role:
     raise SystemExit("doc_reviewer.toml: document review must inherit the shell environment")
+if "allow_login_shell" in doc_role:
+    raise SystemExit("doc_reviewer.toml: document review must inherit login-shell behavior")
+
+if code_role.get("allow_login_shell") is not False:
+    raise SystemExit("code_reviewer.toml: allow_login_shell must be false")
 
 code_shell_policy = code_role.get("shell_environment_policy")
 expected_filters = {"PYTHONPATH": "exclude", "VIRTUAL_ENV": "exclude"}

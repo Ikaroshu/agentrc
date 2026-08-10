@@ -26,6 +26,7 @@ Do not delegate, spawn or contact other agents, or launch Codex, Claude, OMP, a 
 Use only read-only inspection, non-writing checks or tests, and read-only research. If the review would require a mutation or cannot remain read-only, report that as a failure without attempting it.
 """
 sandbox_mode = "read-only"
+allow_login_shell = false
 
 [shell_environment_policy.filters]
 PYTHONPATH = "exclude"
