@@ -1,1 +1,118 @@
-../../../shared/skills/merge/SKILL.md
+---
+name: merge
+description: Run Shu's merge workflow for a branch or pull request. Use when the user asks to merge, finish a branch, merge a PR, or clean up after merging. Reads the project's Git Workflow for tests and additional requirements, confirms the exact PR or branch, tests before and after merge, cleans up local and remote branches and worktrees, and closes the linked issue.
+---
+
+# Merge Workflow
+
+Test, merge, test again, and clean up. Handles both local merges and PR merges.
+
+**Announce at start:** "Running merge workflow."
+
+## Step 1: Read Project Config
+
+Read the repository instructions — prefer `AGENTS.md`; if absent, read `CLAUDE.md`. Read the full `## Git Workflow` (or equivalent) section before acting. Capture the test command and every applicable project-specific requirement, including pre-merge checks, merge or push rules, post-merge deployment or sync commands, and verification steps.
+
+Treat those requirements as part of this workflow and run them at the stage the project specifies. If no such section exists, use the defaults below.
+
+## Step 2: Confirm What to Merge
+
+**Always ask the user to confirm which PR or branch to merge.** Never auto-merge whatever branch happens to exist on the remote. List open PRs (`gh pr list`) and ask explicitly.
+
+Two modes:
+
+- **Local merge** — merge a feature branch into main locally
+- **PR merge** — merge via `gh pr merge`
+
+If already on main with no feature branch, inform the user and stop.
+
+## Step 3: Test on Feature Branch
+
+Run the configured test command, or `pytest` by default.
+
+**If no automated tests exist:** actually start the app, exercise the changed functionality, and verify it works end-to-end. If you can't fully verify (e.g., UI changes, auth flows), **ask the user to manually test before proceeding**. Do not skip testing just because there's no test suite.
+
+**If tests fail, stop.** Do not proceed with merge.
+
+## Step 4: Merge
+
+Do not rebase the feature branch unless the user explicitly requests it. Preserve the branch history through a merge.
+
+### Local Merge
+```bash
+git checkout main
+git pull --ff-only
+git merge --no-ff <feature-branch>
+```
+
+### PR Merge
+```bash
+gh pr merge --merge
+```
+
+## Step 5: Test on Main
+
+After merging, run the same test command on main.
+
+**If tests fail:** report immediately. Do NOT push. The user decides how to proceed.
+
+## Step 6: Push
+
+```bash
+git push origin main
+```
+
+## Step 7: Run Project-Specific Follow-up
+
+Run every remaining requirement from the project's Git Workflow, such as deployment, remote sync, smoke checks, or live verification. Do not consider the merge complete until these commands succeed.
+
+**If a required follow-up fails:** stop before cleanup and issue closure, preserve the evidence, and report the failure.
+
+## Step 8: Clean Up
+
+Delete the feature branch:
+
+```bash
+# Local branch
+git branch -d <feature-branch>
+
+# Remote branch — always verify it's deleted
+git push origin --delete <feature-branch>
+# (PR merge may auto-delete, but check and clean up if not)
+```
+
+Check for worktree:
+```bash
+git worktree list
+```
+
+If the feature branch had a worktree, remove it (only after confirming it belongs to the merged branch):
+```bash
+git worktree remove <worktree-path>
+```
+
+## Step 9: Close the Linked Issue
+
+After the merge is pushed, close any GitHub issue the merged work resolves — do this automatically, without being asked.
+
+Find the issue number from the branch name or the merged commit messages (e.g. `issue #106`, `fixes #106`, `closes #42`). If exactly one issue is referenced, close it with a comment pointing at the merge commit:
+
+```bash
+gh issue close <number> --comment "Resolved by <merge-commit-sha> on main."
+```
+
+If multiple distinct issues are referenced, close each. If none is referenced, skip this step. If the merge happened via `gh pr merge` and the PR body used a closing keyword (`Closes #N`), GitHub already closed the issue — verify with `gh issue view <number>` and only close manually if still open.
+
+## Summary
+
+| Step | Local Merge | PR Merge |
+|------|-------------|----------|
+| Test branch | yes | yes |
+| Merge | `git merge --no-ff` | `gh pr merge --merge` |
+| Test main | yes | yes |
+| Push main | yes | automatic |
+| Project follow-up | if configured | if configured |
+| Delete local branch | yes | yes |
+| Delete remote branch | yes | automatic |
+| Remove worktree | if exists | if exists |
+| Close linked issue | yes | verify (auto if PR keyword) |

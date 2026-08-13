@@ -6,15 +6,6 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PYTHONPYCACHEPREFIX="${PYTHONPYCACHEPREFIX:-${TMPDIR:-/tmp}/agentrc_pycache}"
 export PYTHONPYCACHEPREFIX
 
-require_file() {
-  local path="$1"
-
-  if [ ! -f "$ROOT_DIR/$path" ]; then
-    echo "Missing required file: $path" >&2
-    return 1
-  fi
-}
-
 require_regular_file() {
   local path="$1"
 
@@ -28,25 +19,7 @@ require_absent() {
   local path="$1"
 
   if [ -e "$ROOT_DIR/$path" ] || [ -L "$ROOT_DIR/$path" ]; then
-    echo "Expected obsolete path to be absent: $path" >&2
-    return 1
-  fi
-}
-
-require_symlink() {
-  local path="$1"
-  local expected="$2"
-  local target
-
-  if [ ! -L "$ROOT_DIR/$path" ]; then
-    echo "Expected symlink: $path" >&2
-    return 1
-  fi
-
-  target="$(readlink "$ROOT_DIR/$path")"
-  if [ "$target" != "$expected" ]; then
-    echo "Unexpected symlink target for $path: $target" >&2
-    echo "Expected: $expected" >&2
+    echo "Expected retired active path to be absent: $path" >&2
     return 1
   fi
 }
@@ -67,10 +40,10 @@ python_with_tomllib() {
     if [ -z "$candidate" ]; then
       continue
     fi
-
-    if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import tomllib' >/dev/null 2>&1; then
+    if command -v "$candidate" >/dev/null 2>&1 &&
+       "$candidate" -c 'import tomllib' >/dev/null 2>&1; then
       echo "$candidate"
-      return 0
+      return
     fi
   done
 
@@ -78,91 +51,115 @@ python_with_tomllib() {
   return 1
 }
 
+python_with_yaml() {
+  local candidate
+
+  for candidate in "${PYTHON_YAML:-}" python3.12 python3.11 python3; do
+    if [ -z "$candidate" ]; then
+      continue
+    fi
+    if command -v "$candidate" >/dev/null 2>&1 &&
+       "$candidate" -c 'import yaml' >/dev/null 2>&1; then
+      echo "$candidate"
+      return
+    fi
+  done
+
+  echo "No Python with PyYAML found. Set PYTHON_YAML to a suitable binary." >&2
+  return 1
+}
+
 PYTHON_TOML_BIN="$(python_with_tomllib)"
+PYTHON_YAML_BIN="$(python_with_yaml)"
 
-require_file "AGENTS.md"
-require_file "shared/AGENTS.md"
-require_file "shared/skills/general-auto-research/SKILL.md"
-require_file "shared/skills/brainstorming/SKILL.md"
-require_file "shared/skills/planning/SKILL.md"
-require_absent "shared/skills/adversarial-doc-review"
-require_absent "shared/skills/code-review"
-require_regular_file "claude/skills/adversarial-doc-review/SKILL.md"
-require_regular_file "claude/skills/code-review/SKILL.md"
-require_file "shared/review-runners/agentrc-codex-doc-review"
-require_file "shared/review-runners/agentrc-codex-code-review"
-require_file "shared/skills/commit/SKILL.md"
-require_file "shared/skills/implement/SKILL.md"
-require_file "shared/skills/merge/SKILL.md"
-require_file "shared/skills/issue/SKILL.md"
-require_file "codex/skills/claude-doc-review/SKILL.md"
-require_file "codex/skills/claude-code-review/SKILL.md"
-require_regular_file "codex/skills/adversarial-doc-review/SKILL.md"
-require_regular_file "codex/skills/code-review/SKILL.md"
-require_file "codex/agents/doc_reviewer.toml"
-require_file "codex/agents/code_reviewer.toml"
-require_symlink "omp/AGENTS.md" "../shared/AGENTS.md"
-require_file "omp/config.yml"
-require_file "omp/models.yml"
-require_symlink "CLAUDE.md" "AGENTS.md"
-require_symlink "claude/CLAUDE.md" "../shared/AGENTS.md"
-require_symlink "codex/AGENTS.md" "../shared/AGENTS.md"
-require_symlink "claude/skills/general-auto-research/SKILL.md" "../../../shared/skills/general-auto-research/SKILL.md"
-require_symlink "codex/skills/general-auto-research/SKILL.md" "../../../shared/skills/general-auto-research/SKILL.md"
-for skill in brainstorming planning commit implement merge issue; do
-  require_symlink "claude/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
-  require_symlink "codex/skills/$skill/SKILL.md" "../../../shared/skills/$skill/SKILL.md"
+require_regular_file "AGENTS.md"
+require_regular_file "codex/AGENTS.md"
+require_regular_file "codex/config.toml"
+require_regular_file "codex/agents/doc_reviewer.toml"
+require_regular_file "codex/agents/code_reviewer.toml"
+require_regular_file "codex/agents/implementer.toml"
+for skill in general-auto-research adversarial-doc-review brainstorming planning code-review commit implement merge issue; do
+  require_regular_file "codex/skills/$skill/SKILL.md"
 done
-require_file "claude/settings.json"
-require_file "codex/config.toml"
-require_file "codex/rules/claude-review.rules"
-require_file "codex/rules/omp-review.rules"
-require_absent "codex/rules/codex-review.rules"
+require_regular_file "archive/legacy-harnesses/README.md"
+require_regular_file "archive/legacy-harnesses/MANIFEST.tsv"
+require_regular_file "archive/legacy-harnesses/agentrc-pre-codex-only.tar.gz"
+require_regular_file "scripts/merge-codex-config.py"
+require_regular_file "scripts/test-merge-codex-config.py"
+require_regular_file "scripts/validate-legacy-archive.py"
+require_regular_file "scripts/test-legacy-archive-validation.py"
+require_regular_file "codex/skills/implement/scripts/git_task_guard.py"
+require_regular_file "codex/skills/implement/scripts/test_git_task_guard.py"
 
-require_executable "install.sh"
-require_executable "sync-remote.sh"
-require_executable "claude/install.sh"
-require_executable "codex/install.sh"
-require_executable "claude/sync-remote.sh"
-require_executable "codex/sync-remote.sh"
-require_executable "omp/install.sh"
-require_executable "omp/sync-remote.sh"
-require_executable "scripts/validate-config.sh"
-require_executable "scripts/test-claude-install.sh"
-require_executable "scripts/test-codex-install.sh"
-require_executable "scripts/test-codex-review-runners.sh"
-require_executable "scripts/test-omp-install.sh"
-require_executable "scripts/merge-codex-config.py"
-require_executable "scripts/test-merge-codex-config.py"
-require_executable "scripts/test-sync-remote.sh"
-require_executable "shared/review-runners/agentrc-codex-doc-review"
-require_executable "shared/review-runners/agentrc-codex-code-review"
+for path in \
+  CLAUDE.md \
+  claude \
+  omp \
+  shared \
+  codex/skills/claude-doc-review \
+  codex/skills/claude-code-review \
+  codex/rules/claude-review.rules \
+  codex/rules/omp-review.rules; do
+  require_absent "$path"
+done
+
+active_symlinks="$(find "$ROOT_DIR/codex" -type l -print)"
+if [ -n "$active_symlinks" ]; then
+  echo "Active Codex sources must not be symlinks:" >&2
+  echo "$active_symlinks" >&2
+  exit 1
+fi
+
+for path in \
+  install.sh \
+  sync-remote.sh \
+  codex/install.sh \
+  codex/sync-remote.sh \
+  scripts/validate-config.sh \
+  scripts/test-codex-install.sh \
+  scripts/test-sync-remote.sh \
+  scripts/merge-codex-config.py \
+  scripts/test-merge-codex-config.py \
+  scripts/validate-legacy-archive.py \
+  scripts/test-legacy-archive-validation.py; do
+  require_executable "$path"
+done
+for path in \
+  codex/skills/implement/scripts/git_task_guard.py \
+  codex/skills/implement/scripts/test_git_task_guard.py; do
+  require_executable "$path"
+done
 
 bash -n "$ROOT_DIR/install.sh"
 bash -n "$ROOT_DIR/sync-remote.sh"
-bash -n "$ROOT_DIR/claude/install.sh"
 bash -n "$ROOT_DIR/codex/install.sh"
-bash -n "$ROOT_DIR/claude/sync-remote.sh"
 bash -n "$ROOT_DIR/codex/sync-remote.sh"
-bash -n "$ROOT_DIR/omp/install.sh"
-bash -n "$ROOT_DIR/omp/sync-remote.sh"
 bash -n "$ROOT_DIR/scripts/validate-config.sh"
-bash -n "$ROOT_DIR/scripts/test-claude-install.sh"
 bash -n "$ROOT_DIR/scripts/test-codex-install.sh"
-bash -n "$ROOT_DIR/scripts/test-codex-review-runners.sh"
-bash -n "$ROOT_DIR/scripts/test-omp-install.sh"
 bash -n "$ROOT_DIR/scripts/test-sync-remote.sh"
 
-python3 -m json.tool "$ROOT_DIR/claude/settings.json" >/dev/null
-for yaml_file in "$ROOT_DIR/omp/config.yml" "$ROOT_DIR/omp/models.yml"; do
-  ruby -e 'require "yaml"; YAML.safe_load(File.read(ARGV.fetch(0)), permitted_classes: [], aliases: false)' "$yaml_file"
-done
-if grep -Eq 'sk-or-v1-|OPENROUTER_API_KEY=' "$ROOT_DIR/omp/config.yml" "$ROOT_DIR/omp/models.yml"; then
-  echo "OMP tracked config contains an OpenRouter secret" >&2
+if rg -n 'archive/legacy-harnesses' \
+  "$ROOT_DIR/install.sh" "$ROOT_DIR/sync-remote.sh" "$ROOT_DIR/codex"; then
+  echo "Active Codex runtime consumes the inert legacy archive" >&2
   exit 1
 fi
-"$PYTHON_TOML_BIN" -c 'import pathlib, tomllib, sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' "$ROOT_DIR/codex/config.toml"
+while IFS= read -r path; do
+  case "$path" in
+    "$ROOT_DIR/scripts/validate-config.sh"|\
+    "$ROOT_DIR/scripts/validate-legacy-archive.py"|\
+    "$ROOT_DIR/scripts/test-legacy-archive-validation.py") ;;
+    *)
+      echo "Unexpected active script reference to the inert archive: $path" >&2
+      exit 1
+      ;;
+  esac
+done < <(rg -l 'archive/legacy-harnesses' "$ROOT_DIR/scripts" || true)
+
+"$PYTHON_TOML_BIN" -c \
+  'import pathlib, tomllib, sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' \
+  "$ROOT_DIR/codex/config.toml"
 "$PYTHON_TOML_BIN" - "$ROOT_DIR" <<'PY'
+import hashlib
 import pathlib
 import sys
 import tomllib
@@ -181,6 +178,16 @@ routing_keys = {
     "model_reasoning_effort",
     "service_tier",
 }
+expected_reviewer_hashes = {
+    "doc_reviewer.toml": "b4e996f0b7149dddae81baa37c894ab70c52d768210ba5fed656b381e9a06a64",
+    "code_reviewer.toml": "7fc797cf86cec2e8cb117980f383f314e5991bde6fb8d1fb32c69e7966922908",
+}
+
+for filename, expected_hash in expected_reviewer_hashes.items():
+    payload = (root / "codex" / "agents" / filename).read_bytes()
+    actual_hash = hashlib.sha256(payload).hexdigest()
+    if actual_hash != expected_hash:
+        raise SystemExit(f"{filename}: reviewer role changed unexpectedly")
 
 
 def load_role(filename: str, expected_name: str) -> dict[str, object]:
@@ -282,16 +289,82 @@ if code_shell_policy["filters"] != expected_filters:
     raise SystemExit(
         "code_reviewer.toml: expected exact PYTHONPATH and VIRTUAL_ENV exclusion filters"
     )
-PY
-for skill in adversarial-doc-review code-review; do
-  claude_skill_file="$ROOT_DIR/claude/skills/$skill/SKILL.md"
-  grep -F "agentrc-codex-" "$claude_skill_file" >/dev/null
-  grep -F 'three completed substantive reviewer turns' "$claude_skill_file" >/dev/null
-  if grep -Eq 'spawn_agent|agent_type|followup_task|fork_turns' "$claude_skill_file"; then
-    echo "Claude CLI skill contains native reviewer lifecycle text: $skill" >&2
-    exit 1
-  fi
 
+implementer_path = root / "codex" / "agents" / "implementer.toml"
+with implementer_path.open("rb") as role_file:
+    implementer = tomllib.load(role_file)
+
+expected_implementer_keys = {"name", "description", "developer_instructions", "skills"}
+if set(implementer) != expected_implementer_keys:
+    raise SystemExit(
+        "implementer.toml: expected only role identity, instructions, and skill selectors"
+    )
+if implementer["name"] != "implementer":
+    raise SystemExit("implementer.toml: expected role name 'implementer'")
+for field in ("description", "developer_instructions"):
+    value = implementer[field]
+    if not isinstance(value, str) or not value.strip():
+        raise SystemExit(f"implementer.toml: {field} must be a non-empty string")
+
+disabled_implementer_skills = {
+    "general-auto-research",
+    "brainstorming",
+    "planning",
+    "commit",
+    "implement",
+    "merge",
+    "issue",
+    "adversarial-doc-review",
+    "code-review",
+    "claude-doc-review",
+    "claude-code-review",
+}
+skill_entries = implementer["skills"].get("config", [])
+if not isinstance(skill_entries, list) or len(skill_entries) != 11:
+    raise SystemExit("implementer.toml: expected exactly eleven disabled skills")
+if any(set(entry) != {"name", "enabled"} for entry in skill_entries):
+    raise SystemExit("implementer.toml: skills must use only name and enabled selectors")
+if any(entry["enabled"] is not False for entry in skill_entries):
+    raise SystemExit("implementer.toml: every selected skill must be disabled")
+configured_names = {entry["name"] for entry in skill_entries}
+if configured_names != disabled_implementer_skills:
+    raise SystemExit(
+        f"implementer.toml: unexpected disabled skills: {sorted(configured_names)}"
+    )
+
+implementer_instructions = implementer["developer_instructions"]
+for required_text in (
+    "exactly one implementation-plan phase",
+    "governing AGENTS.md",
+    "absolute plan path",
+    "absolute spec path",
+    "relevant code, callers, tests, and Git history",
+    "explicit file or responsibility ownership",
+    "Other agents may be editing the shared worktree",
+    "Implementation-first",
+    "actual command output",
+    "native nested helpers only when useful for bounded work with disjoint ownership",
+    "Every helper prompt must include",
+    "Let helpers inherit your model and reasoning effort",
+    "Treat the supplied plan and spec as immutable inputs",
+    "Do not stage files or otherwise modify the Git index",
+    "Do not change sibling worktrees",
+    "Do not commit, push, merge",
+    "mutate branches or worktrees",
+    "Do not make external writes",
+    "Do not launch Codex, Claude, OMP, review runners, standalone CLI agents",
+    "Do not request sandbox approvals or escalations",
+    "instruction-level restrictions, not a capability boundary",
+    "changed paths and scoped diff summary",
+    "actual focused and surrounding verification commands and output",
+):
+    if required_text not in implementer_instructions:
+        raise SystemExit(
+            f"implementer.toml: missing stable contract text {required_text!r}"
+        )
+PY
+
+for skill in adversarial-doc-review code-review; do
   skill_file="$ROOT_DIR/codex/skills/$skill/SKILL.md"
   if grep -Eq 'agentrc-codex-|codex exec|managed runner|managed CLI' "$skill_file"; then
     echo "Codex-native skill contains managed runner plumbing: $skill" >&2
@@ -306,40 +379,50 @@ grep -F 'agent_type="doc_reviewer"' \
   "$ROOT_DIR/codex/skills/adversarial-doc-review/SKILL.md" >/dev/null
 grep -F 'agent_type="code_reviewer"' \
   "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
-python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py"
-python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
-"$ROOT_DIR/scripts/test-claude-install.sh"
-"$ROOT_DIR/scripts/test-codex-install.sh"
-"$ROOT_DIR/scripts/test-codex-review-runners.sh"
-"$ROOT_DIR/scripts/test-omp-install.sh"
-"$ROOT_DIR/scripts/test-sync-remote.sh"
-review_models=(
-  "openrouter/deepseek/deepseek-v4-pro"
-  "openrouter/z-ai/glm-5.2"
-  "openrouter/x-ai/grok-4.5"
-)
-for model in "${review_models[@]}"; do
-  codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \
-    omp --profile review -p --no-session --no-extensions --no-skills --no-rules \
-    --no-lsp --tools read,grep,glob --approval-mode always-ask \
-    --model "$model" review \
-    | grep -F '"decision": "allow"' >/dev/null
+
+implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"
+for required_text in \
+  'agent_type="implementer"' \
+  'fork_turns="none"' \
+  'model="gpt-5.6-sol"' \
+  'reasoning_effort="high"' \
+  'git status --porcelain=v1 --untracked-files=all' \
+  '--protect-path <absolute-plan-path>' \
+  'complete ref namespace' \
+  'semantic index state' \
+  'sibling-worktree state' \
+  'git_task_guard.py snapshot' \
+  'git_task_guard.py verify' \
+  'There is no generic-agent or standalone CLI fallback.' \
+  'instruction-level restrictions, not a capability boundary' \
+  'checks cannot prove the absence of arbitrary external side effects' \
+  'The orchestrator alone stages the accepted phase paths and creates one focused commit' \
+  'invokes the `code-review` skill'; do
+  grep -F -- "$required_text" "$implement_skill" >/dev/null
 done
-codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rules" -- \
-  claude -p --permission-mode plan --output-format text review \
-  | grep -F '"decision": "allow"' >/dev/null
-codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/claude-review.rules" -- \
-  env -u PYTHONPATH -u VIRTUAL_ENV claude -p --permission-mode plan --output-format text review \
-  | grep -F '"decision": "allow"' >/dev/null
-if codex execpolicy check --pretty --rules "$ROOT_DIR/codex/rules/omp-review.rules" -- \
-  omp --profile review -p --no-session --no-extensions --no-skills --no-rules \
-  --no-lsp --tools read,grep,glob,bash --approval-mode always-ask \
-  --model openrouter/x-ai/grok-4.5 review \
-  | grep -F '"decision": "allow"' >/dev/null; then
-  echo "OMP review permission rule allowed a mutation-capable tool" >&2
+if grep -Eq 'Fable|Opus|model: "opus"|omit the model override' "$implement_skill"; then
+  echo "Implement skill contains retired model routing" >&2
   exit 1
 fi
-grep -F 'transmit supplied repository documents and diffs through OpenRouter' \
-  "$ROOT_DIR/codex/rules/omp-review.rules" >/dev/null
+
+SKILL_VALIDATOR="${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py"
+if [ ! -f "$SKILL_VALIDATOR" ]; then
+  echo "Skill validator is unavailable: $SKILL_VALIDATOR" >&2
+  exit 1
+fi
+"$PYTHON_YAML_BIN" "$SKILL_VALIDATOR" "$ROOT_DIR/codex/skills/implement"
+
+python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py" \
+  "$ROOT_DIR/scripts/validate-legacy-archive.py" \
+  "$ROOT_DIR/scripts/test-legacy-archive-validation.py" \
+  "$ROOT_DIR/codex/skills/implement/scripts/git_task_guard.py" \
+  "$ROOT_DIR/codex/skills/implement/scripts/test_git_task_guard.py"
+python3 "$ROOT_DIR/codex/skills/implement/scripts/test_git_task_guard.py"
+python3 "$ROOT_DIR/scripts/validate-legacy-archive.py" \
+  "$ROOT_DIR/archive/legacy-harnesses" --repository "$ROOT_DIR"
+python3 "$ROOT_DIR/scripts/test-legacy-archive-validation.py"
+python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
+"$ROOT_DIR/scripts/test-codex-install.sh"
+"$ROOT_DIR/scripts/test-sync-remote.sh"
 
 echo "Config repository validation passed."

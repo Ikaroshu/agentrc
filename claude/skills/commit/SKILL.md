@@ -1,1 +1,0 @@
-../../../shared/skills/commit/SKILL.md
