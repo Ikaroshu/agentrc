@@ -346,6 +346,9 @@ for required_text in (
     "native nested helpers only when useful for bounded work with disjoint ownership",
     "Every helper prompt must include",
     "Let helpers inherit your model and reasoning effort",
+    "Treat the supplied plan and spec as immutable inputs",
+    "Do not stage files or otherwise modify the Git index",
+    "Do not change sibling worktrees",
     "Do not commit, push, merge",
     "mutate branches or worktrees",
     "Do not make external writes",
@@ -384,6 +387,10 @@ for required_text in \
   'model="gpt-5.6-sol"' \
   'reasoning_effort="high"' \
   'git status --porcelain=v1 --untracked-files=all' \
+  '--protect-path <absolute-plan-path>' \
+  'complete ref namespace' \
+  'semantic index state' \
+  'sibling-worktree state' \
   'git_task_guard.py snapshot' \
   'git_task_guard.py verify' \
   'There is no generic-agent or standalone CLI fallback.' \
@@ -391,7 +398,7 @@ for required_text in \
   'checks cannot prove the absence of arbitrary external side effects' \
   'The orchestrator alone stages the accepted phase paths and creates one focused commit' \
   'invokes the `code-review` skill'; do
-  grep -F "$required_text" "$implement_skill" >/dev/null
+  grep -F -- "$required_text" "$implement_skill" >/dev/null
 done
 if grep -Eq 'Fable|Opus|model: "opus"|omit the model override' "$implement_skill"; then
   echo "Implement skill contains retired model routing" >&2

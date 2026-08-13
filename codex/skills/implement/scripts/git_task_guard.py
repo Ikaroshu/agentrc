@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import hashlib
 import json
+import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 
@@ -21,13 +24,125 @@ def repository_root(repository: Path) -> Path:
     return Path(root).resolve()
 
 
-def snapshot_state(repository: Path, require_clean: bool) -> dict[str, object]:
+def output_hash(output: bytes) -> str:
+    return hashlib.sha256(output).hexdigest()
+
+
+def untracked_state(repository: Path) -> dict[str, dict[str, object]]:
+    paths = run_git(
+        repository,
+        "ls-files",
+        "--others",
+        "--exclude-standard",
+        "-z",
+    ).split(b"\0")
+    entries = {}
+    for raw_path in paths:
+        if not raw_path:
+            continue
+        relative = raw_path.decode(errors="surrogateescape")
+        path = repository / relative
+        metadata = path.lstat()
+        if path.is_symlink():
+            kind = "symlink"
+            payload = os.readlink(path)
+        elif path.is_file():
+            kind = "file"
+            payload = hashlib.sha256(path.read_bytes()).hexdigest()
+        else:
+            raise SystemExit(f"unsupported untracked path type: {path}")
+        entries[relative] = {
+            "kind": kind,
+            "mode": stat.S_IMODE(metadata.st_mode),
+            "payload": payload,
+        }
+    return entries
+
+
+def worktree_paths(repository: Path) -> tuple[bytes, list[Path]]:
+    inventory = run_git(repository, "worktree", "list", "--porcelain", "-z")
+    paths = [
+        Path(field.removeprefix(b"worktree ").decode(errors="surrogateescape"))
+        for field in inventory.split(b"\0")
+        if field.startswith(b"worktree ")
+    ]
+    return inventory, paths
+
+
+def semantic_index(repository: Path) -> str:
+    return output_hash(run_git(repository, "ls-files", "--stage", "-v", "-z"))
+
+
+def sibling_worktree_states(repository: Path, paths: list[Path]) -> dict[str, object]:
+    states = {}
+    for path in paths:
+        resolved = path.resolve()
+        if resolved == repository:
+            continue
+        states[str(resolved)] = {
+            "status": output_hash(
+                run_git(
+                    resolved,
+                    "status",
+                    "--porcelain=v1",
+                    "-z",
+                    "--untracked-files=all",
+                )
+            ),
+            "diff": output_hash(
+                run_git(resolved, "diff", "--no-ext-diff", "--binary", "HEAD", "--")
+            ),
+            "cached_diff": output_hash(
+                run_git(
+                    resolved,
+                    "diff",
+                    "--cached",
+                    "--no-ext-diff",
+                    "--binary",
+                    "HEAD",
+                    "--",
+                )
+            ),
+            "index": semantic_index(resolved),
+            "untracked": untracked_state(resolved),
+        }
+    return states
+
+
+def protected_path_state(path: Path) -> dict[str, object]:
+    absolute = Path(os.path.abspath(path))
+    if not absolute.exists():
+        return {"missing": True}
+    if not absolute.is_file():
+        raise SystemExit(f"protected path must be a file: {absolute}")
+    metadata = absolute.lstat()
+    return {
+        "missing": False,
+        "mode": stat.S_IMODE(metadata.st_mode),
+        "symlink": os.readlink(absolute) if absolute.is_symlink() else None,
+        "content": hashlib.sha256(absolute.read_bytes()).hexdigest(),
+    }
+
+
+def protected_paths_state(paths: list[Path]) -> dict[str, object]:
+    return {
+        str(Path(os.path.abspath(path))): protected_path_state(path) for path in paths
+    }
+
+
+def snapshot_state(
+    repository: Path,
+    require_clean: bool,
+    protected_paths: list[Path],
+) -> dict[str, object]:
     root = repository_root(repository)
     status = run_git(root, "status", "--porcelain=v1", "--untracked-files=all")
     if require_clean and status:
         sys.stderr.write("worktree must be completely clean before dispatch:\n")
         sys.stderr.buffer.write(status)
         raise SystemExit(1)
+
+    worktrees, paths = worktree_paths(root)
 
     return {
         "repository": str(root),
@@ -37,15 +152,20 @@ def snapshot_state(repository: Path, require_clean: bool) -> dict[str, object]:
             root,
             "for-each-ref",
             "--format=%(refname) %(objectname) %(symref)",
-            "refs/heads",
-            "refs/remotes",
         ).decode(),
-        "worktrees": run_git(root, "worktree", "list", "--porcelain").decode(),
+        "index": semantic_index(root),
+        "worktrees": worktrees.decode(errors="surrogateescape"),
+        "sibling_worktrees": sibling_worktree_states(root, paths),
+        "protected_paths": protected_paths_state(protected_paths),
     }
 
 
-def write_snapshot(repository: Path, output: Path) -> None:
-    state = snapshot_state(repository, require_clean=True)
+def write_snapshot(repository: Path, output: Path, protected_paths: list[Path]) -> None:
+    for path in protected_paths:
+        absolute = Path(os.path.abspath(path))
+        if not absolute.exists():
+            raise SystemExit(f"protected path does not exist: {absolute}")
+    state = snapshot_state(repository, require_clean=True, protected_paths=protected_paths)
     output.write_text(json.dumps(state, sort_keys=True, indent=2) + "\n")
 
 
@@ -83,10 +203,24 @@ def owned(path: str, allow_paths: list[str]) -> bool:
 
 def verify_snapshot(repository: Path, snapshot: Path, allow_paths: list[str]) -> None:
     before = json.loads(snapshot.read_text())
-    after = snapshot_state(repository, require_clean=False)
+    protected_paths = [Path(path) for path in before["protected_paths"]]
+    after = snapshot_state(
+        repository,
+        require_clean=False,
+        protected_paths=protected_paths,
+    )
 
     violations = []
-    for field in ("repository", "head", "branch", "refs", "worktrees"):
+    for field in (
+        "repository",
+        "head",
+        "branch",
+        "refs",
+        "index",
+        "worktrees",
+        "sibling_worktrees",
+        "protected_paths",
+    ):
         if before[field] != after[field]:
             violations.append(f"{field} changed during implementation phase")
 
@@ -109,6 +243,7 @@ def parse_arguments() -> argparse.Namespace:
     snapshot_parser = subparsers.add_parser("snapshot")
     snapshot_parser.add_argument("--repository", type=Path, required=True)
     snapshot_parser.add_argument("--output", type=Path, required=True)
+    snapshot_parser.add_argument("--protect-path", action="append", type=Path, default=[])
 
     verify_parser = subparsers.add_parser("verify")
     verify_parser.add_argument("--repository", type=Path, required=True)
@@ -121,7 +256,7 @@ def parse_arguments() -> argparse.Namespace:
 def main() -> None:
     arguments = parse_arguments()
     if arguments.command == "snapshot":
-        write_snapshot(arguments.repository, arguments.output)
+        write_snapshot(arguments.repository, arguments.output, arguments.protect_path)
     else:
         verify_snapshot(arguments.repository, arguments.snapshot, arguments.allow_path)
 

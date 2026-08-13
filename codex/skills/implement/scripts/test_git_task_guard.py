@@ -33,8 +33,10 @@ def create_repository(parent: Path, name: str) -> Path:
     return repository
 
 
-def snapshot(repository: Path, output: Path) -> subprocess.CompletedProcess[str]:
-    return run(
+def snapshot(
+    repository: Path, output: Path, *protected_paths: Path
+) -> subprocess.CompletedProcess[str]:
+    arguments = [
         sys.executable,
         str(GUARD),
         "snapshot",
@@ -42,9 +44,10 @@ def snapshot(repository: Path, output: Path) -> subprocess.CompletedProcess[str]
         str(repository),
         "--output",
         str(output),
-        cwd=repository,
-        check=False,
-    )
+    ]
+    for path in protected_paths:
+        arguments.extend(("--protect-path", str(path)))
+    return run(*arguments, cwd=repository, check=False)
 
 
 def verify(
@@ -123,12 +126,23 @@ def test_branch_change(parent: Path) -> None:
     require_failure(verify(repository, output), "branch changed")
 
 
-def test_ref_change(parent: Path) -> None:
-    repository = create_repository(parent, "ref")
-    output = parent / "ref.json"
-    assert snapshot(repository, output).returncode == 0
-    run("git", "update-ref", "refs/heads/other", "HEAD", cwd=repository)
-    require_failure(verify(repository, output), "refs changed")
+def test_ref_changes(parent: Path) -> None:
+    scenarios = {
+        "tag": lambda repository: run("git", "tag", "forbidden", cwd=repository),
+        "stash": lambda repository: (
+            (repository / "owned.txt").write_text("stashed\n"),
+            run("git", "stash", "push", "-q", cwd=repository),
+        ),
+        "notes": lambda repository: run(
+            "git", "notes", "add", "-m", "forbidden", "HEAD", cwd=repository
+        ),
+    }
+    for name, mutate in scenarios.items():
+        repository = create_repository(parent, f"ref-{name}")
+        output = parent / f"ref-{name}.json"
+        assert snapshot(repository, output).returncode == 0
+        mutate(repository)
+        require_failure(verify(repository, output), "refs changed")
 
 
 def test_worktree_change(parent: Path) -> None:
@@ -151,6 +165,58 @@ def test_out_of_ownership_change(parent: Path) -> None:
     )
 
 
+def test_staged_allowed_change(parent: Path) -> None:
+    repository = create_repository(parent, "staged-return")
+    output = parent / "staged-return.json"
+    assert snapshot(repository, output).returncode == 0
+    (repository / "owned.txt").write_text("staged by task owner\n")
+    run("git", "add", "owned.txt", cwd=repository)
+    require_failure(verify(repository, output, "owned.txt"), "index changed")
+
+
+def test_index_flag_change(parent: Path) -> None:
+    repository = create_repository(parent, "index-flag")
+    output = parent / "index-flag.json"
+    assert snapshot(repository, output).returncode == 0
+    run("git", "update-index", "--assume-unchanged", "other.txt", cwd=repository)
+    (repository / "other.txt").write_text("hidden outside ownership\n")
+    require_failure(verify(repository, output, "owned.txt"), "index changed")
+
+
+def test_sibling_worktree_change(parent: Path) -> None:
+    repository = create_repository(parent, "sibling-repository")
+    sibling = parent / "sibling-worktree"
+    run(
+        "git",
+        "worktree",
+        "add",
+        "-q",
+        "-b",
+        "sibling",
+        str(sibling),
+        "HEAD",
+        cwd=repository,
+    )
+    output = parent / "sibling.json"
+    assert snapshot(repository, output).returncode == 0
+    (sibling / "owned.txt").write_text("changed in sibling\n")
+    require_failure(verify(repository, output), "sibling_worktrees changed")
+
+
+def test_ignored_protected_path_change(parent: Path) -> None:
+    repository = create_repository(parent, "protected")
+    (repository / ".gitignore").write_text(".plans/\n")
+    run("git", "add", ".gitignore", cwd=repository)
+    run("git", "commit", "-q", "-m", "ignore plans", cwd=repository)
+    plan = repository / ".plans" / "plan.md"
+    plan.parent.mkdir()
+    plan.write_text("approved plan\n")
+    output = parent / "protected.json"
+    assert snapshot(repository, output, plan).returncode == 0
+    plan.write_text("mutated plan\n")
+    require_failure(verify(repository, output), "protected_paths changed")
+
+
 def main() -> None:
     with tempfile.TemporaryDirectory() as temporary_directory:
         parent = Path(temporary_directory)
@@ -158,10 +224,14 @@ def main() -> None:
         test_allowed_changes(parent)
         test_head_change(parent)
         test_branch_change(parent)
-        test_ref_change(parent)
+        test_ref_changes(parent)
         test_worktree_change(parent)
         test_out_of_ownership_change(parent)
-    print("Implement task guard tests passed (10 deterministic scenarios).")
+        test_staged_allowed_change(parent)
+        test_index_flag_change(parent)
+        test_sibling_worktree_change(parent)
+        test_ignored_protected_path_change(parent)
+    print("Implement task guard tests passed (16 deterministic scenarios).")
 
 
 if __name__ == "__main__":
