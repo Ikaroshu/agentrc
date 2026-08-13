@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# Sync Codex CLI settings and skills to a remote machine via scp.
-# Copies AGENTS.md and skills directly. Merges config.toml so
-# machine-specific project trust settings are preserved.
-#
-# Usage:
-#   ./codex/sync-remote.sh mini
+# Sync active Codex settings, native roles, and skills to a remote machine.
+# Machine-specific remote config is preserved by merging it with the portable source.
 
 set -euo pipefail
 
@@ -18,45 +14,29 @@ cleanup() {
 }
 trap cleanup EXIT
 
-SHARED_SKILLS=(general-auto-research brainstorming planning commit implement merge issue)
-CODEX_SKILLS=(adversarial-doc-review code-review claude-doc-review claude-code-review)
+SKILLS=(
+  general-auto-research
+  adversarial-doc-review
+  brainstorming
+  planning
+  code-review
+  commit
+  implement
+  merge
+  issue
+)
 
-ssh "$REMOTE" '
-  rm -f ~/.codex/commands/commit.md ~/.codex/commands/merge.md
-  rmdir ~/.codex/commands 2>/dev/null || true
-  rm -rf ~/.agents/skills/commit-workflow ~/.agents/skills/merge-workflow ~/.agents/skills/auto-research
-  rm -f ~/.codex/rules/codex-review.rules
-  mkdir -p ~/.codex/agents
-  mkdir -p ~/.codex/rules
-  mkdir -p \
-    ~/.agents/skills/general-auto-research \
-    ~/.agents/skills/brainstorming \
-    ~/.agents/skills/claude-code-review \
-    ~/.agents/skills/claude-doc-review \
-    ~/.agents/skills/planning \
-    ~/.agents/skills/commit \
-    ~/.agents/skills/implement \
-    ~/.agents/skills/merge \
-    ~/.agents/skills/issue \
-    ~/.agents/skills/adversarial-doc-review \
-    ~/.agents/skills/code-review
-'
+ssh "$REMOTE" 'mkdir -p ~/.codex/agents ~/.agents/skills/general-auto-research ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
 
 scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
 scp -q "$REPO_DIR/agents/doc_reviewer.toml" "$REMOTE:~/.codex/agents/doc_reviewer.toml"
 scp -q "$REPO_DIR/agents/code_reviewer.toml" "$REMOTE:~/.codex/agents/code_reviewer.toml"
-scp -q "$REPO_DIR/rules/claude-review.rules" "$REMOTE:~/.codex/rules/claude-review.rules"
-scp -q "$REPO_DIR/rules/omp-review.rules" "$REMOTE:~/.codex/rules/omp-review.rules"
 
-for skill in "${SHARED_SKILLS[@]}"; do
-  scp -q "$ROOT_DIR/shared/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
-done
-for skill in "${CODEX_SKILLS[@]}"; do
+for skill in "${SKILLS[@]}"; do
   scp -q "$REPO_DIR/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
 done
-# config.toml: merge shared repo settings while preserving remote machine-specific
-# sections such as project trust, notices, marketplaces, and skill path entries.
-ssh "$REMOTE" 'cat ~/.codex/config.toml 2>/dev/null || true' > "$REMOTE_CONFIG_FILE"
+
+ssh "$REMOTE" 'cat ~/.codex/config.toml 2>/dev/null || true' >"$REMOTE_CONFIG_FILE"
 python3 "$ROOT_DIR/scripts/merge-codex-config.py" "$REMOTE_CONFIG_FILE" "$REPO_DIR/config.toml" \
   | ssh "$REMOTE" 'cat > ~/.codex/config.toml'
 

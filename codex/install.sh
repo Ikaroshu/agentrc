@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Install Codex CLI settings and skills from this repo.
-# Shared config is merged into the machine-local config; other files are symlinked.
+# Install Codex CLI settings, native roles, and skills from this repository.
+# Machine-local config is merged; managed instructions and skills are symlinked.
 
 set -euo pipefail
 
@@ -16,16 +16,12 @@ CODEX_LINK_FILES=(
 CODEX_COPY_FILES=(
   agents/doc_reviewer.toml
   agents/code_reviewer.toml
-  rules/claude-review.rules
-  rules/omp-review.rules
 )
 
 SKILLS=(
   general-auto-research
   adversarial-doc-review
   brainstorming
-  claude-code-review
-  claude-doc-review
   planning
   code-review
   commit
@@ -34,32 +30,10 @@ SKILLS=(
   issue
 )
 
-is_shared_skill() {
-  case "$1" in
-    general-auto-research|brainstorming|planning|commit|implement|merge|issue) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
-skill_source() {
-  local name="$1"
-
-  if is_shared_skill "$name"; then
-    echo "$ROOT_DIR/shared/skills/$name"
-  else
-    echo "$REPO_DIR/skills/$name"
-  fi
-}
-
 link_file() {
   local rel="$1"
   local src="$REPO_DIR/$rel"
   local dst="$CODEX_TARGET_DIR/$rel"
-
-  if [ ! -f "$src" ]; then
-    echo "SKIP $rel (source missing)"
-    return
-  fi
 
   if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then
     echo "  OK $rel"
@@ -83,11 +57,6 @@ copy_file() {
   local rel="$1"
   local src="$REPO_DIR/$rel"
   local dst="$CODEX_TARGET_DIR/$rel"
-
-  if [ ! -f "$src" ]; then
-    echo "SKIP $rel (source missing)"
-    return
-  fi
 
   if [ -f "$dst" ] && [ ! -L "$dst" ] && cmp -s "$src" "$dst"; then
     echo "  OK $rel"
@@ -143,11 +112,6 @@ link_path() {
   local dst="$2"
   local rel="$3"
 
-  if [ ! -e "$src" ]; then
-    echo "SKIP $rel (source missing)"
-    return
-  fi
-
   if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then
     echo "  OK $rel"
     return
@@ -166,57 +130,24 @@ link_path() {
   echo "LINK $rel"
 }
 
-cleanup_legacy_command() {
-  local rel="$1"
-  local dst="$CODEX_TARGET_DIR/$rel"
-
-  if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$REPO_DIR/$rel" ]; then
-    rm "$dst"
-    echo "DROP legacy $rel"
-  fi
-}
-
-remove_obsolete_rule() {
-  local dst="$CODEX_TARGET_DIR/rules/codex-review.rules"
-
-  if [ -e "$dst" ] || [ -L "$dst" ]; then
-    rm "$dst"
-    echo "DROP obsolete rules/codex-review.rules"
-  fi
-}
-
 echo "Installing Codex settings from $REPO_DIR -> $CODEX_TARGET_DIR"
 echo
 
-for f in "${CODEX_LINK_FILES[@]}"; do
-  link_file "$f"
+for file in "${CODEX_LINK_FILES[@]}"; do
+  link_file "$file"
 done
-for f in "${CODEX_COPY_FILES[@]}"; do
-  copy_file "$f"
+for file in "${CODEX_COPY_FILES[@]}"; do
+  copy_file "$file"
 done
 install_config
-remove_obsolete_rule
-
-cleanup_legacy_command "commands/commit.md"
-cleanup_legacy_command "commands/merge.md"
-rmdir "$CODEX_TARGET_DIR/commands" 2>/dev/null || true
 
 echo
 echo "Installing Codex skills from $REPO_DIR/skills -> $SKILLS_TARGET_DIR"
 echo
 
 for skill in "${SKILLS[@]}"; do
-  link_path "$(skill_source "$skill")" "$SKILLS_TARGET_DIR/$skill" "$skill"
-done
-
-# Drop legacy skill symlinks replaced by renamed or shared skills
-for legacy in commit-workflow merge-workflow auto-research; do
-  dst="$SKILLS_TARGET_DIR/$legacy"
-  if [ -L "$dst" ]; then
-    rm "$dst"
-    echo "DROP legacy skill $legacy"
-  fi
+  link_path "$REPO_DIR/skills/$skill" "$SKILLS_TARGET_DIR/$skill" "$skill"
 done
 
 echo
-echo "Done. Settings are installed from this repo."
+echo "Done. Codex settings are installed from this repository."

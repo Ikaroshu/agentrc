@@ -5,10 +5,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 TEST_DIR="$(mktemp -d)"
 BIN_DIR="$TEST_DIR/bin"
-SCP_LOG="$TEST_DIR/scp.log"
-SSH_LOG="$TEST_DIR/ssh.log"
-CODEX_SCP_LOG="$TEST_DIR/codex-scp.log"
-CODEX_SSH_LOG="$TEST_DIR/codex-ssh.log"
+REMOTE_BASELINE="$TEST_DIR/remote-baseline.toml"
+REMOTE_EXPECTED="$TEST_DIR/remote-expected.toml"
 
 cleanup() {
   rm -rf "$TEST_DIR"
@@ -17,18 +15,33 @@ trap cleanup EXIT
 
 mkdir -p "$BIN_DIR"
 
+cat >"$REMOTE_BASELINE" <<'EOF'
+model = "remote-model"
+remote_marker = true
+
+[projects."/remote/project"]
+trust_level = "trusted"
+EOF
+python3 "$ROOT_DIR/scripts/merge-codex-config.py" \
+  "$REMOTE_BASELINE" "$ROOT_DIR/codex/config.toml" >"$REMOTE_EXPECTED"
+
 cat >"$BIN_DIR/ssh" <<'EOF'
 #!/usr/bin/env bash
 
 set -euo pipefail
 
-command="${2:-}"
-printf '%s\n' "$*" >>"$SYNC_SSH_LOG"
+remote="${1:?missing remote}"
+command="${2:?missing command}"
+printf '%s\t%s\n' "$remote" "$command" >>"$SYNC_SSH_LOG"
 
 case "$command" in
-  *"cat ~/.claude/settings.json"*) echo '{}' ;;
-  *"cat ~/.codex/config.toml"*) ;;
-  *"cat > ~/.claude/settings.json"*|*"cat > ~/.codex/config.toml"*) cat >/dev/null ;;
+  'mkdir -p ~/.codex/agents ~/.agents/skills/general-auto-research ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue') ;;
+  'cat ~/.codex/config.toml 2>/dev/null || true') cat "$SYNC_REMOTE_BASELINE" ;;
+  'cat > ~/.codex/config.toml') cat >"$SYNC_REMOTE_RESULT" ;;
+  *)
+    echo "Unexpected remote command: $command" >&2
+    exit 1
+    ;;
 esac
 EOF
 
@@ -42,91 +55,68 @@ EOF
 
 chmod +x "$BIN_DIR/ssh" "$BIN_DIR/scp"
 
-PATH="$BIN_DIR:$PATH" SYNC_SCP_LOG="$SCP_LOG" SYNC_SSH_LOG="$SSH_LOG" \
-  "$ROOT_DIR/sync-remote.sh" test >/dev/null
-PATH="$BIN_DIR:$PATH" SYNC_SCP_LOG="$CODEX_SCP_LOG" SYNC_SSH_LOG="$CODEX_SSH_LOG" \
-  "$ROOT_DIR/codex/sync-remote.sh" test >/dev/null
+write_expected_scp() {
+  local output="$1"
 
-failed=0
+  {
+    printf '%s\n' "-q $ROOT_DIR/codex/AGENTS.md test:~/.codex/AGENTS.md"
+    printf '%s\n' "-q $ROOT_DIR/codex/agents/doc_reviewer.toml test:~/.codex/agents/doc_reviewer.toml"
+    printf '%s\n' "-q $ROOT_DIR/codex/agents/code_reviewer.toml test:~/.codex/agents/code_reviewer.toml"
+    for skill in general-auto-research adversarial-doc-review brainstorming planning code-review commit implement merge issue; do
+      printf '%s\n' "-q $ROOT_DIR/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
+    done
+  } >"$output"
+}
 
-require_synced() {
-  local description="$1"
-  local pattern="$2"
+write_expected_ssh() {
+  local output="$1"
 
-  if ! grep -Fq "$pattern" "$SCP_LOG"; then
-    echo "Remote sync omitted $description: $pattern" >&2
-    failed=1
+  {
+    printf '%s\t%s\n' test 'mkdir -p ~/.codex/agents ~/.agents/skills/general-auto-research ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
+    printf '%s\t%s\n' test 'cat ~/.codex/config.toml 2>/dev/null || true'
+    printf '%s\t%s\n' test 'cat > ~/.codex/config.toml'
+  } >"$output"
+}
+
+EXPECTED_SCP="$TEST_DIR/expected-scp.log"
+EXPECTED_SSH="$TEST_DIR/expected-ssh.log"
+write_expected_scp "$EXPECTED_SCP"
+write_expected_ssh "$EXPECTED_SSH"
+
+run_sync_test() {
+  local name="$1"
+  local script="$2"
+  local scp_log="$TEST_DIR/$name-scp.log"
+  local ssh_log="$TEST_DIR/$name-ssh.log"
+  local remote_result="$TEST_DIR/$name-remote-result.toml"
+
+  : >"$scp_log"
+  : >"$ssh_log"
+  PATH="$BIN_DIR:$PATH" \
+    SYNC_SCP_LOG="$scp_log" \
+    SYNC_SSH_LOG="$ssh_log" \
+    SYNC_REMOTE_BASELINE="$REMOTE_BASELINE" \
+    SYNC_REMOTE_RESULT="$remote_result" \
+    "$script" test >/dev/null
+
+  if ! cmp -s "$EXPECTED_SCP" "$scp_log"; then
+    diff -u "$EXPECTED_SCP" "$scp_log" >&2
+    echo "$name sync used unexpected copy sources or destinations" >&2
+    exit 1
+  fi
+  if ! cmp -s "$EXPECTED_SSH" "$ssh_log"; then
+    diff -u "$EXPECTED_SSH" "$ssh_log" >&2
+    echo "$name sync used an unexpected remote command" >&2
+    exit 1
+  fi
+  if ! cmp -s "$REMOTE_EXPECTED" "$remote_result"; then
+    diff -u "$REMOTE_EXPECTED" "$remote_result" >&2
+    echo "$name sync did not merge from the remote machine baseline" >&2
+    exit 1
   fi
 }
 
-require_remote_command() {
-  local description="$1"
-  local pattern="$2"
+run_sync_test root "$ROOT_DIR/sync-remote.sh"
+run_sync_test codex "$ROOT_DIR/codex/sync-remote.sh"
 
-  if ! grep -Fq "$pattern" "$SSH_LOG"; then
-    echo "Remote sync omitted $description: $pattern" >&2
-    failed=1
-  fi
-}
-
-for skill in brainstorming planning implement; do
-  require_synced "Claude skill $skill" "/shared/skills/$skill/SKILL.md test:~/.claude/skills/$skill/"
-  require_synced "Codex skill $skill" "/shared/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
-done
-
-for skill in adversarial-doc-review code-review; do
-  require_synced "Claude skill $skill" "/claude/skills/$skill/SKILL.md test:~/.claude/skills/$skill/"
-  require_synced "Codex skill $skill" "/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
-done
-
-for skill in claude-doc-review claude-code-review; do
-  require_synced "Codex skill $skill" "/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
-done
-
-require_synced "Claude instructions" "/claude/CLAUDE.md"
-require_synced "Codex instructions" "/codex/AGENTS.md test:~/.codex/AGENTS.md"
-require_synced "Codex document-review role" "/codex/agents/doc_reviewer.toml test:~/.codex/agents/doc_reviewer.toml"
-require_synced "Codex code-review role" "/codex/agents/code_reviewer.toml test:~/.codex/agents/code_reviewer.toml"
-require_remote_command "Codex agents directory creation" "mkdir -p ~/.codex/agents"
-require_remote_command "obsolete Codex review rule removal" "rm -f ~/.codex/rules/codex-review.rules"
-require_synced "managed document-review runner" \
-  "/shared/review-runners/agentrc-codex-doc-review test:~/.local/bin/agentrc-codex-doc-review"
-require_synced "managed code-review runner" \
-  "/shared/review-runners/agentrc-codex-code-review test:~/.local/bin/agentrc-codex-code-review"
-require_remote_command "managed review runner executable modes" \
-  "chmod +x ~/.claude/file-suggestion.sh ~/.claude/statusline-command.sh ~/.local/bin/agentrc-codex-doc-review ~/.local/bin/agentrc-codex-code-review"
-require_synced "Codex OMP review rule" "/codex/rules/omp-review.rules test:~/.codex/rules/omp-review.rules"
-require_synced "Codex Claude review rule" "/codex/rules/claude-review.rules test:~/.codex/rules/claude-review.rules"
-require_synced "OMP review instructions" "/shared/AGENTS.md"
-require_synced "OMP review config" "/omp/config.yml"
-require_synced "OMP review models" "/omp/models.yml"
-
-for skill in adversarial-doc-review code-review; do
-  if ! grep -Fq "/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md" "$CODEX_SCP_LOG"; then
-    echo "Codex-only sync omitted native skill $skill" >&2
-    failed=1
-  fi
-done
-if ! grep -Fq 'rm -f ~/.codex/rules/codex-review.rules' "$CODEX_SSH_LOG"; then
-  echo "Codex-only sync omitted obsolete rule cleanup" >&2
-  failed=1
-fi
-for unexpected in \
-  agentrc-codex-doc-review \
-  agentrc-codex-code-review \
-  /codex/rules/codex-review.rules; do
-  if grep -Fq "$unexpected" "$CODEX_SCP_LOG"; then
-    echo "Codex-only sync unexpectedly deployed $unexpected" >&2
-    failed=1
-  fi
-done
-if grep -Fq '~/.local/bin' "$CODEX_SSH_LOG"; then
-  echo "Codex-only sync unexpectedly managed shared runner binaries" >&2
-  failed=1
-fi
-
-if [ "$failed" -ne 0 ]; then
-  exit 1
-fi
-
-echo "Remote sync skill test passed."
+echo "Remote sync test passed (12 exact destinations, 3 exact commands)."
