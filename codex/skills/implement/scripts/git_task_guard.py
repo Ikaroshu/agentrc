@@ -28,7 +28,10 @@ def output_hash(output: bytes) -> str:
     return hashlib.sha256(output).hexdigest()
 
 
-def untracked_state(repository: Path) -> dict[str, dict[str, object]]:
+def untracked_state(
+    repository: Path,
+    registered_worktrees: set[Path],
+) -> dict[str, dict[str, object]]:
     paths = run_git(
         repository,
         "ls-files",
@@ -49,6 +52,8 @@ def untracked_state(repository: Path) -> dict[str, dict[str, object]]:
         elif path.is_file():
             kind = "file"
             payload = hashlib.sha256(path.read_bytes()).hexdigest()
+        elif path.is_dir() and path.resolve() in registered_worktrees:
+            continue
         else:
             raise SystemExit(f"unsupported untracked path type: {path}")
         entries[relative] = {
@@ -75,6 +80,7 @@ def semantic_index(repository: Path) -> str:
 
 def sibling_worktree_states(repository: Path, paths: list[Path]) -> dict[str, object]:
     states = {}
+    registered_worktrees = {path.resolve() for path in paths}
     for path in paths:
         resolved = path.resolve()
         if resolved == repository:
@@ -104,7 +110,7 @@ def sibling_worktree_states(repository: Path, paths: list[Path]) -> dict[str, ob
                 )
             ),
             "index": semantic_index(resolved),
-            "untracked": untracked_state(resolved),
+            "untracked": untracked_state(resolved, registered_worktrees),
         }
     return states
 

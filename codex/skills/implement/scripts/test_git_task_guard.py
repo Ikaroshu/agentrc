@@ -203,6 +203,29 @@ def test_sibling_worktree_change(parent: Path) -> None:
     require_failure(verify(repository, output), "sibling_worktrees changed")
 
 
+def test_nested_worktree_layout(parent: Path) -> None:
+    repository = create_repository(parent, "nested-repository")
+    feature = repository / ".worktrees" / "feature"
+    run(
+        "git",
+        "worktree",
+        "add",
+        "-q",
+        "-b",
+        "feature",
+        str(feature),
+        "HEAD",
+        cwd=repository,
+    )
+    output = parent / "nested.json"
+    result = snapshot(feature, output)
+    assert result.returncode == 0, result.stderr
+    result = verify(feature, output)
+    assert result.returncode == 0, result.stderr
+    (repository / "owned.txt").write_text("changed in main sibling\n")
+    require_failure(verify(feature, output), "sibling_worktrees changed")
+
+
 def test_ignored_protected_path_change(parent: Path) -> None:
     repository = create_repository(parent, "protected")
     (repository / ".gitignore").write_text(".plans/\n")
@@ -230,8 +253,9 @@ def main() -> None:
         test_staged_allowed_change(parent)
         test_index_flag_change(parent)
         test_sibling_worktree_change(parent)
+        test_nested_worktree_layout(parent)
         test_ignored_protected_path_change(parent)
-    print("Implement task guard tests passed (16 deterministic scenarios).")
+    print("Implement task guard tests passed (17 deterministic scenarios).")
 
 
 if __name__ == "__main__":
