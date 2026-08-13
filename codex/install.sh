@@ -16,6 +16,7 @@ CODEX_LINK_FILES=(
 CODEX_COPY_FILES=(
   agents/doc_reviewer.toml
   agents/code_reviewer.toml
+  agents/implementer.toml
 )
 
 SKILLS=(

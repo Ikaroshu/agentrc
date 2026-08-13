@@ -1,73 +1,85 @@
 ---
 name: implement
-description: Use to execute a written plan (from .plans/) task by task with an implementation and testing sequence suited to each task. Dispatches one fresh task-owner subagent per task, permits nested delegation, and reviews verification evidence between tasks.
+description: Execute a written plan from .plans one phase at a time with a fresh exact implementer role, deterministic Git guards, scoped orchestration, and evidence review before each orchestrator-owned commit.
 ---
 
 # Implement
 
-Execute an agreed plan with per-task context isolation and evidence-backed verification. This is the implement step of the development workflow; run it after the plan exists and (for non-trivial work) inside an isolated worktree.
+Execute an approved plan phase by phase in its implementation worktree. The main agent is the orchestrator and retains every commit, cross-phase decision, diff/evidence checkpoint, and final code review.
 
-**Announce at start:** "Using the implement skill to execute the plan task by task."
+**Announce at start:** "Using the implement skill to execute the plan phase by phase."
 
 ## Setup
 
-1. Read the plan at `<project-root>/.plans/plans/<title>.md`. Confirm the phase breakdown with the user if anything is stale.
-2. Ensure the right workspace: an isolated worktree for non-trivial work, or `main` directly when the scope is small and `main` is clean.
-3. Create one todo per plan phase.
+1. Read the absolute plan path and any approved spec in full. Confirm the phase breakdown if it is stale.
+2. Use the agreed implementation worktree and create one todo per plan phase.
+3. Locate this skill's `scripts/git_task_guard.py`. Use it directly for every pre-dispatch snapshot and post-return verification; do not ask an implementer to self-police Git state.
+4. Require the callable native spawn schema to accept the exact configured `agent_type="implementer"`. If it does not, stop and identify a fresh supported Codex runtime with the installed role as the prerequisite. Never substitute a generic agent, Codex or Claude CLI process, OMP, a review runner, or another standalone harness.
 
-## Per-task loop
+## Per-phase loop
 
-When the main model is Fable, dispatch every task subagent with `model: "opus"`. For any other main model, omit the model override and use the default.
+For each plan phase:
 
-For **each** task, dispatch **one fresh task-owner subagent** (clean context) accountable for choosing a suitable implementation and testing sequence and reporting back:
+1. Create a temporary snapshot path outside the repository. Run:
 
-1. **Choose the sequence** — prefer test-first for bugs, behavior changes, and logic with a clear executable contract. Implementation-first is acceptable for refactors, configuration, infrastructure, exploratory integration work, or whenever it produces a clearer and more useful test. Briefly explain the choice when not using test-first.
-2. **Implement and test** — make the smallest change that completes the task, using the chosen sequence. No extra scope.
-3. **Verify** — run the focused tests or checks and the appropriate surrounding suite. Return the **actual command output** as evidence, plus a short summary of the diff.
+   ```bash
+   python3 <implement-skill>/scripts/git_task_guard.py snapshot \
+     --repository <absolute-worktree-path> \
+     --output <absolute-snapshot-path>
+   ```
 
-When a unit test does not fit the task, use an appropriate **verification gate**: the repo's validation script, lint/type-check, or a concrete manual check with expected output. Never fabricate a trivial test just to satisfy a process.
+   The guard runs `git status --porcelain=v1 --untracked-files=all` and refuses dispatch unless it is completely empty, including staged, unstaged, untracked-file, and untracked-directory content. It then records HEAD, the current branch, all local and remote-tracking refs, and `git worktree list --porcelain`.
 
-The subagent's final message must include the real verification output.
+2. Build a self-contained dynamic prompt containing:
 
-### Nested helpers
+   - the absolute plan path and optional absolute spec path;
+   - the absolute implementation worktree cwd;
+   - the exact phase number and title;
+   - explicit owned files or responsibility and verification expectations;
+   - a warning that other agents may edit the shared worktree and their changes must be preserved;
+   - the role's complete restrictions: no commits, pushes, merges, commit creation, branch/worktree/ref mutations, external writes or messages, mutating connector/browser/Computer Use actions, standalone Codex/Claude/OMP/review-runner or CLI-agent launches, recursive orchestration/review workflows, or sandbox approval/escalation requests;
+   - for every nested helper, the requirement to propagate that complete restriction set, the phase context, disjoint ownership, concurrent-edit warning, and no-escalation rule while inheriting the implementer's model and reasoning effort.
 
-The task owner may delegate work to nested helpers, and those helpers may
-delegate further, when useful. Keep the agent tree scoped to the current plan
-task.
+   State that these are instruction-level restrictions, not a capability boundary. Require real focused and surrounding verification output, changed paths, remaining risks, and delegated-work integration details.
 
-The task owner coordinates shared-worktree changes, reviews and integrates
-delegated work, and remains accountable for the task's final diff and complete
-verification evidence.
+3. Dispatch one fresh native task owner with exactly:
 
-### Quiet supervision
+   ```text
+   spawn_agent(
+     agent_type="implementer",
+     fork_turns="none",
+     model="gpt-5.6-sol",
+     reasoning_effort="high",
+     message=<dynamic-phase-prompt>,
+     task_name=<unique-phase-task-name>,
+   )
+   ```
 
-After dispatching a task owner, wait passively for its completion or messages
-using the platform's longest practical blocking or event-driven wait.
+   There is no generic-agent or standalone CLI fallback.
 
-- Do not poll agent status, inspect partial transcripts or shared-worktree
-  changes, or send progress check-ins while the agent is running.
-- Resume supervision only when the agent completes, raises a blocker or
-  question, a concrete failure or deadline signal appears, or the user
-  interrupts.
-- Apply this recursively when task owners coordinate nested helpers.
-- Begin evidence and diff review only after the task owner returns.
+4. Wait passively using the platform's longest practical event-driven wait. Do not poll status, inspect partial transcripts or worktree changes, or send progress messages while the owner or its helpers run. Resume only for completion, a blocker or question, a concrete failure/deadline signal, or user interruption.
 
-## Between tasks (orchestrator checkpoint)
+5. After the task owner returns, run:
 
-After each subagent returns:
+   ```bash
+   python3 <implement-skill>/scripts/git_task_guard.py verify \
+     --repository <absolute-worktree-path> \
+     --snapshot <absolute-snapshot-path> \
+     --allow-path <owned-path> [--allow-path <owned-path> ...]
+   ```
 
-1. **Verify the evidence.** Confirm from the output that the test actually ran and passed — not a claim. If the output is missing or unconvincing, send it back.
-2. **Review the diff.** Check it matches the plan and does not sprawl beyond the task.
-3. **Commit the task.** Stage only the current task's changes and create a focused commit before dispatching the next subagent.
-4. Mark the todo complete and move to the next task.
+   Use repository-relative exact paths; append `/` only for an explicitly owned directory. Reject the phase if HEAD, current branch, local or remote-tracking refs, or worktree inventory changed, or if any staged, unstaged, or untracked return path falls outside the allowlist. Surface the exact violation before accepting or committing anything. These observable repository checks cannot prove the absence of arbitrary external side effects.
+
+6. Verify the returned command output actually shows focused and surrounding checks ran and passed. Inspect the complete owned diff, integrate any delegated work, and reject missing evidence or scope sprawl.
+7. The orchestrator alone stages the accepted phase paths and creates one focused commit. Then remove the temporary snapshot, mark the phase complete, and proceed from the newly clean worktree.
 
 ## Rules
 
-- **One fresh task owner per task** — context isolation is the point; do not
-  reuse a task owner across plan tasks.
-- **No faking verification.** If a required test or check will not pass after a genuine attempt, STOP and surface it to the user — do not skip it, weaken the assertion, or mark the task done.
-- **Evidence over assertion.** Every "done" is backed by command output you have seen.
+- Use one fresh exact `implementer` per plan phase; never reuse a task owner across phases.
+- Stop for reconciliation instead of dispatching into any dirty worktree.
+- Never fake, skip, or weaken verification. Surface a genuine required-check failure.
+- Keep failures and residual risk visible. The orchestrator owns decisions that cross phase boundaries.
 
-## After all tasks
+## After all phases
 
-Run the shared `code-review` skill on the full diff before merging. Address each finding or push back with reasoning.
+The orchestrator runs the complete verification gate, inspects the full branch diff, and invokes the `code-review` skill. Never delegate final review or publication to an implementer.

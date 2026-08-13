@@ -51,13 +51,33 @@ python_with_tomllib() {
   return 1
 }
 
+python_with_yaml() {
+  local candidate
+
+  for candidate in "${PYTHON_YAML:-}" python3.12 python3.11 python3; do
+    if [ -z "$candidate" ]; then
+      continue
+    fi
+    if command -v "$candidate" >/dev/null 2>&1 &&
+       "$candidate" -c 'import yaml' >/dev/null 2>&1; then
+      echo "$candidate"
+      return
+    fi
+  done
+
+  echo "No Python with PyYAML found. Set PYTHON_YAML to a suitable binary." >&2
+  return 1
+}
+
 PYTHON_TOML_BIN="$(python_with_tomllib)"
+PYTHON_YAML_BIN="$(python_with_yaml)"
 
 require_regular_file "AGENTS.md"
 require_regular_file "codex/AGENTS.md"
 require_regular_file "codex/config.toml"
 require_regular_file "codex/agents/doc_reviewer.toml"
 require_regular_file "codex/agents/code_reviewer.toml"
+require_regular_file "codex/agents/implementer.toml"
 for skill in general-auto-research adversarial-doc-review brainstorming planning code-review commit implement merge issue; do
   require_regular_file "codex/skills/$skill/SKILL.md"
 done
@@ -68,6 +88,8 @@ require_regular_file "scripts/merge-codex-config.py"
 require_regular_file "scripts/test-merge-codex-config.py"
 require_regular_file "scripts/validate-legacy-archive.py"
 require_regular_file "scripts/test-legacy-archive-validation.py"
+require_regular_file "codex/skills/implement/scripts/git_task_guard.py"
+require_regular_file "codex/skills/implement/scripts/test_git_task_guard.py"
 
 for path in \
   CLAUDE.md \
@@ -102,6 +124,11 @@ for path in \
   scripts/test-legacy-archive-validation.py; do
   require_executable "$path"
 done
+for path in \
+  codex/skills/implement/scripts/git_task_guard.py \
+  codex/skills/implement/scripts/test_git_task_guard.py; do
+  require_executable "$path"
+done
 
 bash -n "$ROOT_DIR/install.sh"
 bash -n "$ROOT_DIR/sync-remote.sh"
@@ -132,6 +159,7 @@ done < <(rg -l 'archive/legacy-harnesses' "$ROOT_DIR/scripts" || true)
   'import pathlib, tomllib, sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' \
   "$ROOT_DIR/codex/config.toml"
 "$PYTHON_TOML_BIN" - "$ROOT_DIR" <<'PY'
+import hashlib
 import pathlib
 import sys
 import tomllib
@@ -150,6 +178,16 @@ routing_keys = {
     "model_reasoning_effort",
     "service_tier",
 }
+expected_reviewer_hashes = {
+    "doc_reviewer.toml": "b4e996f0b7149dddae81baa37c894ab70c52d768210ba5fed656b381e9a06a64",
+    "code_reviewer.toml": "7fc797cf86cec2e8cb117980f383f314e5991bde6fb8d1fb32c69e7966922908",
+}
+
+for filename, expected_hash in expected_reviewer_hashes.items():
+    payload = (root / "codex" / "agents" / filename).read_bytes()
+    actual_hash = hashlib.sha256(payload).hexdigest()
+    if actual_hash != expected_hash:
+        raise SystemExit(f"{filename}: reviewer role changed unexpectedly")
 
 
 def load_role(filename: str, expected_name: str) -> dict[str, object]:
@@ -251,6 +289,76 @@ if code_shell_policy["filters"] != expected_filters:
     raise SystemExit(
         "code_reviewer.toml: expected exact PYTHONPATH and VIRTUAL_ENV exclusion filters"
     )
+
+implementer_path = root / "codex" / "agents" / "implementer.toml"
+with implementer_path.open("rb") as role_file:
+    implementer = tomllib.load(role_file)
+
+expected_implementer_keys = {"name", "description", "developer_instructions", "skills"}
+if set(implementer) != expected_implementer_keys:
+    raise SystemExit(
+        "implementer.toml: expected only role identity, instructions, and skill selectors"
+    )
+if implementer["name"] != "implementer":
+    raise SystemExit("implementer.toml: expected role name 'implementer'")
+for field in ("description", "developer_instructions"):
+    value = implementer[field]
+    if not isinstance(value, str) or not value.strip():
+        raise SystemExit(f"implementer.toml: {field} must be a non-empty string")
+
+disabled_implementer_skills = {
+    "general-auto-research",
+    "brainstorming",
+    "planning",
+    "commit",
+    "implement",
+    "merge",
+    "issue",
+    "adversarial-doc-review",
+    "code-review",
+    "claude-doc-review",
+    "claude-code-review",
+}
+skill_entries = implementer["skills"].get("config", [])
+if not isinstance(skill_entries, list) or len(skill_entries) != 11:
+    raise SystemExit("implementer.toml: expected exactly eleven disabled skills")
+if any(set(entry) != {"name", "enabled"} for entry in skill_entries):
+    raise SystemExit("implementer.toml: skills must use only name and enabled selectors")
+if any(entry["enabled"] is not False for entry in skill_entries):
+    raise SystemExit("implementer.toml: every selected skill must be disabled")
+configured_names = {entry["name"] for entry in skill_entries}
+if configured_names != disabled_implementer_skills:
+    raise SystemExit(
+        f"implementer.toml: unexpected disabled skills: {sorted(configured_names)}"
+    )
+
+implementer_instructions = implementer["developer_instructions"]
+for required_text in (
+    "exactly one implementation-plan phase",
+    "governing AGENTS.md",
+    "absolute plan path",
+    "absolute spec path",
+    "relevant code, callers, tests, and Git history",
+    "explicit file or responsibility ownership",
+    "Other agents may be editing the shared worktree",
+    "Implementation-first",
+    "actual command output",
+    "native nested helpers only when useful for bounded work with disjoint ownership",
+    "Every helper prompt must include",
+    "Let helpers inherit your model and reasoning effort",
+    "Do not commit, push, merge",
+    "mutate branches or worktrees",
+    "Do not make external writes",
+    "Do not launch Codex, Claude, OMP, review runners, standalone CLI agents",
+    "Do not request sandbox approvals or escalations",
+    "instruction-level restrictions, not a capability boundary",
+    "changed paths and scoped diff summary",
+    "actual focused and surrounding verification commands and output",
+):
+    if required_text not in implementer_instructions:
+        raise SystemExit(
+            f"implementer.toml: missing stable contract text {required_text!r}"
+        )
 PY
 
 for skill in adversarial-doc-review code-review; do
@@ -269,9 +377,40 @@ grep -F 'agent_type="doc_reviewer"' \
 grep -F 'agent_type="code_reviewer"' \
   "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 
+implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"
+for required_text in \
+  'agent_type="implementer"' \
+  'fork_turns="none"' \
+  'model="gpt-5.6-sol"' \
+  'reasoning_effort="high"' \
+  'git status --porcelain=v1 --untracked-files=all' \
+  'git_task_guard.py snapshot' \
+  'git_task_guard.py verify' \
+  'There is no generic-agent or standalone CLI fallback.' \
+  'instruction-level restrictions, not a capability boundary' \
+  'checks cannot prove the absence of arbitrary external side effects' \
+  'The orchestrator alone stages the accepted phase paths and creates one focused commit' \
+  'invokes the `code-review` skill'; do
+  grep -F "$required_text" "$implement_skill" >/dev/null
+done
+if grep -Eq 'Fable|Opus|model: "opus"|omit the model override' "$implement_skill"; then
+  echo "Implement skill contains retired model routing" >&2
+  exit 1
+fi
+
+SKILL_VALIDATOR="${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py"
+if [ ! -f "$SKILL_VALIDATOR" ]; then
+  echo "Skill validator is unavailable: $SKILL_VALIDATOR" >&2
+  exit 1
+fi
+"$PYTHON_YAML_BIN" "$SKILL_VALIDATOR" "$ROOT_DIR/codex/skills/implement"
+
 python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py" \
   "$ROOT_DIR/scripts/validate-legacy-archive.py" \
-  "$ROOT_DIR/scripts/test-legacy-archive-validation.py"
+  "$ROOT_DIR/scripts/test-legacy-archive-validation.py" \
+  "$ROOT_DIR/codex/skills/implement/scripts/git_task_guard.py" \
+  "$ROOT_DIR/codex/skills/implement/scripts/test_git_task_guard.py"
+python3 "$ROOT_DIR/codex/skills/implement/scripts/test_git_task_guard.py"
 python3 "$ROOT_DIR/scripts/validate-legacy-archive.py" \
   "$ROOT_DIR/archive/legacy-harnesses" --repository "$ROOT_DIR"
 python3 "$ROOT_DIR/scripts/test-legacy-archive-validation.py"

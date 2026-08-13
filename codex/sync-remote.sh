@@ -26,15 +26,17 @@ SKILLS=(
   issue
 )
 
-ssh "$REMOTE" 'mkdir -p ~/.codex/agents ~/.agents/skills/general-auto-research ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
+ssh "$REMOTE" 'mkdir -p ~/.codex/agents ~/.agents/skills/general-auto-research ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/implement/scripts ~/.agents/skills/merge ~/.agents/skills/issue'
 
 scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
 scp -q "$REPO_DIR/agents/doc_reviewer.toml" "$REMOTE:~/.codex/agents/doc_reviewer.toml"
 scp -q "$REPO_DIR/agents/code_reviewer.toml" "$REMOTE:~/.codex/agents/code_reviewer.toml"
+scp -q "$REPO_DIR/agents/implementer.toml" "$REMOTE:~/.codex/agents/implementer.toml"
 
 for skill in "${SKILLS[@]}"; do
   scp -q "$REPO_DIR/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
 done
+scp -q "$REPO_DIR/skills/implement/scripts/git_task_guard.py" "$REMOTE:~/.agents/skills/implement/scripts/git_task_guard.py"
 
 ssh "$REMOTE" 'cat ~/.codex/config.toml 2>/dev/null || true' >"$REMOTE_CONFIG_FILE"
 python3 "$ROOT_DIR/scripts/merge-codex-config.py" "$REMOTE_CONFIG_FILE" "$REPO_DIR/config.toml" \
