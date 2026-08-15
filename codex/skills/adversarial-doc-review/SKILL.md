@@ -32,7 +32,7 @@ Tell the user the tier and a one-sentence rationale, then proceed unless the use
 
 1. Create a logical-workflow counter with a three-completed-turn budget.
 2. Require the callable native spawn schema to accept the exact configured `agent_type="doc_reviewer"`. If it does not, stop and identify a fresh supported Codex runtime with the installed role as the prerequisite. Do not use a generic agent or CLI fallback.
-3. Snapshot sibling task names. Choose the smallest positive ordinal unused by `doc_reviewer_workflow_<N>_stage_*` and reserve `doc_reviewer_workflow_<N>_stage_1`.
+3. Generate one task name as `doc_reviewer_review_<yyyymmddthhmmssz>_<six lowercase hex characters>`, using the current UTC time and a random hexadecimal suffix. Use only lowercase letters, digits, and underscores. Do not list sibling tasks before or after dispatch.
 4. Build only this dynamic task, omitting absent fields:
 
    ```text
@@ -42,25 +42,22 @@ Tell the user the tier and a one-sentence rationale, then proceed unless the use
    Additional emphasis only; it does not narrow the review: {{FOCUS}}
    ```
 
-5. Call `spawn_agent` with the dynamic task as `message`, the exact `agent_type="doc_reviewer"`, the reserved `task_name`, `fork_turns="none"`, `model="gpt-5.6-sol"`, and the selected `reasoning_effort`.
-6. Retain the returned canonical target. Accepted exact-role dispatch is the role-selection evidence. Do not require unavailable parent-visible child metadata or treat reviewer self-report as proof of its role, model, or effort.
-
-If dispatch is ambiguous, compare the post-dispatch sibling snapshot with the reservation. Adopt only one newly created canonical target for that previously absent name. Retry once with the same reservation only after confirming that no target was created; otherwise stop rather than risk duplicate review work.
+5. Call `spawn_agent` once with the dynamic task as `message`, the exact `agent_type="doc_reviewer"`, the generated `task_name`, `fork_turns="none"`, `model="gpt-5.6-sol"`, and the selected `reasoning_effort`.
+6. Retain the canonical target returned by the successful call. Accepted exact-role dispatch is the role-selection evidence. Do not require unavailable parent-visible child metadata or treat reviewer self-report as proof of its role, model, or effort. If the platform rejects the task name, dispatch fails, or no canonical target is returned, report the failure directly and make no second spawn call.
 
 ## Receive and verify the review
 
-- Wait event-first for the canonical target. Do not narrate unchanged status, inspect partial reasoning, or relay intermediate output.
+- Wait passively and event-first for the canonical target's completed response. Do not poll task status, narrate unchanged status, inspect partial reasoning, or relay intermediate output.
 - Reject every sandbox approval or escalation request. If the reviewer attempts delegation, process or runner launch, or a local or external mutation that the main agent did not explicitly authorize in a follow-up, terminate the review as failed and report the attempted side effect.
-- Treat a terminated or unavailable canonical target as a surfaced failure. Never switch transport.
+- Treat a terminated or unavailable canonical target as a surfaced failure.
 - Relay only the completed review. Verify every finding against the documents and repository context before editing; classify it as confirmed, rejected with specific evidence, or needing clarification. Never blindly implement or silently skip feedback.
 - If the reviewer reports no findings, spot-check the documents before continuing.
 
 ## Re-review
 
 - Count each completed substantive final response. Failed dispatches, transport errors without completed output, waits, and partial messages do not consume a turn. Ask the user before a fourth completed turn.
-- A materially new scope begins a disclosed new workflow with a fresh smallest-unused ordinal and three-turn budget. Replacements do not reset the current workflow's counter.
-- Reuse the canonical target with `followup_task`. Include a unique `[review-workflow: doc_reviewer_workflow_<N>; stage:<S>; turn:<T>]` marker, original finding identifiers, each verified disposition and evidence, exact revised paths and sections, and a request to check fixes and regressions under the original role contract.
-- If follow-up acceptance is ambiguous, inspect only the canonical target. Resend the same marked follow-up once only after confirming non-acceptance; otherwise stop.
-- Start `doc_reviewer_workflow_<N>_stage_<S+1>` only when the canonical target is confirmed unavailable or terminated, or the user requests a same-workflow tie-breaker. Preserve the remaining turn budget and give the replacement the original dynamic task plus workflow history. Reconcile an already-present next-stage name instead of skipping it.
+- A materially new scope begins a disclosed new workflow with its own three-turn budget. A user-authorized fresh start for unchanged scope keeps the original workflow's completed-turn count.
+- Reuse only the original canonical target with one `followup_task` call per re-review. Keep the follow-up concise and include the original finding identifiers, each verified disposition and evidence, the exact revised paths and sections, and a request to check fixes and regressions under the original role contract.
+- If the canonical target or follow-up is unavailable, report the failure directly. Do not resend the follow-up or start another reviewer unless the user explicitly authorizes a fresh start.
 
-Fail loudly for missing input, empty files, unavailable exact-role dispatch, ambiguous native dispatch, unavailable targets, or unauthorized side-effect attempts.
+Fail loudly for missing input, empty files, unavailable exact-role dispatch, rejected task names, unavailable canonical targets or follow-ups, or unauthorized side-effect attempts.
