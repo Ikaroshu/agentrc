@@ -73,6 +73,7 @@ write_expected_scp() {
     printf '%s\n' "-q $ROOT_DIR/codex/agents/doc_reviewer.toml test:~/.codex/agents/doc_reviewer.toml"
     printf '%s\n' "-q $ROOT_DIR/codex/agents/code_reviewer.toml test:~/.codex/agents/code_reviewer.toml"
     printf '%s\n' "-q $ROOT_DIR/codex/agents/implementer.toml test:~/.codex/agents/implementer.toml"
+    printf '%s\n' "-q $ROOT_DIR/codex/agents/research_worker.toml test:~/.codex/agents/research_worker.toml"
     for skill in general-auto-research adversarial-doc-review brainstorming planning code-review commit implement merge issue; do
       printf '%s\n' "-q $ROOT_DIR/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
     done
@@ -129,13 +130,15 @@ run_sync_test() {
     echo "$name sync did not merge from the remote machine baseline" >&2
     exit 1
   fi
-  if [ ! -f "$remote_home/.codex/agents/implementer.toml" ] ||
-     [ -L "$remote_home/.codex/agents/implementer.toml" ] ||
-     ! cmp -s "$ROOT_DIR/codex/agents/implementer.toml" \
-       "$remote_home/.codex/agents/implementer.toml"; then
-    echo "$name sync did not deploy an exact regular implementer role" >&2
-    exit 1
-  fi
+  for role in implementer.toml research_worker.toml; do
+    if [ ! -f "$remote_home/.codex/agents/$role" ] ||
+       [ -L "$remote_home/.codex/agents/$role" ] ||
+       ! cmp -s "$ROOT_DIR/codex/agents/$role" \
+         "$remote_home/.codex/agents/$role"; then
+      echo "$name sync did not deploy an exact regular role: $role" >&2
+      exit 1
+    fi
+  done
   if [ ! -f "$remote_home/.agents/skills/implement/scripts/git_task_guard.py" ] ||
      ! cmp -s "$ROOT_DIR/codex/skills/implement/scripts/git_task_guard.py" \
        "$remote_home/.agents/skills/implement/scripts/git_task_guard.py"; then
@@ -147,4 +150,4 @@ run_sync_test() {
 run_sync_test root "$ROOT_DIR/sync-remote.sh"
 run_sync_test codex "$ROOT_DIR/codex/sync-remote.sh"
 
-echo "Remote sync test passed (14 exact destinations, 3 exact commands)."
+echo "Remote sync test passed (15 exact destinations, 3 exact commands)."

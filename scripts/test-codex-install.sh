@@ -201,7 +201,7 @@ if [ ! -L "$TEST_HOME/.codex/AGENTS.md" ] ||
   exit 1
 fi
 
-for role in doc_reviewer.toml code_reviewer.toml implementer.toml; do
+for role in doc_reviewer.toml code_reviewer.toml implementer.toml research_worker.toml; do
   target="$TEST_HOME/.codex/agents/$role"
   if [ ! -f "$target" ] || [ -L "$target" ] ||
      ! cmp -s "$target" "$ROOT_DIR/codex/agents/$role"; then
