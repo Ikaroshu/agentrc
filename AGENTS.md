@@ -11,6 +11,7 @@ This repository tracks portable Codex configuration. It is a config repository m
 - `codex/skills/` — canonical Codex skills installed into `~/.agents/skills/`.
 - `codex/install.sh` and `codex/sync-remote.sh` — Codex-only local installation and remote synchronization.
 - `archive/legacy-harnesses/` — an inert documentation-only snapshot of the former multi-harness repository. Inspect it with the read-only commands in its README; never extract it into an agent workspace or install, sync, execute, source, or otherwise use its contents as active configuration.
+- `archive/portseer-claude/` — an inert documentation-only snapshot of retired Portseer Claude-local configuration. Never extract, execute, install, sync, or source it.
 - `scripts/` — active validation and Codex configuration merge helpers.
 
 ## Common Commands
@@ -39,7 +40,7 @@ Validate the repository after every config change:
 
 - Keep cross-project behavioral instructions in `codex/AGENTS.md`; keep repository-maintenance instructions here.
 - Keep every active skill under `codex/skills/` and every active role under `codex/agents/` as a regular Codex-owned file. Do not add shared or compatibility paths.
-- Treat `archive/legacy-harnesses/` as historical documentation only. Active scripts must never extract, source, execute, install, sync, or copy runtime content from it.
+- Treat `archive/` as historical documentation only. Active scripts must never extract, source, execute, install, sync, or copy runtime content from it.
 - Codex install and sync must preserve machine-specific config, project trust, notices, marketplaces, skill path entries, app-managed settings, unrelated rules, unrelated skills, and legacy Claude/OMP state that this repository no longer manages.
 - Paths inside portable config should prefer `~/` when Codex supports it. Absolute paths are acceptable only for machine-local state that Codex itself records.
 - Shell scripts should use `set -euo pipefail` and stay simple enough to review without a framework.

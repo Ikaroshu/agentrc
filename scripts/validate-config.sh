@@ -78,12 +78,32 @@ require_regular_file "codex/config.toml"
 require_regular_file "codex/agents/doc_reviewer.toml"
 require_regular_file "codex/agents/code_reviewer.toml"
 require_regular_file "codex/agents/implementer.toml"
+require_regular_file "codex/agents/research_worker.toml"
 for skill in general-auto-research adversarial-doc-review brainstorming planning code-review commit implement merge issue; do
   require_regular_file "codex/skills/$skill/SKILL.md"
 done
 require_regular_file "archive/legacy-harnesses/README.md"
 require_regular_file "archive/legacy-harnesses/MANIFEST.tsv"
 require_regular_file "archive/legacy-harnesses/agentrc-pre-codex-only.tar.gz"
+require_regular_file "archive/portseer-claude/README.md"
+require_regular_file "archive/portseer-claude/portseer-claude-20260815.tar.gz"
+portseer_claude_archive="$ROOT_DIR/archive/portseer-claude/portseer-claude-20260815.tar.gz"
+portseer_claude_entries="$(tar -tzf "$portseer_claude_archive")"
+for path in \
+  .claude/settings.local.json \
+  .claude/file-suggestion-extra.sh \
+  .claude/hooks/block-py-mv.sh; do
+  if ! grep -Fx "$path" <<<"$portseer_claude_entries" >/dev/null; then
+    echo "Retired Portseer Claude archive is missing: $path" >&2
+    exit 1
+  fi
+done
+if grep -Eq '(^|/)\.\.(/|$)' <<<"$portseer_claude_entries" ||
+   grep -Ev '^\.claude(/|$)' <<<"$portseer_claude_entries" >/dev/null ||
+   grep -E '^\.claude/skills/?$' <<<"$portseer_claude_entries" >/dev/null; then
+  echo "Retired Portseer Claude archive contains an unsafe or active entry" >&2
+  exit 1
+fi
 require_regular_file "scripts/merge-codex-config.py"
 require_regular_file "scripts/test-merge-codex-config.py"
 require_regular_file "scripts/validate-legacy-archive.py"
@@ -335,6 +355,46 @@ for required_text in (
     if required_text not in implementer_instructions:
         raise SystemExit(
             f"implementer.toml: missing stable contract text {required_text!r}"
+        )
+
+research_worker_path = root / "codex" / "agents" / "research_worker.toml"
+with research_worker_path.open("rb") as role_file:
+    research_worker = tomllib.load(role_file)
+
+if set(research_worker) != {"name", "description", "developer_instructions"}:
+    raise SystemExit(
+        "research_worker.toml: expected only role identity and instructions"
+    )
+if research_worker["name"] != "research_worker":
+    raise SystemExit("research_worker.toml: expected role name 'research_worker'")
+for field in ("description", "developer_instructions"):
+    value = research_worker[field]
+    if not isinstance(value, str) or not value.strip():
+        raise SystemExit(f"research_worker.toml: {field} must be a non-empty string")
+
+research_worker_instructions = research_worker["developer_instructions"]
+for required_text in (
+    "exactly one research experiment or follow-up",
+    "supplied research brief",
+    "exact hypothesis",
+    "owned experiment-folder path",
+    "Implement and evaluate the idea end to end",
+    "Follow the brief's evidence standard",
+    "only inside the supplied folder",
+    "treat tracked repository code",
+    "Other workers may share the repository",
+    "never revert or overwrite files you do not own",
+    "reproducible code, exact commands, raw or machine-readable results",
+    "result.md containing the conclusion, evidence, limitations, and useful next tests",
+    "keep the prior experiment artifacts intact",
+    "Do not stage files, modify the Git index",
+    "Use only experiment infrastructure explicitly authorized",
+    "Do not delegate",
+    "artifact paths",
+):
+    if required_text not in research_worker_instructions:
+        raise SystemExit(
+            f"research_worker.toml: missing stable contract text {required_text!r}"
         )
 PY
 
