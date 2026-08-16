@@ -91,6 +91,8 @@ If the feature branch had a worktree, remove it (only after confirming it belong
 git worktree remove <worktree-path>
 ```
 
+If that worktree was registered as a saved local Codex project for continuation tasks, remove the matching project registration after the worktree is removed. If project removal is unavailable, report the exact stale project path that the user must remove from the app; do not leave it unmentioned.
+
 ## Step 9: Close the Linked Issue
 
 After the merge is pushed, close any GitHub issue the merged work resolves — do this automatically, without being asked.
@@ -115,4 +117,5 @@ If multiple distinct issues are referenced, close each. If none is referenced, s
 | Delete local branch | yes | yes |
 | Delete remote branch | yes | automatic |
 | Remove worktree | if exists | if exists |
+| Remove worktree project registration | if registered | if registered |
 | Close linked issue | yes | verify (auto if PR keyword) |

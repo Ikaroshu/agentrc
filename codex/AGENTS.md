@@ -22,6 +22,13 @@
 - Keep plans and specs uncommitted on `main`; put planned implementation worktrees under `<project-root>/.worktrees/`. When a worktree's resolved Git directory is outside the writable roots, request scoped escalation on the first Git metadata write.
 - Cap each logical document-review or code-review workflow at three completed substantive reviewer turns. Ask before a fourth; only materially new scope resets the count.
 
+## Context Handoffs
+
+- When the user requests a fresh task because the current task's context is too long, create a new task with a concise self-contained handoff prompt. Do not fork the current task, because a fork copies its completed history.
+- Keep active issue work in its existing `<project-root>/.worktrees/<name>/` checkout. Make that exact directory the primary folder of a saved local Codex project. Resolve its exact path with the project-listing tool, then create the continuation with the thread-creation tool targeting that project and `environment: local`. Do not target the parent project or select a worktree environment, which would use a different checkout.
+- Before dispatch, verify that the saved project's primary path exactly matches the active worktree. If it is unavailable, stop and ask the user to add that worktree as a local project; do not create another worktree, relocate the changes, or construct a temporary patch.
+- Include the absolute worktree path, branch and HEAD, working-tree state, governing plan/spec/handoff paths, completed work and verification, remaining work, blockers, and approval boundaries in the handoff prompt.
+
 ## GitHub Issues
 
 - Issue bodies describe only the problem and relevant context, without proposed solutions or acceptance criteria, unless the user explicitly asks otherwise.

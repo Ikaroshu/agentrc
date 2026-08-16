@@ -111,6 +111,24 @@ require_regular_file "scripts/test-legacy-archive-validation.py"
 require_regular_file "codex/skills/implement/scripts/git_task_guard.py"
 require_regular_file "codex/skills/implement/scripts/test_git_task_guard.py"
 
+for required_text in \
+  "## Context Handoffs" \
+  "Do not fork the current task" \
+  "<project-root>/.worktrees/<name>/" \
+  "thread-creation tool targeting that project and \`environment: local\`" \
+  "primary path exactly matches the active worktree"; do
+  if ! grep -F "$required_text" "$ROOT_DIR/codex/AGENTS.md" >/dev/null; then
+    echo "codex/AGENTS.md is missing context-handoff contract text: $required_text" >&2
+    exit 1
+  fi
+done
+
+if ! grep -F "remove the matching project registration" \
+  "$ROOT_DIR/codex/skills/merge/SKILL.md" >/dev/null; then
+  echo "merge skill is missing worktree project-registration cleanup" >&2
+  exit 1
+fi
+
 for path in \
   CLAUDE.md \
   claude \
