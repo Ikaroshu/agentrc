@@ -16,7 +16,7 @@
 
 ## Development Workflow
 
-- Implement small, clear, low-risk changes directly. Invoke brainstorming automatically when intent, requirements, scope, assumptions, or design choices are materially uncertain. For settled large, cross-cutting, or high-risk work, recommend planning and document review; for borderline work, give a recommendation and let the user choose.
+- Implement small, clear, low-risk changes directly. Invoke brainstorming automatically only when a material uncertainty about intent, requirements, scope, assumptions, or design choices requires meaningful user input before proceeding. Do not invoke it for uncertainty resolvable through project context, ordinary reasoning, or safe in-scope assumptions. For settled large, cross-cutting, or high-risk work, recommend planning and document review; for borderline work, give a recommendation and let the user choose.
 - Ask before starting an optional workflow. When chosen, follow **[brainstorm ->] plan -> doc-review -> worktree -> implement -> code-review -> merge** and let each skill own its stage mechanics. The agent invokes the selected skills; do not ask the user to invoke them.
 - Get approval for the design during brainstorming. After document-review findings are resolved, pause for approval before creating a worktree or implementing. After code-review findings are resolved, pause again before merging. Do not add other reconfirmation gates.
 - Keep plans and specs uncommitted on `main`; put planned implementation worktrees under `<project-root>/.worktrees/`. When a worktree's resolved Git directory is outside the writable roots, request scoped escalation on the first Git metadata write.

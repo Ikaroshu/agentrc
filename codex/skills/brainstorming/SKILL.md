@@ -1,17 +1,18 @@
 ---
 name: brainstorming
-description: Use automatically when a discussion or request has material uncertainty about intent, requirements, scope, assumptions, or design choices that could change the outcome. Explore project context, discuss meaningful design tensions with the user, compare approaches, and produce an approved design before planning or implementation. Do not use for clear factual questions, well-scoped tasks, or details discoverable from project context. Do not write an implementation plan.
+description: Use only when a material uncertainty about intent, requirements, scope, assumptions, or design choices requires meaningful discussion with the user before planning or implementation can proceed. This is a user-interaction workflow, not a private reasoning technique. Do not use when Codex can resolve the uncertainty through project context, ordinary reasoning, or safe in-scope assumptions, or for clear factual questions and well-scoped tasks. Explore context, discuss consequential design tensions, and produce an approved design. Do not write an implementation plan.
 ---
 
 # Brainstorming
 
-Turn material uncertainty into an agreed design before planning or implementation. Trigger automatically when necessary, then converge as soon as the design is decision-ready.
+Turn a material design question that requires user input into an agreed design before planning or implementation. Do not invoke this skill merely to structure private thinking.
 
 **Announce at start:** "Using the brainstorming skill to clarify the material uncertainty and settle the design."
 
 ## Principles
 
 - **No implementation yet.** Read and explore freely, but do not edit implementation files or write the implementation plan during this skill.
+- **Require meaningful user input.** Invoke only when progress depends on the user's intent, preference, or tradeoff decision. The existence of uncertainty or alternatives is not enough. If context, ordinary reasoning, established constraints, or safe in-scope assumptions resolve the question, continue normally without invoking or announcing this skill.
 - **Keep the user inside the reasoning.** Surface the working view and any genuinely relevant alternative or concern, then give the user room to challenge, extend, or redirect the thinking before settling the design. Never complete a meaningful design debate entirely with yourself and present only the conclusion.
 - **One question at a time.** Ask a single focused question, wait for the answer, then ask the next. Never dump a wall of questions.
 - **Keep dialogue bounded.** Ask only questions whose answers could materially change the design. Stop when it is decision-ready. If discussion stops producing new information, state the remaining tension, recommend a resolution, and seek approval.
@@ -21,7 +22,7 @@ Turn material uncertainty into an agreed design before planning or implementatio
 ## Steps
 
 1. **Explore context.** Read the relevant code, docs, and recent history before proposing a design. Follow established project patterns.
-2. **Confirm brainstorming is necessary.** If exploration resolves the uncertainty, exit the skill and continue normally. Do not manufacture design choices.
+2. **Confirm discussion is necessary.** Continue only if at least one consequential question requires the user's answer. If exploration or private reasoning resolves the uncertainty, or established constraints and safe in-scope assumptions provide a clear path, exit the skill and continue normally. Do not manufacture design choices or use this skill as a self-review checklist.
 3. **Check scope.** If the request spans independent subsystems, propose a decomposition and brainstorm one focused piece at a time.
 4. **Discuss the design, one question at a time.** Surface the current view and any genuinely relevant challenge, then invite the user to challenge, extend, or redirect the thinking before settling it. Cover only what the design needs:
    - Intent — what problem are we actually solving, and for whom?
