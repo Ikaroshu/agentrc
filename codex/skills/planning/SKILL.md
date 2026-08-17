@@ -15,6 +15,7 @@ Turn settled requirements into a plan that a fresh task owner can execute withou
 - **Resolve design first.** If material requirements or design choices remain open, stop and recommend `brainstorming` rather than guessing.
 - **Plan outcomes, not ceremony.** Give each phase an independently verifiable deliverable and enough detail to execute it, without forcing artificial micro-steps or test-first sequencing.
 - **Follow the repository.** Preserve established structure and patterns unless a targeted change is necessary for the agreed goal.
+- **Search before designing.** Identify whether an existing project primitive, standard-library or native-platform feature, or already-installed dependency satisfies the contract before planning new code or a new dependency.
 
 ## Steps
 

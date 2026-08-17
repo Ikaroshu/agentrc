@@ -7,7 +7,7 @@ Find only actionable issues introduced by the supplied change:
 1. Correctness bugs, regressions, and broken behavioral or interface contracts.
 2. Security vulnerabilities, data-loss risks, unsafe partial failure, and concurrency defects.
 3. Important missing tests or verification for changed behavior.
-4. Maintainability or over-engineering problems that materially harm correctness, performance, operability, or ongoing maintenance. This includes redundant runtime auditing or validation when a test or an explicit verification or maintenance command would satisfy the actual contract.
+4. Maintainability or over-engineering problems that materially harm correctness, performance, operability, or ongoing maintenance. This includes redundant runtime auditing or validation when a test or an explicit verification or maintenance command would satisfy the actual contract. Explicitly inspect whether the change duplicates an existing project primitive, standard-library or native-platform capability, or already-installed dependency, or adds an unnecessary dependency, single-implementation abstraction, pass-through wrapper, or unused configurability. Report it only when the added maintenance cost is material.
 
 Do not flag style preferences, hypothetical risks without a plausible execution path, or issues unrelated to changed behavior. Do not claim a check passed unless you ran it successfully. Do not approve by default or manufacture findings. Support each finding concisely with severity, confidence, file and line, evidence, problem, impact, and minimum fix, ordered by severity.
 

@@ -1,15 +1,17 @@
 ## Engineering Philosophy
 
 - Prefer the simplest design that satisfies the current contract. Do not add speculative abstractions, state, branches, validation, error handling, fallbacks, retries, or guards for conditions that should be impossible. Let contract violations fail at their source.
-- Validate or catch only at real boundaries such as untrusted input, external APIs, and user-facing entry points. Do not use exceptions for normal control flow or swallow unexpected failures. Keep runtime checks only when the current operation needs them for correct or safe behavior. Put deeper semantic, integrity, provenance, and consistency checks in tests or explicit verification and maintenance commands that run separately.
+- Before adding code, determine whether the current contract needs new code; then look for an appropriate project primitive or pattern, the standard library or native platform, and an already-installed dependency before writing the smallest clear local implementation. Add a dependency only when it materially reduces total complexity or provides behavior the project should not own.
+- Validate or catch only at real boundaries such as untrusted input, external APIs, and user-facing entry points. Do not use exceptions for normal control flow or swallow unexpected failures. Keep a runtime safeguard only when the current operation needs it to prevent a plausible security failure, data loss, inaccessible user-facing behavior, or another contract violation. Put broader semantic, integrity, provenance, and consistency audits in tests or explicit verification and maintenance commands.
 - Do not reread, recompute, rehash, or traverse trusted data merely to prove that the producing code worked. Construct immutable artifacts and any required content identity in one pass; compute hashes only when identity or integrity is part of the active contract.
-- Treat these as personal projects with no external customers. Prefer clean current code over legacy readers, migrations, compatibility gates, aliases, shims, and version branches unless the user requests compatibility or a known active consumer requires it. Breaking changes may require rebuilding state or rerunning jobs; state those consequences before implementation.
-- Keep version fields only for an active generic storage or serialization protocol or external provider and normalization provenance. Do not use source, recipe, or format versions as proxies for current code; record source revisions as provenance when useful.
-- Prefer clear names and simple structure over comments. Add comments or docstrings only for non-obvious logic, subtle constraints, or important warnings.
+- Prefer clean current code over legacy readers, migrations, aliases, shims, and compatibility branches unless the user requests compatibility or a known active consumer requires it. State before implementation when a breaking change requires rebuilding state or rerunning jobs.
+- Use version fields only for active generic storage or serialization protocols or when an external provider exposes a meaningful version. Record normalization provenance and source revisions directly; do not invent source, recipe, or format versions as proxies for current code.
+- Prefer clear names and simple structure over comments. Add comments or docstrings only for non-obvious logic, subtle constraints, or important warnings. When a deliberate simplification has a real, non-obvious ceiling, document the ceiling and the concrete condition for revisiting it.
 
 ## Debugging
 
 - Reproduce the problem and read the complete error before theorizing. Without a reliable repro, keep gathering evidence.
+- For bug fixes, trace the active flow and relevant callers to the layer that owns the contract. Fix the shared root cause once rather than patching only the reported path, unless changing the shared layer would alter unrelated contracts.
 - Ask about material uncertainty that cannot be resolved from context. Test one hypothesis at a time with a focused experiment, and revert a failed change before trying another.
 - After three falsified hypotheses, consult primary documentation or search online rather than continuing to guess.
 - Verify the fix against the original repro before claiming success.
@@ -17,6 +19,7 @@
 ## Development Workflow
 
 - Implement small, clear, low-risk changes directly. Invoke brainstorming automatically only when a material uncertainty about intent, requirements, scope, assumptions, or design choices requires meaningful user input before proceeding. Do not invoke it for uncertainty resolvable through project context, ordinary reasoning, or safe in-scope assumptions. For settled large, cross-cutting, or high-risk work, recommend planning and document review; for borderline work, give a recommendation and let the user choose.
+- For non-trivial changed behavior, leave the smallest focused regression check that would fail if the behavior regressed, using the repository's existing test tools; scale surrounding verification to risk.
 - Ask before starting an optional workflow. When chosen, follow **[brainstorm ->] plan -> doc-review -> worktree -> implement -> code-review -> merge** and let each skill own its stage mechanics. The agent invokes the selected skills; do not ask the user to invoke them.
 - Get approval for the design during brainstorming. After document-review findings are resolved, pause for approval before creating a worktree or implementing. After code-review findings are resolved, pause again before merging. Do not add other reconfirmation gates.
 - Keep plans and specs uncommitted on `main`; put planned implementation worktrees under `<project-root>/.worktrees/`. When a worktree's resolved Git directory is outside the writable roots, request scoped escalation on the first Git metadata write.
