@@ -19,7 +19,7 @@ require_absent() {
   local path="$1"
 
   if [ -e "$ROOT_DIR/$path" ] || [ -L "$ROOT_DIR/$path" ]; then
-    echo "Expected retired active path to be absent: $path" >&2
+    echo "Expected retired path to be absent: $path" >&2
     return 1
   fi
 }
@@ -33,427 +33,207 @@ require_executable() {
   fi
 }
 
-python_with_tomllib() {
+python_with_module() {
+  local module="$1"
+  local configured="$2"
   local candidate
 
-  for candidate in "${PYTHON_TOML:-}" python3.12 python3.11 python3; do
-    if [ -z "$candidate" ]; then
-      continue
-    fi
-    if command -v "$candidate" >/dev/null 2>&1 &&
-       "$candidate" -c 'import tomllib' >/dev/null 2>&1; then
+  for candidate in "$configured" python3.12 python3.11 python3; do
+    if [ -n "$candidate" ] &&
+       command -v "$candidate" >/dev/null 2>&1 &&
+       "$candidate" -c "import $module" >/dev/null 2>&1; then
       echo "$candidate"
       return
     fi
   done
 
-  echo "No Python with tomllib found. Set PYTHON_TOML to a Python 3.11+ binary." >&2
+  echo "No Python with $module found." >&2
   return 1
 }
 
-python_with_yaml() {
-  local candidate
+PYTHON_TOML_BIN="$(python_with_module tomllib "${PYTHON_TOML:-}")"
+PYTHON_YAML_BIN="$(python_with_module yaml "${PYTHON_YAML:-}")"
 
-  for candidate in "${PYTHON_YAML:-}" python3.12 python3.11 python3; do
-    if [ -z "$candidate" ]; then
-      continue
-    fi
-    if command -v "$candidate" >/dev/null 2>&1 &&
-       "$candidate" -c 'import yaml' >/dev/null 2>&1; then
-      echo "$candidate"
-      return
-    fi
-  done
+required_files=(
+  AGENTS.md
+  codex/AGENTS.md
+  codex/config.toml
+  codex/agents/doc_reviewer.toml
+  codex/agents/code_reviewer.toml
+  codex/agents/implementer.toml
+  codex/agents/research_worker.toml
+  scripts/merge-codex-config.py
+  scripts/test-merge-codex-config.py
+)
+for path in "${required_files[@]}"; do
+  require_regular_file "$path"
+done
 
-  echo "No Python with PyYAML found. Set PYTHON_YAML to a suitable binary." >&2
-  return 1
-}
-
-PYTHON_TOML_BIN="$(python_with_tomllib)"
-PYTHON_YAML_BIN="$(python_with_yaml)"
-
-require_regular_file "AGENTS.md"
-require_regular_file "codex/AGENTS.md"
-require_regular_file "codex/config.toml"
-require_regular_file "codex/agents/doc_reviewer.toml"
-require_regular_file "codex/agents/code_reviewer.toml"
-require_regular_file "codex/agents/implementer.toml"
-require_regular_file "codex/agents/research_worker.toml"
-for skill in general-auto-research adversarial-doc-review brainstorming planning code-review commit implement merge issue; do
+skills=(
+  adversarial-doc-review
+  brainstorming
+  planning
+  code-review
+  commit
+  implement
+  merge
+  issue
+)
+for skill in "${skills[@]}"; do
   require_regular_file "codex/skills/$skill/SKILL.md"
 done
-require_regular_file "archive/legacy-harnesses/README.md"
-require_regular_file "archive/legacy-harnesses/MANIFEST.tsv"
-require_regular_file "archive/legacy-harnesses/agentrc-pre-codex-only.tar.gz"
-require_regular_file "archive/portseer-claude/README.md"
-require_regular_file "archive/portseer-claude/portseer-claude-20260815.tar.gz"
-portseer_claude_archive="$ROOT_DIR/archive/portseer-claude/portseer-claude-20260815.tar.gz"
-portseer_claude_entries="$(tar -tzf "$portseer_claude_archive")"
-for path in \
-  .claude/settings.local.json \
-  .claude/file-suggestion-extra.sh \
-  .claude/hooks/block-py-mv.sh; do
-  if ! grep -Fx "$path" <<<"$portseer_claude_entries" >/dev/null; then
-    echo "Retired Portseer Claude archive is missing: $path" >&2
-    exit 1
-  fi
-done
-if grep -Eq '(^|/)\.\.(/|$)' <<<"$portseer_claude_entries" ||
-   grep -Ev '^\.claude(/|$)' <<<"$portseer_claude_entries" >/dev/null ||
-   grep -E '^\.claude/skills/?$' <<<"$portseer_claude_entries" >/dev/null; then
-  echo "Retired Portseer Claude archive contains an unsafe or active entry" >&2
-  exit 1
-fi
-require_regular_file "scripts/merge-codex-config.py"
-require_regular_file "scripts/test-merge-codex-config.py"
-require_regular_file "scripts/validate-legacy-archive.py"
-require_regular_file "scripts/test-legacy-archive-validation.py"
-require_regular_file "codex/skills/implement/scripts/git_task_guard.py"
-require_regular_file "codex/skills/implement/scripts/test_git_task_guard.py"
 
-for required_text in \
-  "## Context Handoffs" \
-  "Do not fork the current task" \
-  "<project-root>/.worktrees/<name>/" \
-  "thread-creation tool targeting that project and \`environment: local\`" \
-  "primary path exactly matches the active worktree"; do
-  if ! grep -F "$required_text" "$ROOT_DIR/codex/AGENTS.md" >/dev/null; then
-    echo "codex/AGENTS.md is missing context-handoff contract text: $required_text" >&2
-    exit 1
-  fi
-done
-
-if ! grep -F "remove the matching project registration" \
-  "$ROOT_DIR/codex/skills/merge/SKILL.md" >/dev/null; then
-  echo "merge skill is missing worktree project-registration cleanup" >&2
-  exit 1
-fi
-
-for path in \
-  CLAUDE.md \
-  claude \
-  omp \
-  shared \
-  codex/skills/claude-doc-review \
-  codex/skills/claude-code-review \
-  codex/rules/claude-review.rules \
-  codex/rules/omp-review.rules; do
+retired_paths=(
+  codex/skills/general-auto-research
+  codex/skills/implement/scripts/git_task_guard.py
+  codex/skills/implement/scripts/test_git_task_guard.py
+  scripts/validate-legacy-archive.py
+  scripts/test-legacy-archive-validation.py
+)
+for path in "${retired_paths[@]}"; do
   require_absent "$path"
 done
 
+active_skill_names="$(find "$ROOT_DIR/codex/skills" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)"
+expected_skill_names="$(printf '%s\n' "${skills[@]}" | sort)"
+if [ "$active_skill_names" != "$expected_skill_names" ]; then
+  echo "Active skill directories do not match the managed skill set" >&2
+  diff -u <(printf '%s\n' "$expected_skill_names") <(printf '%s\n' "$active_skill_names") >&2
+  exit 1
+fi
+
 active_symlinks="$(find "$ROOT_DIR/codex" -type l -print)"
 if [ -n "$active_symlinks" ]; then
-  echo "Active Codex sources must not be symlinks:" >&2
+  echo "Active Codex sources must be regular files:" >&2
   echo "$active_symlinks" >&2
   exit 1
 fi
 
-for path in \
-  install.sh \
-  sync-remote.sh \
-  codex/install.sh \
-  codex/sync-remote.sh \
-  scripts/validate-config.sh \
-  scripts/test-codex-install.sh \
-  scripts/test-sync-remote.sh \
-  scripts/merge-codex-config.py \
-  scripts/test-merge-codex-config.py \
-  scripts/validate-legacy-archive.py \
-  scripts/test-legacy-archive-validation.py; do
-  require_executable "$path"
-done
-for path in \
-  codex/skills/implement/scripts/git_task_guard.py \
-  codex/skills/implement/scripts/test_git_task_guard.py; do
+executables=(
+  install.sh
+  sync-remote.sh
+  codex/install.sh
+  codex/sync-remote.sh
+  scripts/validate-config.sh
+  scripts/test-codex-install.sh
+  scripts/test-sync-remote.sh
+  scripts/merge-codex-config.py
+  scripts/test-merge-codex-config.py
+)
+for path in "${executables[@]}"; do
   require_executable "$path"
 done
 
-bash -n "$ROOT_DIR/install.sh"
-bash -n "$ROOT_DIR/sync-remote.sh"
-bash -n "$ROOT_DIR/codex/install.sh"
-bash -n "$ROOT_DIR/codex/sync-remote.sh"
-bash -n "$ROOT_DIR/scripts/validate-config.sh"
-bash -n "$ROOT_DIR/scripts/test-codex-install.sh"
-bash -n "$ROOT_DIR/scripts/test-sync-remote.sh"
+shell_scripts=(
+  install.sh
+  sync-remote.sh
+  codex/install.sh
+  codex/sync-remote.sh
+  scripts/validate-config.sh
+  scripts/test-codex-install.sh
+  scripts/test-sync-remote.sh
+)
+for path in "${shell_scripts[@]}"; do
+  bash -n "$ROOT_DIR/$path"
+done
 
-if rg -n 'archive/legacy-harnesses' \
-  "$ROOT_DIR/install.sh" "$ROOT_DIR/sync-remote.sh" "$ROOT_DIR/codex"; then
-  echo "Active Codex runtime consumes the inert legacy archive" >&2
+runtime_paths=(
+  "$ROOT_DIR/install.sh"
+  "$ROOT_DIR/sync-remote.sh"
+  "$ROOT_DIR/codex"
+  "$ROOT_DIR/scripts/merge-codex-config.py"
+  "$ROOT_DIR/scripts/test-merge-codex-config.py"
+  "$ROOT_DIR/scripts/test-codex-install.sh"
+  "$ROOT_DIR/scripts/test-sync-remote.sh"
+)
+if rg -n 'archive/' "${runtime_paths[@]}"; then
+  echo "Active Codex code references the inert archive" >&2
   exit 1
 fi
-while IFS= read -r path; do
-  case "$path" in
-    "$ROOT_DIR/scripts/validate-config.sh"|\
-    "$ROOT_DIR/scripts/validate-legacy-archive.py"|\
-    "$ROOT_DIR/scripts/test-legacy-archive-validation.py") ;;
-    *)
-      echo "Unexpected active script reference to the inert archive: $path" >&2
-      exit 1
-      ;;
-  esac
-done < <(rg -l 'archive/legacy-harnesses' "$ROOT_DIR/scripts" || true)
 
-"$PYTHON_TOML_BIN" -c \
-  'import pathlib, tomllib, sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' \
-  "$ROOT_DIR/codex/config.toml"
 "$PYTHON_TOML_BIN" - "$ROOT_DIR" <<'PY'
-import pathlib
+from pathlib import Path
 import sys
 import tomllib
 
-root = pathlib.Path(sys.argv[1])
-review_skills = {
+root = Path(sys.argv[1])
+
+with (root / "codex/config.toml").open("rb") as config_file:
+    config = tomllib.load(config_file)
+if set(config) != {
+    "model",
+    "model_reasoning_effort",
+    "personality",
+    "tui",
+    "desktop",
+}:
+    raise SystemExit("codex/config.toml must contain only portable behavior and UI settings")
+
+recursive_skills = {
+    "implement",
     "adversarial-doc-review",
     "code-review",
     "claude-doc-review",
     "claude-code-review",
 }
-def load_role(
-    filename: str, expected_name: str, expected_keys: set[str]
-) -> dict[str, object]:
-    path = root / "codex" / "agents" / filename
-    with path.open("rb") as role_file:
-        role = tomllib.load(role_file)
+role_specs = {
+    "doc_reviewer.toml": ("doc_reviewer", True),
+    "code_reviewer.toml": ("code_reviewer", True),
+    "implementer.toml": ("implementer", True),
+    "research_worker.toml": ("research_worker", False),
+}
 
+for filename, (expected_name, blocks_recursion) in role_specs.items():
+    with (root / "codex/agents" / filename).open("rb") as role_file:
+        role = tomllib.load(role_file)
+    expected_keys = {"name", "description", "developer_instructions"}
+    if blocks_recursion:
+        expected_keys.add("skills")
     if set(role) != expected_keys:
         raise SystemExit(f"{filename}: unexpected top-level keys: {sorted(role)}")
-    if role.get("name") != expected_name:
+    if role["name"] != expected_name:
         raise SystemExit(f"{filename}: expected role name {expected_name!r}")
     for field in ("description", "developer_instructions"):
-        value = role.get(field)
-        if not isinstance(value, str) or not value.strip():
+        if not isinstance(role[field], str) or not role[field].strip():
             raise SystemExit(f"{filename}: {field} must be a non-empty string")
-    skill_entries = role.get("skills", {}).get("config", [])
-    if not isinstance(skill_entries, list) or len(skill_entries) != len(review_skills):
-        raise SystemExit(f"{filename}: expected exactly four disabled review skills")
-    if any(set(entry) != {"name", "enabled"} for entry in skill_entries):
-        raise SystemExit(f"{filename}: review skills must use only name and enabled selectors")
-    if any(entry["enabled"] is not False for entry in skill_entries):
-        raise SystemExit(f"{filename}: every review skill must be disabled")
-    configured_names = {entry["name"] for entry in skill_entries}
-    if configured_names != review_skills:
-        raise SystemExit(
-            f"{filename}: unexpected disabled review skills: {sorted(configured_names)}"
-        )
-
-    return role
-
-
-doc_role = load_role(
-    "doc_reviewer.toml",
-    "doc_reviewer",
-    {"name", "description", "developer_instructions", "skills"},
-)
-code_role = load_role(
-    "code_reviewer.toml",
-    "code_reviewer",
-    {
-        "name",
-        "description",
-        "developer_instructions",
-        "allow_login_shell",
-        "shell_environment_policy",
-        "skills",
-    },
-)
-
-doc_instructions = doc_role["developer_instructions"]
-for required_text in (
-    "## Verdict",
-    "## Blocking findings",
-    "## Non-blocking suggestions",
-    "## Questions for the author",
-):
-    if required_text not in doc_instructions:
-        raise SystemExit(f"doc_reviewer.toml: missing stable contract text {required_text!r}")
-
-code_instructions = code_role["developer_instructions"]
-for required_text in (
-    "## Findings",
-    "## Test gaps",
-    "## Residual risk",
-):
-    if required_text not in code_instructions:
-        raise SystemExit(f"code_reviewer.toml: missing stable contract text {required_text!r}")
-
-for filename, instructions in (
-    ("doc_reviewer.toml", doc_instructions),
-    ("code_reviewer.toml", code_instructions),
-):
-    for required_text in (
-        "non-modifying by default",
-        "main agent explicitly authorizes that exact action",
-        "Do not delegate",
-        "Do not request sandbox approvals or escalations",
-        "launch Codex, Claude, OMP, a review runner",
+    if not blocks_recursion:
+        continue
+    selectors = role["skills"].get("config", [])
+    if (
+        not isinstance(selectors, list)
+        or any(set(item) != {"name", "enabled"} for item in selectors)
+        or any(item["enabled"] is not False for item in selectors)
+        or {item["name"] for item in selectors} != recursive_skills
+        or len(selectors) != len(recursive_skills)
     ):
-        if required_text not in instructions:
-            raise SystemExit(f"{filename}: missing no-side-effect contract {required_text!r}")
-
-if code_role.get("allow_login_shell") is not False:
-    raise SystemExit("code_reviewer.toml: allow_login_shell must be false")
-
-code_shell_policy = code_role.get("shell_environment_policy")
-expected_filters = {"PYTHONPATH": "exclude", "VIRTUAL_ENV": "exclude"}
-if not isinstance(code_shell_policy, dict) or set(code_shell_policy) != {"filters"}:
-    raise SystemExit("code_reviewer.toml: expected only canonical shell filters")
-if code_shell_policy["filters"] != expected_filters:
-    raise SystemExit(
-        "code_reviewer.toml: expected exact PYTHONPATH and VIRTUAL_ENV exclusion filters"
-    )
-
-implementer_path = root / "codex" / "agents" / "implementer.toml"
-with implementer_path.open("rb") as role_file:
-    implementer = tomllib.load(role_file)
-
-expected_implementer_keys = {"name", "description", "developer_instructions", "skills"}
-if set(implementer) != expected_implementer_keys:
-    raise SystemExit(
-        "implementer.toml: expected only role identity, instructions, and skill selectors"
-    )
-if implementer["name"] != "implementer":
-    raise SystemExit("implementer.toml: expected role name 'implementer'")
-for field in ("description", "developer_instructions"):
-    value = implementer[field]
-    if not isinstance(value, str) or not value.strip():
-        raise SystemExit(f"implementer.toml: {field} must be a non-empty string")
-
-disabled_implementer_skills = {
-    "general-auto-research",
-    "brainstorming",
-    "planning",
-    "commit",
-    "implement",
-    "merge",
-    "issue",
-    "adversarial-doc-review",
-    "code-review",
-    "claude-doc-review",
-    "claude-code-review",
-}
-skill_entries = implementer["skills"].get("config", [])
-if not isinstance(skill_entries, list) or len(skill_entries) != 11:
-    raise SystemExit("implementer.toml: expected exactly eleven disabled skills")
-if any(set(entry) != {"name", "enabled"} for entry in skill_entries):
-    raise SystemExit("implementer.toml: skills must use only name and enabled selectors")
-if any(entry["enabled"] is not False for entry in skill_entries):
-    raise SystemExit("implementer.toml: every selected skill must be disabled")
-configured_names = {entry["name"] for entry in skill_entries}
-if configured_names != disabled_implementer_skills:
-    raise SystemExit(
-        f"implementer.toml: unexpected disabled skills: {sorted(configured_names)}"
-    )
-
-implementer_instructions = implementer["developer_instructions"]
-for required_text in (
-    "exactly one implementation-plan phase",
-    "governing AGENTS.md",
-    "absolute plan path",
-    "absolute spec path",
-    "relevant code, callers, tests, and Git history",
-    "explicit file or responsibility ownership",
-    "Other agents may be editing the shared worktree",
-    "Implementation-first",
-    "actual command output",
-    "native nested helpers only when useful for bounded work with disjoint ownership",
-    "Every helper prompt must include",
-    "Let helpers inherit your model and reasoning effort",
-    "Treat the supplied plan and spec as immutable inputs",
-    "Do not stage files or otherwise modify the Git index",
-    "Do not change sibling worktrees",
-    "Do not commit, push, merge",
-    "mutate branches or worktrees",
-    "Do not make external writes",
-    "Do not launch Codex, Claude, OMP, review runners, standalone CLI agents",
-    "Do not request sandbox approvals or escalations",
-    "instruction-level restrictions, not a capability boundary",
-    "changed paths and scoped diff summary",
-    "actual focused and surrounding verification commands and output",
-):
-    if required_text not in implementer_instructions:
         raise SystemExit(
-            f"implementer.toml: missing stable contract text {required_text!r}"
-        )
-
-research_worker_path = root / "codex" / "agents" / "research_worker.toml"
-with research_worker_path.open("rb") as role_file:
-    research_worker = tomllib.load(role_file)
-
-if set(research_worker) != {"name", "description", "developer_instructions"}:
-    raise SystemExit(
-        "research_worker.toml: expected only role identity and instructions"
-    )
-if research_worker["name"] != "research_worker":
-    raise SystemExit("research_worker.toml: expected role name 'research_worker'")
-for field in ("description", "developer_instructions"):
-    value = research_worker[field]
-    if not isinstance(value, str) or not value.strip():
-        raise SystemExit(f"research_worker.toml: {field} must be a non-empty string")
-
-research_worker_instructions = research_worker["developer_instructions"]
-for required_text in (
-    "exactly one research experiment or follow-up",
-    "supplied research brief",
-    "exact hypothesis",
-    "owned experiment-folder path",
-    "Implement and evaluate the idea end to end",
-    "Follow the brief's evidence standard",
-    "only inside the supplied folder",
-    "treat tracked repository code",
-    "Other workers may share the repository",
-    "never revert or overwrite files you do not own",
-    "reproducible code, exact commands, raw or machine-readable results",
-    "result.md containing the conclusion, evidence, limitations, and useful next tests",
-    "keep the prior experiment artifacts intact",
-    "Do not stage files, modify the Git index",
-    "Use only experiment infrastructure explicitly authorized",
-    "Do not delegate",
-    "artifact paths",
-):
-    if required_text not in research_worker_instructions:
-        raise SystemExit(
-            f"research_worker.toml: missing stable contract text {required_text!r}"
+            f"{filename}: expected exactly the five disabled recursive workflow skills"
         )
 PY
 
 for skill in adversarial-doc-review code-review; do
   skill_file="$ROOT_DIR/codex/skills/$skill/SKILL.md"
-  if grep -Eq 'agentrc-codex-|codex exec|managed runner|managed CLI' "$skill_file"; then
-    echo "Codex-native skill contains managed runner plumbing: $skill" >&2
-    exit 1
-  fi
   grep -F 'fork_turns="none"' "$skill_file" >/dev/null
   grep -F 'model="gpt-5.6-sol"' "$skill_file" >/dev/null
   grep -F 'reasoning_effort="xhigh"' "$skill_file" >/dev/null
   grep -F 'reasoning_effort="max"' "$skill_file" >/dev/null
 done
-grep -F 'agent_type="doc_reviewer"' \
-  "$ROOT_DIR/codex/skills/adversarial-doc-review/SKILL.md" >/dev/null
-grep -F 'agent_type="code_reviewer"' \
-  "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
+grep -F 'agent_type="doc_reviewer"' "$ROOT_DIR/codex/skills/adversarial-doc-review/SKILL.md" >/dev/null
+grep -F 'agent_type="code_reviewer"' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 
 implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"
-for required_text in \
-  'agent_type="implementer"' \
-  'fork_turns="none"' \
-  'model="gpt-5.6-sol"' \
-  'reasoning_effort="high"' \
-  'git status --porcelain=v1 --untracked-files=all' \
-  '--protect-path <absolute-plan-path>' \
-  'complete ref namespace' \
-  'semantic index state' \
-  'sibling-worktree state' \
-  'git_task_guard.py snapshot' \
-  'git_task_guard.py verify' \
-  'There is no generic-agent or standalone CLI fallback.' \
-  'instruction-level restrictions, not a capability boundary' \
-  'checks cannot prove the absence of arbitrary external side effects' \
-  'The orchestrator alone stages the accepted phase paths and creates one focused commit' \
-  'invokes the `code-review` skill'; do
+implement_contract=(
+  'agent_type="implementer"'
+  'fork_turns="none"'
+  'model="gpt-5.6-sol"'
+  'reasoning_effort="high"'
+  'code-review'
+)
+for required_text in "${implement_contract[@]}"; do
   grep -F -- "$required_text" "$implement_skill" >/dev/null
 done
-if grep -Eq 'Fable|Opus|model: "opus"|omit the model override' "$implement_skill"; then
-  echo "Implement skill contains retired model routing" >&2
+if rg -n 'git_task_guard|general-auto-research' "$ROOT_DIR/codex" "$ROOT_DIR/install.sh" "$ROOT_DIR/sync-remote.sh"; then
+  echo "Active configuration references retired guard machinery" >&2
   exit 1
 fi
 
@@ -462,17 +242,11 @@ if [ ! -f "$SKILL_VALIDATOR" ]; then
   echo "Skill validator is unavailable: $SKILL_VALIDATOR" >&2
   exit 1
 fi
-"$PYTHON_YAML_BIN" "$SKILL_VALIDATOR" "$ROOT_DIR/codex/skills/implement"
+for skill in "${skills[@]}"; do
+  "$PYTHON_YAML_BIN" "$SKILL_VALIDATOR" "$ROOT_DIR/codex/skills/$skill"
+done
 
-python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py" \
-  "$ROOT_DIR/scripts/validate-legacy-archive.py" \
-  "$ROOT_DIR/scripts/test-legacy-archive-validation.py" \
-  "$ROOT_DIR/codex/skills/implement/scripts/git_task_guard.py" \
-  "$ROOT_DIR/codex/skills/implement/scripts/test_git_task_guard.py"
-python3 "$ROOT_DIR/codex/skills/implement/scripts/test_git_task_guard.py"
-python3 "$ROOT_DIR/scripts/validate-legacy-archive.py" \
-  "$ROOT_DIR/archive/legacy-harnesses" --repository "$ROOT_DIR"
-python3 "$ROOT_DIR/scripts/test-legacy-archive-validation.py"
+python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py" "$ROOT_DIR/scripts/test-merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 "$ROOT_DIR/scripts/test-codex-install.sh"
 "$ROOT_DIR/scripts/test-sync-remote.sh"

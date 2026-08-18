@@ -47,10 +47,10 @@ Validate the repository after every config change:
 
 ## Testing
 
-There is no app test suite. The repository validation script is the required check. It verifies the inert archive, active Codex topology, executable bits, shell and TOML syntax, configuration merge behavior, local installation, and exact remote-sync destinations and commands.
+There is no app test suite. The repository validation script checks the active Codex topology, executable bits, shell and TOML syntax, configuration merge behavior, local installation, and exact remote-sync destinations and commands.
 
 ## Git Workflow
 
 - **Commit tests:** Run `./scripts/validate-config.sh` before committing.
 - **Feature-worktree commits:** Run validation, but do not install or sync from a feature worktree.
-- **Main deployment:** After a successful merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from the main checkout, verify installed local and remote active files match the committed sources without changing the protected legacy state, and start a fresh global Codex task or process for installed-role canaries. If a canary fails, report the deployment failure and fix forward; do not leave installation pointed at a deleted worktree. A remote live-role canary is required only when that machine exposes the collaboration runtime.
+- **Main deployment:** When deployment is separately authorized after a successful merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from the main checkout, verify installed local and remote active files match the committed sources while preserving unrelated machine state, and start a fresh global Codex task or process for installed-role canaries. If a canary fails, report the deployment failure and fix forward; do not leave installation pointed at a deleted worktree. A remote live-role canary is required only when that machine exposes the collaboration runtime.

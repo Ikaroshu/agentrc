@@ -10,8 +10,6 @@ from pathlib import Path
 
 SECTION_RE = re.compile(r"^(\[\[?.+\]\]?)$")
 TOP_LEVEL_KEY_RE = re.compile(r"^([A-Za-z0-9_-]+)\s*=")
-RETIRED_TOP_LEVEL_KEYS = {"sandbox_mode"}
-RETIRED_BLOCK_NAMES = {"sandbox_workspace_write"}
 
 
 @dataclass(frozen=True)
@@ -97,7 +95,6 @@ def merge(remote_text: str, repo_text: str) -> str:
         for line in remote_top
         if (match := TOP_LEVEL_KEY_RE.match(line)) is not None
         and match.group(1) not in repo_top_keys
-        and match.group(1) not in RETIRED_TOP_LEVEL_KEYS
     ]
 
     repo_shared_blocks = [block for block in repo_blocks if not is_machine_specific(block.name)]
@@ -113,9 +110,6 @@ def merge(remote_text: str, repo_text: str) -> str:
         append_block(output, block)
 
     for block in remote_blocks:
-        if block.name in RETIRED_BLOCK_NAMES:
-            continue
-
         if is_machine_specific(block.name) or block.name not in repo_shared_names:
             append_block(output, block)
 
