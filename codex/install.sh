@@ -21,7 +21,6 @@ CODEX_COPY_FILES=(
 )
 
 SKILLS=(
-  general-auto-research
   adversarial-doc-review
   brainstorming
   planning

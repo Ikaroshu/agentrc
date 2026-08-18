@@ -23,7 +23,6 @@
 - Ask before starting an optional workflow. When chosen, follow **[brainstorm ->] plan -> doc-review -> worktree -> implement -> code-review -> merge** and let each skill own its stage mechanics. The agent invokes the selected skills; do not ask the user to invoke them.
 - Get approval for the design during brainstorming. After document-review findings are resolved, pause for approval before creating a worktree or implementing. After code-review findings are resolved, pause again before merging. Do not add other reconfirmation gates.
 - Keep plans and specs uncommitted on `main`; put planned implementation worktrees under `<project-root>/.worktrees/`. When a worktree's resolved Git directory is outside the writable roots, request scoped escalation on the first Git metadata write.
-- Cap each logical document-review or code-review workflow at three completed substantive reviewer turns. Ask before a fourth; only materially new scope resets the count.
 
 ## Context Handoffs
 
@@ -36,9 +35,9 @@
 
 - Issue bodies describe only the problem and relevant context, without proposed solutions or acceptance criteria, unless the user explicitly asks otherwise.
 
-## Pre-existing Check Failures
+## Check Failures
 
-- If a pre-stage check fails in files not touched during the session, stop and ask whether to fix those failures or proceed around them. Never commit with known failing checks without explicit approval.
+- Treat checks as evidence rather than harness vetoes. Diagnose failures far enough to determine whether they affect the requested change, fix in-scope regressions, and disclose unresolved failures before consequential actions. Proceed only when the user's authorization covers accepting that evidence.
 
 ## Python Style
 

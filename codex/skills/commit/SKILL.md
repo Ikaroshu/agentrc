@@ -1,11 +1,11 @@
 ---
 name: commit
-description: Run Shu's commit workflow for a repository. Use when the user asks to commit changes, run the commit workflow, or prepare a tested commit and push. Reads repo instructions for checks, runs validation before staging, stages files explicitly, commits with an appropriate message, and pushes the current branch.
+description: Run Shu's commit workflow for a repository. Use when the user asks to commit changes, run the commit workflow, or prepare a tested commit and push. Reads repo instructions for checks, runs validation before staging, stages files explicitly, commits with an appropriate message, and pushes only when authorized.
 ---
 
 # Commit Workflow
 
-Run tests, commit, and push. Adapt behavior based on the repository's instructions.
+Run tests and commit, then push when the user or repository workflow authorizes it. Adapt behavior based on the repository's instructions.
 
 **Announce at start:** "Running commit workflow."
 
@@ -21,13 +21,11 @@ If no such section exists, use defaults.
 
 ## Step 2: Run Pre-stage Checks
 
-Run the configured pre-stage check commands (e.g., `ruff check --fix`, `pyright`). **If type checking fails, stop.** Fix lint issues automatically where possible, but do not proceed if errors remain.
-
-**If checks fail in files you did NOT touch this session, stop and ask the user** whether to fix them or commit around them. Do not silently classify them as pre-existing and move on.
+Run the configured pre-stage check commands (e.g., `ruff check --fix`, `pyright`). Treat their results as evidence: diagnose failures far enough to say whether they are caused by the proposed commit, and report unresolved failures accurately.
 
 ## Step 3: Run Tests
 
-Run the configured test command. **If tests fail, stop.** Do not proceed to commit. If no automated tests exist, run the repo's required validation gate or clearly report the gap. Do not commit with known failing checks unless the user explicitly confirms.
+Run the configured test command. If no automated tests exist, run the repository's validation command or clearly report the gap. A failed check is not by itself a harness veto: assess its relevance, fix in-scope regressions, and disclose any unresolved failure before committing or pushing. Proceed only when the user's authorization covers accepting that evidence.
 
 ## Step 4: Stage and Commit
 
@@ -39,7 +37,7 @@ Run the configured test command. **If tests fail, stop.** Do not proceed to comm
 
 ## Step 5: Push
 
-Push to the current branch unless repo instructions or the user say otherwise:
+Push only when the user's request or repository workflow explicitly authorizes it:
 
 ```bash
 git push origin $(git branch --show-current)
@@ -51,4 +49,4 @@ git push origin $(git branch --show-current)
 |---------|----------------|----------------|
 | Tests | from repo instructions | `pytest` |
 | Pre-commit | yes | no |
-| Push | yes | yes |
+| Push | when authorized | when authorized |

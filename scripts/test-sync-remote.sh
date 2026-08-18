@@ -35,7 +35,7 @@ command="${2:?missing command}"
 printf '%s\t%s\n' "$remote" "$command" >>"$SYNC_SSH_LOG"
 
 case "$command" in
-  'mkdir -p ~/.codex/agents ~/.agents/skills/general-auto-research ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/implement/scripts ~/.agents/skills/merge ~/.agents/skills/issue') ;;
+  'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue') ;;
   'cat ~/.codex/config.toml 2>/dev/null || true') cat "$SYNC_REMOTE_BASELINE" ;;
   'cat > ~/.codex/config.toml') cat >"$SYNC_REMOTE_RESULT" ;;
   *)
@@ -74,10 +74,9 @@ write_expected_scp() {
     printf '%s\n' "-q $ROOT_DIR/codex/agents/code_reviewer.toml test:~/.codex/agents/code_reviewer.toml"
     printf '%s\n' "-q $ROOT_DIR/codex/agents/implementer.toml test:~/.codex/agents/implementer.toml"
     printf '%s\n' "-q $ROOT_DIR/codex/agents/research_worker.toml test:~/.codex/agents/research_worker.toml"
-    for skill in general-auto-research adversarial-doc-review brainstorming planning code-review commit implement merge issue; do
+    for skill in adversarial-doc-review brainstorming planning code-review commit implement merge issue; do
       printf '%s\n' "-q $ROOT_DIR/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
     done
-    printf '%s\n' "-q $ROOT_DIR/codex/skills/implement/scripts/git_task_guard.py test:~/.agents/skills/implement/scripts/git_task_guard.py"
   } >"$output"
 }
 
@@ -85,7 +84,7 @@ write_expected_ssh() {
   local output="$1"
 
   {
-    printf '%s\t%s\n' test 'mkdir -p ~/.codex/agents ~/.agents/skills/general-auto-research ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/implement/scripts ~/.agents/skills/merge ~/.agents/skills/issue'
+    printf '%s\t%s\n' test 'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
     printf '%s\t%s\n' test 'cat ~/.codex/config.toml 2>/dev/null || true'
     printf '%s\t%s\n' test 'cat > ~/.codex/config.toml'
   } >"$output"
@@ -139,15 +138,9 @@ run_sync_test() {
       exit 1
     fi
   done
-  if [ ! -f "$remote_home/.agents/skills/implement/scripts/git_task_guard.py" ] ||
-     ! cmp -s "$ROOT_DIR/codex/skills/implement/scripts/git_task_guard.py" \
-       "$remote_home/.agents/skills/implement/scripts/git_task_guard.py"; then
-    echo "$name sync did not deploy the implementation task guard" >&2
-    exit 1
-  fi
 }
 
 run_sync_test root "$ROOT_DIR/sync-remote.sh"
 run_sync_test codex "$ROOT_DIR/codex/sync-remote.sh"
 
-echo "Remote sync test passed (15 exact destinations, 3 exact commands)."
+echo "Remote sync test passed (13 exact destinations, 3 exact commands)."

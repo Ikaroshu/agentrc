@@ -25,10 +25,17 @@ def main() -> None:
 model = "old-model"
 personality = "remote"
 notify = ["/machine/notifier", "turn-ended"]
+approval_policy = "never"
+approvals_reviewer = "machine-reviewer"
+default_permissions = "machine-policy"
 sandbox_mode = "workspace-write"
+web_search = "cached"
 
 [sandbox_workspace_write]
 network_access = true
+
+[permissions.machine-policy]
+extends = ":workspace"
 
 [projects."/remote/project"]
 trust_level = "trusted"
@@ -45,45 +52,24 @@ enabled = false
 
 [features]
 memories = false
+
+[tui]
+status_line = ["model"]
 '''.lstrip(),
         )
         repo = write_tmp(
             tmp_dir,
             "repo.toml",
             '''
-model = "gpt-5.4"
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
 personality = "pragmatic"
-default_permissions = "workspace-customized"
 
-[permissions.workspace-customized]
-extends = ":workspace"
+[tui]
+status_line = ["model-with-reasoning", "current-dir"]
 
-[permissions.workspace-customized.filesystem]
-"~/.cache/uv" = "write"
-"~/Projects/agentrc/.git" = "write"
-"~/Projects/Portseer/.git" = "write"
-
-[permissions.workspace-customized.filesystem.":workspace_roots"]
-".git" = "write"
-
-[permissions.workspace-customized.network]
-enabled = true
-
-[projects."/repo/project"]
-trust_level = "trusted"
-
-[plugins."github@openai-curated"]
-enabled = true
-
-[marketplaces.openai-bundled]
-source = "/Users/shu/.codex/.tmp/bundled-marketplaces/openai-bundled"
-
-[[skills.config]]
-path = "/Users/shu/.codex/skills/doc/SKILL.md"
-enabled = false
-
-[features]
-memories = true
+[desktop]
+mac-menu-bar-enabled = false
 '''.lstrip(),
         )
 
@@ -96,28 +82,26 @@ memories = true
 
     merged = result.stdout
 
-    assert 'model = "gpt-5.4"' in merged
+    assert 'model = "gpt-5.6-sol"' in merged
+    assert 'model_reasoning_effort = "xhigh"' in merged
     assert 'personality = "pragmatic"' in merged
     assert 'notify = ["/machine/notifier", "turn-ended"]' in merged
-    assert 'default_permissions = "workspace-customized"' in merged
-    assert 'sandbox_mode = "workspace-write"' not in merged
-    assert "[sandbox_workspace_write]" not in merged
-    assert "[permissions.workspace-customized]" in merged
-    assert '"~/.cache/uv" = "write"' in merged
-    assert '"~/Projects/agentrc/.git" = "write"' in merged
-    assert '"~/Projects/Portseer/.git" = "write"' in merged
-    assert '[permissions.workspace-customized.filesystem.":workspace_roots"]' in merged
-    assert '".git" = "write"' in merged
-    assert '[plugins."github@openai-curated"]' in merged
-    assert '[plugins."remote-only@example"]' in merged
+    assert 'approval_policy = "never"' in merged
+    assert 'approvals_reviewer = "machine-reviewer"' in merged
+    assert 'default_permissions = "machine-policy"' in merged
+    assert 'sandbox_mode = "workspace-write"' in merged
+    assert 'web_search = "cached"' in merged
+    assert "[sandbox_workspace_write]" in merged
+    assert "[permissions.machine-policy]" in merged
     assert '[projects."/remote/project"]' in merged
-    assert '[projects."/repo/project"]' not in merged
-    assert '[notice.model_migrations]' in merged
-    assert '/remote/skill/SKILL.md' in merged
-    assert '/Users/shu/.codex/skills/doc/SKILL.md' not in merged
-    assert '[marketplaces.openai-bundled]' not in merged
-    assert "memories = true" in merged
-    assert "enabled = true" in merged
+    assert "[notice.model_migrations]" in merged
+    assert '[plugins."remote-only@example"]' in merged
+    assert "/remote/skill/SKILL.md" in merged
+    assert "memories = false" in merged
+    assert 'status_line = ["model-with-reasoning", "current-dir"]' in merged
+    assert 'status_line = ["model"]' not in merged
+    assert "[desktop]" in merged
+    assert "mac-menu-bar-enabled = false" in merged
 
 
 if __name__ == "__main__":
