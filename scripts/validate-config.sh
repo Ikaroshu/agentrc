@@ -75,6 +75,7 @@ skills=(
   planning
   code-review
   commit
+  handoff
   implement
   merge
   issue
@@ -171,6 +172,7 @@ if set(config) != {
 
 recursive_skills = {
     "implement",
+    "handoff",
     "adversarial-doc-review",
     "code-review",
     "claude-doc-review",
@@ -207,7 +209,7 @@ for filename, (expected_name, blocks_recursion) in role_specs.items():
         or len(selectors) != len(recursive_skills)
     ):
         raise SystemExit(
-            f"{filename}: expected exactly the five disabled recursive workflow skills"
+            f"{filename}: expected exactly the six disabled recursive workflow skills"
         )
 PY
 
@@ -231,6 +233,20 @@ implement_contract=(
 )
 for required_text in "${implement_contract[@]}"; do
   grep -F -- "$required_text" "$implement_skill" >/dev/null
+done
+
+handoff_skill="$ROOT_DIR/codex/skills/handoff/SKILL.md"
+handoff_contract=(
+  'git worktree list --porcelain'
+  'saved parent local project'
+  'environment: { type: "local" }'
+  'reuse that exact worktree with explicit workdirs'
+  '<project-root>/.worktrees/'
+  'Never fork the current task'
+  "app's Hand off action"
+)
+for required_text in "${handoff_contract[@]}"; do
+  grep -F -- "$required_text" "$handoff_skill" >/dev/null
 done
 if rg -n 'git_task_guard|general-auto-research' "$ROOT_DIR/codex" "$ROOT_DIR/install.sh" "$ROOT_DIR/sync-remote.sh"; then
   echo "Active configuration references retired guard machinery" >&2

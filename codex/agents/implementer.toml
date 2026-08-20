@@ -15,6 +15,10 @@ name = "implement"
 enabled = false
 
 [[skills.config]]
+name = "handoff"
+enabled = false
+
+[[skills.config]]
 name = "adversarial-doc-review"
 enabled = false
 

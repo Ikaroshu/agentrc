@@ -74,7 +74,7 @@ for role in doc_reviewer.toml code_reviewer.toml implementer.toml research_worke
   fi
 done
 
-for skill in adversarial-doc-review brainstorming planning code-review commit implement merge issue; do
+for skill in adversarial-doc-review brainstorming planning code-review commit handoff implement merge issue; do
   target="$TEST_HOME/.agents/skills/$skill"
   expected="$ROOT_DIR/codex/skills/$skill"
   if [ ! -L "$target" ] || [ "$(readlink "$target")" != "$expected" ]; then

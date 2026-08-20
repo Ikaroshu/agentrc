@@ -26,6 +26,7 @@ SKILLS=(
   planning
   code-review
   commit
+  handoff
   implement
   merge
   issue
