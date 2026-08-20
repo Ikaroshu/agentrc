@@ -238,7 +238,9 @@ done
 handoff_skill="$ROOT_DIR/codex/skills/handoff/SKILL.md"
 handoff_contract=(
   'git worktree list --porcelain'
-  'saved parent local project'
+  "Resolve the current task's host before selecting a project"
+  'require both the exact parent path and the current task'
+  'whether its `projectKind` is `"local"` or `"remote"`'
   'environment: { type: "local" }'
   'reuse that exact worktree with explicit workdirs'
   '<project-root>/.worktrees/'
