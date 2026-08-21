@@ -1,11 +1,11 @@
 ---
 name: commit
-description: Run Shu's commit workflow for a repository. Use when the user asks to commit changes, run the commit workflow, or prepare a tested commit and push. Reads repo instructions for checks, runs validation before staging, stages files explicitly, commits with an appropriate message, and pushes only when authorized.
+description: Run Shu's commit workflow for a repository. Use when the user asks to commit changes, run the commit workflow, or prepare a tested commit and push. Reads repo instructions for checks, runs validation before staging, stages files explicitly, commits with an appropriate message, and pushes automatically when the work is on main or otherwise when authorized.
 ---
 
 # Commit Workflow
 
-Run tests and commit, then push when the user or repository workflow authorizes it. Adapt behavior based on the repository's instructions.
+Run tests and commit, then push automatically when the work is on `main`; on other branches, push when the user or repository workflow authorizes it. Adapt behavior based on the repository's instructions.
 
 **Announce at start:** "Running commit workflow."
 
@@ -37,7 +37,11 @@ Run the configured test command. If no automated tests exist, run the repository
 
 ## Step 5: Push
 
-Push only when the user's request or repository workflow explicitly authorizes it:
+Resolve the current branch after committing:
+
+- If it is `main`, push `origin main` as part of the commit workflow without a separate authorization prompt.
+- On any other branch, push only when the user's request or repository workflow explicitly authorizes it.
+- Before either push, inspect the unpublished commits. If the push would publish unrelated commits, surface them and obtain explicit approval.
 
 ```bash
 git push origin $(git branch --show-current)
@@ -49,4 +53,4 @@ git push origin $(git branch --show-current)
 |---------|----------------|----------------|
 | Tests | from repo instructions | `pytest` |
 | Pre-commit | yes | no |
-| Push | when authorized | when authorized |
+| Push | automatic on `main`; otherwise when authorized | automatic on `main`; otherwise when authorized |
