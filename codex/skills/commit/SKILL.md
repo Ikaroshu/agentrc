@@ -1,11 +1,11 @@
 ---
 name: commit
-description: Run Shu's commit workflow for a repository. Use when the user asks to commit changes, run the commit workflow, or prepare a tested commit and push. Reads repo instructions for checks, runs validation before staging, stages files explicitly, commits with an appropriate message, and pushes automatically when the work is on main or otherwise when authorized.
+description: Run Shu's commit workflow for a repository. Use when the user asks to commit changes, run the commit workflow, or prepare a tested commit and push. Reads repo instructions, validates and stages explicitly, commits, completes required post-commit actions, and pushes automatically when the work is on main or otherwise when authorized.
 ---
 
 # Commit Workflow
 
-Run tests and commit, then push automatically when the work is on `main`; on other branches, push when the user or repository workflow authorizes it. Adapt behavior based on the repository's instructions.
+Run tests, commit, complete any repository-required post-commit actions, then push automatically when the work is on `main`; on other branches, push when the user or repository workflow authorizes it.
 
 **Announce at start:** "Running commit workflow."
 
@@ -16,6 +16,7 @@ Read the repository instructions — prefer `AGENTS.md`; if absent, read `CLAUDE
 - **Pre-stage checks** — lint/type-check commands to run before staging (default: none)
 - **Commit tests** — test command to run before commit (default: `pytest`)
 - **Pre-commit** — whether pre-commit hooks are enforced (default: no)
+- **Post-commit actions** — deployment, synchronization, or verification required to complete the repository's commit workflow (default: none)
 
 If no such section exists, use defaults.
 
@@ -35,7 +36,11 @@ Run the configured test command. If no automated tests exist, run the repository
 4. Commit (pre-commit hooks will run automatically if configured)
 5. If pre-commit fails, fix issues, re-stage, and create a NEW commit
 
-## Step 5: Push
+## Step 5: Complete Repository Post-Commit Actions
+
+Run every post-commit action required by the repository in its specified order. Treat invoking the commit workflow as authorization for actions that the repository explicitly makes part of commit completion; do not ask for separate authorization. Do not infer deployment or other external mutations when the repository does not require them.
+
+## Step 6: Push
 
 Resolve the current branch after committing:
 
