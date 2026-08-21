@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Use after the user chooses a written implementation plan for a multi-step, cross-cutting, or high-risk change whose requirements and design decisions are settled. May follow brainstorming or start directly from clear requirements. Explore the repository, map files and interfaces, split work into independently verifiable phases, and save an executable plan under .plans/plans/ before implementation.
+description: Use after the user chooses a written implementation plan for a settled change whose implementation complexity warrants multiple coherent phases. Do not use merely because impact or risk is high; use brainstorming first when material requirements or design uncertainty remains. Explore the repository, map files and interfaces, and save an executable plan under .plans/plans/ before implementation.
 ---
 
 # Planning
@@ -12,7 +12,8 @@ Turn settled requirements into a plan that a fresh task owner can execute withou
 ## Principles
 
 - **No implementation yet.** Inspect freely, but do not edit implementation files or create a worktree.
-- **Resolve design first.** If material requirements or design choices remain open, stop and recommend `brainstorming` rather than guessing.
+- **Complexity justifies phases.** Use planning only when implementation complexity benefits from multiple coherent phases, such as several dependent interfaces or workstreams. A large blast radius or high consequence alone is not a reason to create a phase-based plan; scale verification and review to impact instead.
+- **Resolve design first.** If material requirements or design choices remain open, stop and invoke `brainstorming` rather than guessing, especially when the work is high-impact.
 - **Plan outcomes, not ceremony.** Give each phase an independently verifiable deliverable and enough detail to execute it, without forcing artificial micro-steps or test-first sequencing.
 - **Follow the repository.** Preserve established structure and patterns unless a targeted change is necessary for the agreed goal.
 - **Search before designing.** Identify whether an existing project primitive, standard-library or native-platform feature, or already-installed dependency satisfies the contract before planning new code or a new dependency.
