@@ -1,11 +1,11 @@
 ---
 name: merge
-description: Run Shu's merge workflow for a branch or pull request. Use when the user asks to merge, finish a branch, merge a PR, or clean up after merging. Reads the project's Git Workflow, resolves the exact target, tests before and after merge, and performs only authorized push, deployment, cleanup, and issue-closure follow-ups.
+description: Run Shu's merge workflow for a branch or pull request. Use when the user asks to merge, finish a branch, merge a PR, or clean up after merging. Reads the project's Git Workflow, resolves the exact target, reuses exact-candidate evidence when valid, verifies after merge, and performs only authorized follow-ups.
 ---
 
 # Merge Workflow
 
-Test, merge, test again, and clean up. Handles both local merges and PR merges.
+Verify the candidate, merge, verify the integrated result, and clean up. Handles both local merges and PR merges.
 
 **Announce at start:** "Running merge workflow."
 
@@ -26,9 +26,9 @@ Two modes:
 
 If already on main with no feature branch, inform the user and stop.
 
-## Step 3: Test on Feature Branch
+## Step 3: Verify Feature Candidate
 
-Run the configured test command, or `pytest` by default.
+Resolve the clean feature `HEAD` commit and tree. Reuse complete repository verification only when the evidence records the exact command and successful result after final code review and is bound to that same commit and tree. If the candidate changed, the evidence is missing, or the repository explicitly requires a fresh pre-merge run, run the configured test command or `pytest` by default.
 
 If no automated tests exist, run the repository's validation or exercise the changed behavior when practical and report any verification gap.
 
@@ -113,7 +113,7 @@ If multiple distinct issues are referenced, close each. If none is referenced, s
 
 | Step | Local Merge | PR Merge |
 |------|-------------|----------|
-| Test branch | yes | yes |
+| Verify branch | reuse exact evidence or test | reuse exact evidence or test |
 | Merge | `git merge --no-ff` | `gh pr merge --merge` |
 | Test main | yes | yes |
 | Push main | when authorized | automatic with PR merge |

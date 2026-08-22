@@ -229,11 +229,21 @@ implement_contract=(
   'fork_turns="none"'
   'model="gpt-5.6-sol"'
   'reasoning_effort="high"'
+  'one persistent owner'
+  'followup_task'
+  'checkpoint commit'
+  'until the requested implementer returns'
   'code-review'
 )
 for required_text in "${implement_contract[@]}"; do
   grep -F -- "$required_text" "$implement_skill" >/dev/null
 done
+
+grep -F 'followup_task' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
+grep -F 'complete approved implementation plan across sequential turns' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
+grep -F 'same commit and tree' "$ROOT_DIR/codex/skills/merge/SKILL.md" >/dev/null
+grep -F 'full recorded immutable review-base-to-candidate range' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
+grep -F 'one or more ordered plan phases' "$implement_skill" >/dev/null
 
 handoff_skill="$ROOT_DIR/codex/skills/handoff/SKILL.md"
 handoff_contract=(

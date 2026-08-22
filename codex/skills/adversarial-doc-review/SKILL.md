@@ -11,6 +11,7 @@ Use the configured `doc_reviewer` native subagent. Never substitute a generic ag
 
 - Run from the main repository checkout and supply at least one explicit regular-file path: `--spec <path>` or `--plan <path>`.
 - Resolve supplied paths to absolute paths. Treat any focus text as additional emphasis, not a narrowing of the review.
+- Review the declared in-scope design and verify that out-of-scope boundaries, dependencies, and consequences are safe and complete. Do not expand or perfect deferred work; report detailed deferred implementation as scope leakage that should be removed or split before review continues.
 - Use `model="gpt-5.6-sol"` with `reasoning_effort="xhigh"` for a sufficiently specified established design and `reasoning_effort="max"` when interacting contracts, irreversibility, novel concurrency or security concerns, broad blast radius, or unresolved ambiguity materially complicate the review.
 - Tell the user the tier and short rationale before dispatch.
 
