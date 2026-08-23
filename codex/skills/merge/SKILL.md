@@ -1,130 +1,76 @@
 ---
 name: merge
-description: Run Shu's merge workflow for a branch or pull request. Use when the user asks to merge, finish a branch, merge a PR, or clean up after merging. Reads the project's Git Workflow, resolves the exact target, reuses exact-candidate evidence when valid, verifies after merge, and performs only authorized follow-ups.
+description: Merge, finish, or clean up a branch or pull request through Shu's workflow by verifying the exact candidate and main, running authorized follow-ups, and cleaning up safely.
 ---
 
 # Merge Workflow
 
-Verify the candidate, merge, verify the integrated result, and clean up. Handles both local merges and PR merges.
+Verify the candidate, merge locally or through a PR, verify main, run authorized follow-ups, and clean up.
 
 **Announce at start:** "Running merge workflow."
 
-## Step 1: Read Project Config
+## Prepare
 
-Read the repository instructions — prefer `AGENTS.md`; if absent, read `CLAUDE.md`. Read the full `## Git Workflow` (or equivalent) section before acting. Capture the test command and every applicable project-specific requirement, including pre-merge checks, merge or push rules, post-merge deployment or sync commands, and verification steps.
+Read repository instructions, preferring `AGENTS.md` then `CLAUDE.md`, and the complete Git Workflow equivalent. Capture tests, pre-merge checks, merge/push rules, deployment or sync, and verification. These requirements run at their specified stage; otherwise use the defaults below.
 
-Treat those requirements as part of this workflow and run them at the stage the project specifies. If no such section exists, use the defaults below.
+Resolve the exact branch or PR and local-versus-PR mode from the request and repository. Ask only if ambiguous; do not reconfirm an authorized target. If already on main without a feature target, stop.
 
-## Step 2: Resolve What to Merge
+## Verify the candidate
 
-Resolve the exact PR or branch from the user's request and current repository evidence. If the target or merge mode is ambiguous, list the candidates and ask. Do not add a redundant confirmation when the user already authorized an exact target.
+Resolve clean feature `HEAD` and tree. Reuse complete verification only when it records the exact successful command after final review for the same commit and tree. Otherwise run configured tests, or `pytest` by default.
 
-Two modes:
+Without tests, run repository validation or exercise the behavior and disclose gaps. Treat failures as evidence: diagnose relevance, fix in-scope regressions, disclose unresolved failures, and merge only when they do not invalidate the change and authorization covers them.
 
-- **Local merge** — merge a feature branch into main locally
-- **PR merge** — merge via `gh pr merge`
+## Merge
 
-If already on main with no feature branch, inform the user and stop.
+Never rebase unless requested; preserve history with a merge.
 
-## Step 3: Verify Feature Candidate
-
-Resolve the clean feature `HEAD` commit and tree. Reuse complete repository verification only when the evidence records the exact command and successful result after final code review and is bound to that same commit and tree. If the candidate changed, the evidence is missing, or the repository explicitly requires a fresh pre-merge run, run the configured test command or `pytest` by default.
-
-If no automated tests exist, run the repository's validation or exercise the changed behavior when practical and report any verification gap.
-
-Treat failures as evidence, not an automatic harness veto. Diagnose their relevance, fix in-scope regressions, and disclose unresolved failures before merging. Proceed only when the failure does not invalidate the change and the user's authorization covers accepting that evidence.
-
-## Step 4: Merge
-
-Do not rebase the feature branch unless the user explicitly requests it. Preserve the branch history through a merge.
-
-### Local Merge
 ```bash
+# Local
 git checkout main
 git pull --ff-only
 git merge --no-ff <feature-branch>
-```
-
-### PR Merge
-```bash
+# PR
 gh pr merge --merge
 ```
 
-## Step 5: Test on Main
+## Verify main
 
-After merging, run the same test command on main.
+Run the same tests on main. Diagnose failures immediately and never push a known regression; disclose unrelated or pre-existing failures before deciding whether authorization covers the push.
 
-If tests fail, report immediately and determine whether the merge introduced the failure. Do not push a known regression. For unrelated or pre-existing failures, disclose the evidence before deciding whether existing authorization covers the push.
+## Push
 
-## Step 6: Push
-
-Push a local merge only when the user's request or repository workflow explicitly authorizes it. Otherwise report that local `main` is ahead.
+Push a local merge only when the request or repository workflow authorizes it; otherwise report that main is ahead.
 
 ```bash
 git push origin main
 ```
 
-## Step 7: Run Project-Specific Follow-up
+## Follow up
 
-Run every remaining requirement from the project's Git Workflow that the user has authorized, such as deployment, remote sync, smoke checks, or live verification. Ask before a consequential follow-up when the request did not already authorize it.
+Run every remaining authorized Git Workflow requirement, such as deployment, sync, smoke checks, or live verification. Ask before an unauthorized consequential follow-up. Preserve and report failures without claiming success.
 
-If a follow-up fails, preserve and report the evidence. Do not claim that deployment or verification succeeded.
+## Clean up
 
-## Step 8: Clean Up
-
-Cleanup is part of an authorized merge workflow and does not require separate
-approval. After the merge, required post-merge verification, and applicable push
-succeed, remove the merged feature branch and its clean worktree unless the user
-explicitly asks to retain them. Stop and report instead of cleaning up when the
-worktree is dirty, the branch is not fully merged, or ownership of the branch or
-worktree is ambiguous.
+Cleanup is part of an authorized merge and needs no separate approval. After merge, required verification, and applicable push succeed, remove the merged branch and clean owned worktree unless retention was requested. Stop if the worktree is dirty, the branch is not fully merged, or ownership is ambiguous.
 
 Delete the feature branch:
 
 ```bash
-# Local branch
 git branch -d <feature-branch>
-
-# Remote branch — always verify it's deleted
 git push origin --delete <feature-branch>
-# (PR merge may auto-delete, but check and clean up if not)
-```
-
-Check for worktree:
-```bash
 git worktree list
-```
-
-If the feature branch had a worktree, remove it (only after confirming it belongs to the merged branch):
-```bash
 git worktree remove <worktree-path>
 ```
 
-If that worktree was registered as a saved local Codex project for continuation tasks, remove the matching project registration after the worktree is removed. If project removal is unavailable, report the exact stale project path that the user must remove from the app; do not leave it unmentioned.
+Verify remote deletion when applicable. After removing a worktree, remove its saved local Codex project registration; if unavailable, report the exact stale project path.
 
-## Step 9: Close the Linked Issue
+## Close linked issues
 
-After the merge is pushed, close a linked GitHub issue only when the user's request or repository workflow authorizes issue closure.
-
-Find the issue number from the branch name or the merged commit messages (e.g. `issue #106`, `fixes #106`, `closes #42`). If exactly one issue is referenced, close it with a comment pointing at the merge commit:
+After push, close linked issues only when authorized. Resolve them from branch and commit messages; close each distinct reference with the merge commit:
 
 ```bash
 gh issue close <number> --comment "Resolved by <merge-commit-sha> on main."
 ```
 
-If multiple distinct issues are referenced, close each. If none is referenced, skip this step. If the merge happened via `gh pr merge` and the PR body used a closing keyword (`Closes #N`), GitHub already closed the issue — verify with `gh issue view <number>` and only close manually if still open.
-
-## Summary
-
-| Step | Local Merge | PR Merge |
-|------|-------------|----------|
-| Verify branch | reuse exact evidence or test | reuse exact evidence or test |
-| Merge | `git merge --no-ff` | `gh pr merge --merge` |
-| Test main | yes | yes |
-| Push main | when authorized | automatic with PR merge |
-| Project follow-up | when authorized | when authorized |
-| Delete local branch | yes, after successful merge | yes, after successful merge |
-| Delete remote branch | if it exists and is fully merged | automatic if configured; otherwise delete it |
-| Remove worktree | yes, when clean and owned by the merged branch | yes, when clean and owned by the merged branch |
-| Remove worktree project registration | after removing a registered worktree | after removing a registered worktree |
-| Close linked issue | when authorized | verify automatic closure before acting |
+Skip when none are referenced. For PR closing keywords, verify GitHub's automatic closure and close manually only if still open.

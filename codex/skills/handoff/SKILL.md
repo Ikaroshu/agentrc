@@ -1,50 +1,47 @@
 ---
 name: handoff
-description: Create a normal new Codex task when the user asks the current task to hand off, continue, or transfer part or all of its work to a fresh task or session. Use a self-contained prompt in the exact saved parent project with a Local environment, regardless of whether the app classifies that project's host as local or remote. Do not use for the app's Hand off action that moves the same task between Local and Worktree, for forks, or for internal subagent delegation.
+description: Transfer requested work to a normal fresh Codex task in the exact saved parent project and Local environment. Do not use for forks, internal delegation, or the app's Hand off action between Local and Worktree.
 ---
 
 # Handoff
 
-Create a new task as if the user opened the saved parent project, selected the Local environment, and typed a self-contained continuation prompt.
+Create a fresh task in the saved parent project and Local environment with a self-contained continuation prompt.
 
 **Announce at start:** "Using the handoff skill to create a fresh local task."
 
-## Resolve the destination
+## Resolve
 
-1. Proceed only after the user explicitly requests a new task or session.
-2. Resolve the repository's parent checkout with `git worktree list --porcelain`. Use the checkout represented by the main `worktree` entry, not a Codex-managed or feature worktree.
-3. Resolve the current task's host before selecting a project. Prefer the app's current-thread host metadata; if only host names are available, compare the project host with `hostname`.
-4. Use the project-listing tool and require both the exact parent path and the current task's host. Accept that match whether its `projectKind` is `"local"` or `"remote"`; that field describes how the app reaches the configured host, not whether the task uses the checkout or a worktree.
-5. If the current host cannot be resolved, or no project matches both host and path, stop and report the mismatch. Do not substitute a different path or host or tell the user to add a project that already exists on another host.
+1. Proceed only after an explicit request for a new task or session.
+2. Find the parent checkout with `git worktree list --porcelain`; use the first `worktree` entry, never a feature or Codex-managed worktree.
+3. Resolve the current task's host before selecting a project. Prefer thread metadata; otherwise compare host names with `hostname`.
+4. List projects and require both the exact parent path and the current task's host, whether its `projectKind` is `"local"` or `"remote"`. That field describes host access, not environment type.
+5. If host resolution or the exact match fails, stop and report it; substitute no path or host, and do not ask the user to recreate a project that exists elsewhere.
 
 ## Inspect the continuation state
 
-Inspect the current task evidence and the relevant repository with read-only commands. Capture:
+Read current task evidence and repository state. Capture:
 
-- the user's requested continuation scope;
-- the issue or goal and the governing plan, specification, or handoff paths;
-- completed work, actual verification, remaining work, blockers, and approval boundaries;
-- evidence that must be preserved;
-- the parent checkout's absolute path; and
-- each relevant worktree's absolute path, branch, HEAD, and working-tree state.
+- requested scope, goal or issue, and governing plan/spec/handoff paths;
+- completed and remaining work, actual verification, blockers, approval boundaries, and retained evidence; and
+- the parent path plus each relevant worktree's path, branch, HEAD, and status.
 
-If implementation already has an active worktree, identify the exact worktree used by the existing work. If more than one worktree could plausibly be active and the current task does not resolve the ambiguity, ask the user which one to continue.
+Identify any active implementation worktree. Ask if multiple plausible worktrees remain ambiguous.
 
 ## Build the prompt
 
-Write a concise, self-contained prompt that transfers exactly the work the user requested. Do not introduce total-versus-partial handoff modes or ownership state.
+Transfer exactly the requested work without inventing handoff modes or ownership state.
 
 When an active implementation worktree exists, the prompt must:
 
-- identify its absolute path, branch, HEAD, and working-tree state;
-- direct the new task to reuse that exact worktree with explicit workdirs;
-- prohibit creating a replacement worktree or editing the parent checkout; and
-- preserve uncommitted work and retained evidence.
+- state its absolute path, branch, HEAD, and status;
+- require the task to reuse that exact worktree with explicit workdirs;
+- forbid a replacement worktree or parent-checkout edits; and
+- preserve uncommitted work and evidence.
 
-When no implementation worktree exists, state that the task starts in the saved parent project's Local environment and that an approved implementation workflow may later create its worktree under `<project-root>/.worktrees/`.
+Without one, state that the task starts in the saved parent's Local environment and an approved implementation may later create `<project-root>/.worktrees/`.
 
 ## Create the task
 
-Use the thread-creation tool with the saved parent project's ID and `environment: { type: "local" }`. Never fork the current task, select a Worktree environment, target a saved worktree project, or use the app's Hand off action. Omit model and thinking settings unless the user explicitly requests them.
+Use the thread-creation tool with the saved parent project ID and `environment: { type: "local" }`. Never fork the current task, choose a Worktree environment, target a saved worktree project, or use the app's Hand off action. Omit model and thinking settings unless requested.
 
-Leave the current task, parent checkout, worktrees, and retained evidence unchanged. Report the new task and the exact parent project and active worktree, if any, after creation succeeds.
+Leave current state unchanged. After success, report the new task, exact parent project, and active worktree if any.

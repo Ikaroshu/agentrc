@@ -1,31 +1,29 @@
 ---
 name: adversarial-doc-review
-description: Run a Codex-native adversarial review of a spec and/or implementation plan before implementation. Use the exact doc_reviewer role with GPT-5.6 Sol at xhigh effort for non-hard reviews or max effort for hard reviews, then verify its findings inline.
+description: Adversarially review a spec or implementation plan before implementation with the exact native doc_reviewer role, then verify its findings.
 ---
 
 # Adversarial Doc Review
 
-Use the configured `doc_reviewer` native subagent. Never substitute a generic agent or a CLI reviewer.
+Use the configured native `doc_reviewer`; never substitute a generic or CLI reviewer.
 
-## Scope and tier
+## Prepare
 
-- Run from the main repository checkout and supply at least one explicit regular-file path: `--spec <path>` or `--plan <path>`.
-- Resolve supplied paths to absolute paths. Treat any focus text as additional emphasis, not a narrowing of the review.
-- Review the declared in-scope design and verify that out-of-scope boundaries, dependencies, and consequences are safe and complete. Do not expand or perfect deferred work; report detailed deferred implementation as scope leakage that should be removed or split before review continues.
-- Judge every proposed edge-case fix against the primary functional outcome, evidence, likelihood, impact, and implementation cost. Treat it as blocking only when an active requirement or plausible material failure requires handling now. When the handling would add disproportionate code, logic, or plan detail, prefer a brief documented limitation and revisit condition or, when separately authorized, a follow-up issue.
-- First distinguish a failure reachable during contract-respecting execution from invalid user or caller behavior. In Shu's code repositories, assume competent users and callers follow the documented contract. When invalid invocation, contradictory input, manual state tampering, or a bypassed workflow naturally fails loudly before harmful side effects, do not require a fix, documented limitation, or follow-up issue. Untrusted or public inputs and user-triggered security, data-loss, or irreversible risks remain real boundaries.
-- Document review cannot prove behavior that requires working code or execution. When the primary path is sufficiently specified, preserve the relevant assumption or residual risk and let implementation plus focused checks produce the evidence instead of demanding more speculative plan detail.
-- Use `model="gpt-5.6-sol"` with `reasoning_effort="xhigh"` for a sufficiently specified established design and `reasoning_effort="max"` when interacting contracts, irreversibility, novel concurrency or security concerns, broad blast radius, or unresolved ambiguity materially complicate the review.
+- From the main checkout, require at least one non-empty regular file, `--spec <path>` or `--plan <path>`, and resolve it to an absolute path. Focus text adds emphasis; it never narrows scope.
+- Review the declared design plus the safety of out-of-scope boundaries, dependencies, and consequences. Reject detailed deferred implementation as scope leakage.
+- Judge concerns by the primary outcome, evidence, reachable valid-use path, likelihood, impact, and handling cost. Competent callers follow documented contracts; misuse that fails loudly before harm needs no fix or deferral. Untrusted inputs and plausible security, data-loss, irreversible, or active-contract failures remain boundaries.
+- Block only active requirements or plausible material failures worth handling now. Prefer a brief limitation and revisit condition, or a separately authorized issue, over disproportionate detail. Leave questions requiring working code to implementation and focused checks.
+- Use `model="gpt-5.6-sol"` with `reasoning_effort="xhigh"` for an established, sufficiently specified design; use `reasoning_effort="max"` for materially difficult interacting contracts, irreversibility, concurrency, security, blast radius, or ambiguity.
 - Tell the user the tier and short rationale before dispatch.
 
 ## Dispatch
 
-Build a concise task containing the absolute document paths and optional focus, then dispatch a fresh task with `agent_type="doc_reviewer"`, `fork_turns="none"`, the selected exact model and effort, and a clear unique task name.
+Dispatch a fresh, uniquely named task containing the absolute paths and optional focus with `agent_type="doc_reviewer"`, `fork_turns="none"`, and the selected exact model and effort.
 
 If input is missing or empty, or the runtime cannot dispatch the exact role, fail loudly. Ordinary scheduling or transport failures may be retried with the same exact role; never weaken the role requirement.
 
-## Verify and follow up
+## Resolve
 
-Wait for the completed review. Verify every finding against the documents and repository context before editing. Classify findings as confirmed blocking, accepted non-blocking deferral, rejected with evidence, or needing clarification.
+Wait for completion, then verify every finding against the documents and repository. Classify it as confirmed blocking, accepted non-blocking deferral, rejected with evidence, or needing clarification before editing.
 
-One complete review is the default. Use focused follow-up review only when a repair materially changes the contract or an unresolved blocking finding requires confirmation. Reuse the reviewer when practical or dispatch a fresh exact reviewer when the original task is unavailable. Non-blocking suggestions, documented limitations, and questions answerable only by implementation do not keep the plan in review. Keep the revised paths, relevant sections, and verified dispositions explicit; once confirmed blocking findings are resolved, report residual risk and move to the implementation approval gate.
+One complete review is the default. Follow up only when a repair materially changes the contract or an unresolved blocker needs confirmation; reuse the reviewer when practical, otherwise use a fresh exact reviewer. Non-blocking suggestions, documented limitations, and implementation-only questions do not keep review open. Record revised sections and dispositions, report residual risk, and move to implementation approval once blockers are resolved.

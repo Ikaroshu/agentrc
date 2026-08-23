@@ -1,61 +1,31 @@
 ---
 name: commit
-description: Run Shu's commit workflow for a repository. Use when the user asks to commit changes, run the commit workflow, or prepare a tested commit and push. Reads repo instructions, validates and stages explicitly, commits, completes required post-commit actions, and pushes automatically when the work is on main or otherwise when authorized.
+description: Run Shu's repository commit workflow to validate, stage explicitly, commit, complete required post-commit actions, and push main automatically or another branch when authorized.
 ---
 
 # Commit Workflow
 
-Run tests, commit, complete any repository-required post-commit actions, then push automatically when the work is on `main`; on other branches, push when the user or repository workflow authorizes it.
+Validate, commit, complete repository-required post-commit actions, then push `main` automatically or another branch when authorized.
 
 **Announce at start:** "Running commit workflow."
 
-## Step 1: Read Project Config
+## Workflow
 
-Read the repository instructions — prefer `AGENTS.md`; if absent, read `CLAUDE.md`. Look for a `## Git Workflow` (or equivalent) section for these fields:
+1. Read repository instructions, preferring `AGENTS.md` then `CLAUDE.md`, and the complete Git Workflow equivalent. Capture:
 
-- **Pre-stage checks** — lint/type-check commands to run before staging (default: none)
-- **Commit tests** — test command to run before commit (default: `pytest`)
-- **Pre-commit** — whether pre-commit hooks are enforced (default: no)
-- **Post-commit actions** — deployment, synchronization, or verification required to complete the repository's commit workflow (default: none)
+   - pre-stage checks (default none);
+   - commit tests (default `pytest`);
+   - enforced pre-commit hooks (default no); and
+   - required post-commit deployment, sync, or verification (default none).
 
-If no such section exists, use defaults.
+2. Run configured pre-stage checks and tests. If no tests exist, run repository validation or report the gap. Treat failures as evidence: diagnose relevance, fix in-scope regressions, disclose unresolved failures, and proceed only when authorization covers that evidence.
 
-## Step 2: Run Pre-stage Checks
+3. Review `git status` and `git diff`; stage relevant files by name, never `git add -A` or `git add .`, and preserve unrelated changes. Write a concise message in repository style and commit. Hooks run normally; after a hook failure, fix, restage, and create a new commit.
 
-Run the configured pre-stage check commands (e.g., `ruff check --fix`, `pyright`). Treat their results as evidence: diagnose failures far enough to say whether they are caused by the proposed commit, and report unresolved failures accurately.
+4. Run required post-commit actions in order. Invoking this workflow authorizes actions the repository explicitly requires for commit completion; infer no other external mutation.
 
-## Step 3: Run Tests
+5. Re-resolve the branch and inspect unpublished commits. If a push would publish unrelated commits, disclose them and ask. Otherwise push `origin main` automatically on `main`; on another branch, push only when the user or repository workflow authorizes it:
 
-Run the configured test command. If no automated tests exist, run the repository's validation command or clearly report the gap. A failed check is not by itself a harness veto: assess its relevance, fix in-scope regressions, and disclose any unresolved failure before committing or pushing. Proceed only when the user's authorization covers accepting that evidence.
-
-## Step 4: Stage and Commit
-
-1. Run `git status` and `git diff` to review changes
-2. Stage relevant files by name (never `git add -A` or `git add .`); preserve unrelated user changes
-3. Craft a concise commit message following the repo's existing style
-4. Commit (pre-commit hooks will run automatically if configured)
-5. If pre-commit fails, fix issues, re-stage, and create a NEW commit
-
-## Step 5: Complete Repository Post-Commit Actions
-
-Run every post-commit action required by the repository in its specified order. Treat invoking the commit workflow as authorization for actions that the repository explicitly makes part of commit completion; do not ask for separate authorization. Do not infer deployment or other external mutations when the repository does not require them.
-
-## Step 6: Push
-
-Resolve the current branch after committing:
-
-- If it is `main`, push `origin main` as part of the commit workflow without a separate authorization prompt.
-- On any other branch, push only when the user's request or repository workflow explicitly authorizes it.
-- Before either push, inspect the unpublished commits. If the push would publish unrelated commits, surface them and obtain explicit approval.
-
-```bash
-git push origin $(git branch --show-current)
-```
-
-## Defaults Summary
-
-| Setting | Serious project | Casual project |
-|---------|----------------|----------------|
-| Tests | from repo instructions | `pytest` |
-| Pre-commit | yes | no |
-| Push | automatic on `main`; otherwise when authorized | automatic on `main`; otherwise when authorized |
+   ```bash
+   git push origin $(git branch --show-current)
+   ```

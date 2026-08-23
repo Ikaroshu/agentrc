@@ -223,6 +223,16 @@ done
 grep -F 'agent_type="doc_reviewer"' "$ROOT_DIR/codex/skills/adversarial-doc-review/SKILL.md" >/dev/null
 grep -F 'agent_type="code_reviewer"' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 
+behavior_contract=(
+  'needs user-only `sudo` or other privileged work'
+  'ask once and end the turn'
+  'Do not poll or try workarounds'
+  'unprivileged path directly only if it is equivalent'
+)
+for required_text in "${behavior_contract[@]}"; do
+  grep -F -- "$required_text" "$ROOT_DIR/codex/AGENTS.md" >/dev/null
+done
+
 implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"
 implement_contract=(
   'agent_type="implementer"'

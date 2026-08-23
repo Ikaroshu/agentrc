@@ -1,45 +1,37 @@
 ## Engineering Philosophy
 
-- Prefer the simplest design that satisfies the current contract. Do not add speculative abstractions, state, branches, validation, error handling, fallbacks, retries, or guards for conditions that should be impossible. Let contract violations fail at their source.
-- Before adding code, determine whether the current contract needs new code; then look for an appropriate project primitive or pattern, the standard library or native platform, and an already-installed dependency before writing the smallest clear local implementation. Add a dependency only when it materially reduces total complexity or provides behavior the project should not own.
-- Distinguish failures reachable during contract-respecting execution from invalid user or caller behavior. In Shu's code repositories, assume competent users and callers follow the documented contract. Do not plan or patch for invalid invocation, contradictory input, manual state tampering, or bypassed workflows when the violation naturally fails loudly at its source before harmful side effects.
-- Validate or catch only at real boundaries such as untrusted or public input and external APIs. A user-facing entry point is not automatically an untrusted boundary. Do not use exceptions for normal control flow or swallow unexpected failures. Keep a runtime safeguard only when the current operation needs it to prevent a plausible security failure, data loss, irreversible side effect, inaccessible user-facing behavior, or another contract violation reachable during valid use. Put broader semantic, integrity, provenance, and consistency audits in tests or explicit verification and maintenance commands.
-- Do not reread, recompute, rehash, or traverse trusted data merely to prove that the producing code worked. Construct immutable artifacts and any required content identity in one pass; compute hashes only when identity or integrity is part of the active contract.
-- Prefer clean current code over legacy readers, migrations, aliases, shims, and compatibility branches unless the user requests compatibility or a known active consumer requires it. State before implementation when a breaking change requires rebuilding state or rerunning jobs.
-- Use version fields only for active generic storage or serialization protocols or when an external provider exposes a meaningful version. Record normalization provenance and source revisions directly; do not invent source, recipe, or format versions as proxies for current code.
-- Prefer clear names and simple structure over comments. Add comments or docstrings only for non-obvious logic, subtle constraints, or important warnings. When a deliberate simplification has a real, non-obvious ceiling, document the ceiling and the concrete condition for revisiting it.
+- Prefer the simplest design that meets the current contract. Avoid speculative abstractions, state, branches, validation, recovery, retries, guards, or dependencies. First reuse a project primitive, the standard library or platform, or an installed dependency; add a dependency only when it materially lowers total complexity or supplies behavior the project should not own.
+- Assume competent users and callers follow documented contracts. Do not handle invalid invocation, contradictory input, tampering, or bypassed workflows when they fail loudly before harm. Validate at real untrusted or external boundaries; user-facing alone is not untrusted. Add runtime safeguards only for plausible valid-use security, data-loss, irreversible, accessibility, or contract failures. Never swallow unexpected failures or use exceptions as normal control flow.
+- Put broader semantic, integrity, provenance, and consistency audits in tests or explicit maintenance commands. Do not reread, recompute, rehash, or traverse trusted data merely to prove its producer worked; construct immutable artifacts and required identity once.
+- Prefer current code over legacy readers, migrations, aliases, shims, or compatibility branches unless requested or required by an active consumer. Disclose required rebuilds or reruns before a breaking change. Use versions only for active generic protocols or meaningful provider versions; record actual provenance and source revisions directly.
+- Prefer clear names and structure over comments. Document only non-obvious logic, important warnings, or a deliberate simplification's concrete ceiling and revisit condition.
 
 ## Debugging
 
-- Reproduce the problem and read the complete error before theorizing. Without a reliable repro, keep gathering evidence.
-- For bug fixes, trace the active flow and relevant callers to the layer that owns the contract. Fix the shared root cause once rather than patching only the reported path, unless changing the shared layer would alter unrelated contracts.
-- Ask about material uncertainty that cannot be resolved from context. Test one hypothesis at a time with a focused experiment, and revert a failed change before trying another.
-- After three falsified hypotheses, consult primary documentation or search online rather than continuing to guess.
-- Verify the fix against the original repro before claiming success.
+- Reproduce the problem and read the complete error before theorizing. Trace active callers to the contract owner and fix the shared root cause unless that would alter unrelated contracts.
+- Resolve material uncertainty from context or ask. Test one hypothesis at a time and revert failed experiments. After three falsified hypotheses, consult primary documentation or search instead of guessing.
+- Verify the fix against the original reproduction before claiming success.
 
 ## Development Workflow
 
-- Implement clear, low-complexity changes directly, even when their impact is large; scale verification and review to impact. Invoke brainstorming automatically when a material uncertainty about intent, requirements, scope, assumptions, or design choices requires meaningful user input before proceeding, especially for high-impact work. Do not invoke it for uncertainty resolvable through project context, ordinary reasoning, or safe in-scope assumptions. Recommend planning and document review only when settled implementation complexity warrants phased execution; impact alone does not require a phase-based plan. For borderline complexity, give a recommendation and let the user choose.
-- Keep planning and every review centered on the primary functional outcome. Include or require an edge-case fix now only when an active requirement or plausible material failure justifies its implementation cost. When handling would add disproportionate code, logic, or plan detail, record the limitation and concrete revisit condition briefly or, when separately authorized, capture it in a follow-up issue; do not let hypothetical completeness delay implementation or merge. Never defer a plausible security, data-loss, irreversible, or active-contract failure merely because its fix is large.
-- After one complete review of the current document or code scope and resolution of confirmed required findings, move to the next workflow stage or approval gate. Focused rereview is for code-changing repairs or unresolved blockers, not reopening accepted scope. Use working code and focused checks to resolve questions that planning alone cannot answer.
-- For non-trivial changed behavior, leave the smallest focused regression check that would fail if the behavior regressed, using the repository's existing test tools; scale surrounding verification to risk.
-- Treat delegated agents and long-running commands as event-driven. For native agent work, block until the specifically requested owner or reviewer result arrives. If an unrelated agent update wakes the wait, handle it and resume waiting; do not treat that update as completion. For background terminals, use the longest supported empty-poll window. React to a result, exit, question, failure, or user interruption, not elapsed time. Do not repeatedly poll status, logs, partial output, Git state, or other indicators, and do not narrate unchanged waits. Perform a separate targeted status check only when the operation materially exceeds its expected duration or another concrete abnormal signal appears.
-- Ask before starting an optional workflow. When chosen, follow **[brainstorm ->] plan -> doc-review -> worktree -> implement -> code-review -> merge** and let each skill own its stage mechanics. The agent invokes the selected skills; do not ask the user to invoke them.
-- Get approval for the design during brainstorming. After document-review findings are resolved, pause for approval before creating a worktree or implementing. After final code-review findings are resolved, pause again before merging. Do not add other reconfirmation gates.
+- Implement clear, low-complexity changes directly and scale verification and review to impact. Use brainstorming only when consequential uncertainty needs user input; use planning and document review only when settled complexity warrants phases. Ask before optional workflows.
+- Center plans and reviews on the primary outcome. Handle an edge case now only for an active requirement or plausible material failure worth its cost; otherwise note the limitation and concrete revisit condition briefly or, when separately authorized, open a follow-up issue. Never defer plausible security, data-loss, irreversible, or active-contract failures merely because the fix is large.
+- After one complete review and resolution of required findings, advance. Rereview only code-changing repairs or unresolved blockers; use working code and focused checks for questions prose cannot settle. For non-trivial behavior changes, leave the smallest focused regression check and scale surrounding verification to risk.
+- Treat agents and long commands as event-driven. Wait for the requested owner, reviewer, or process; handle unrelated events and resume. Use the longest supported empty terminal wait. Do not poll or narrate unchanged state; check separately only after abnormal duration or a concrete signal.
+- When a task needs user-only `sudo` or other privileged work, ask once and end the turn. Do not poll or try workarounds; take an unprivileged path directly only if it is equivalent.
+- When chosen, follow **[brainstorm ->] plan -> doc-review -> worktree -> implement -> code-review -> merge**; the agent invokes each skill and lets it own its stage. Get design approval during brainstorming, implementation approval after doc review, and merge approval after final code review. Add no other reconfirmation gates.
 - Keep plans and specs uncommitted on `main`; put planned implementation worktrees under `<project-root>/.worktrees/`. When a worktree's resolved Git directory is outside the writable roots, request scoped escalation on the first Git metadata write.
 
 ## GitHub Issues
 
-- Issue bodies describe only the problem and relevant context, without proposed solutions or acceptance criteria, unless the user explicitly asks otherwise.
+- Unless asked otherwise, issue bodies contain only the problem and relevant context, not solutions or acceptance criteria.
 
 ## Check Failures
 
-- Treat checks as evidence rather than harness vetoes. Diagnose failures far enough to determine whether they affect the requested change, fix in-scope regressions, and disclose unresolved failures before consequential actions. Proceed only when the user's authorization covers accepting that evidence.
+- Treat checks as evidence, not harness vetoes. Diagnose relevance, fix in-scope regressions, disclose unresolved failures before consequential actions, and proceed only when authorization covers that evidence.
 
 ## Python Style
 
-- Add direct type annotations to public functions.
-- Use `snake_case` for modules and functions, `PascalCase` for classes, and `UPPER_SNAKE_CASE` for constants. Names carrying physical units include the unit when ambiguity is possible.
-- Do not create underscore-prefixed module files. A leading underscore marks a private symbol; do not import private symbols across modules, including from tests, and do not maintain `__all__`.
-- Prefer namespace packages. Add `__init__.py` only for genuine package-level exports.
-- Use `uv` for dependency management and direnv for project environments.
+- Type public functions directly. Use `snake_case` for modules/functions, `PascalCase` for classes, and `UPPER_SNAKE_CASE` for constants; include physical units when ambiguous.
+- Leading underscores mark private symbols: create no underscore-prefixed modules and import no private symbols across modules, including tests. Do not maintain `__all__`.
+- Prefer namespace packages; add `__init__.py` only for genuine exports. Use `uv` and direnv.
