@@ -72,7 +72,12 @@ If a follow-up fails, preserve and report the evidence. Do not claim that deploy
 
 ## Step 8: Clean Up
 
-Clean up only when the user's request or repository workflow authorizes it.
+Cleanup is part of an authorized merge workflow and does not require separate
+approval. After the merge, required post-merge verification, and applicable push
+succeed, remove the merged feature branch and its clean worktree unless the user
+explicitly asks to retain them. Stop and report instead of cleaning up when the
+worktree is dirty, the branch is not fully merged, or ownership of the branch or
+worktree is ambiguous.
 
 Delete the feature branch:
 
@@ -118,8 +123,8 @@ If multiple distinct issues are referenced, close each. If none is referenced, s
 | Test main | yes | yes |
 | Push main | when authorized | automatic with PR merge |
 | Project follow-up | when authorized | when authorized |
-| Delete local branch | when authorized | when authorized |
-| Delete remote branch | when authorized | automatic if configured |
-| Remove worktree | when authorized | when authorized |
-| Remove worktree project registration | with authorized worktree cleanup | with authorized worktree cleanup |
+| Delete local branch | yes, after successful merge | yes, after successful merge |
+| Delete remote branch | if it exists and is fully merged | automatic if configured; otherwise delete it |
+| Remove worktree | yes, when clean and owned by the merged branch | yes, when clean and owned by the merged branch |
+| Remove worktree project registration | after removing a registered worktree | after removing a registered worktree |
 | Close linked issue | when authorized | verify automatic closure before acting |
