@@ -26,7 +26,7 @@ Turn settled requirements into a plan a fresh owner can execute without rediscov
 4. Define ordered outcome phases under one persistent owner. Group coherent phases into commit checkpoints; add intermediate review only where a foundational contract must clear before dependent work, then cumulative final review. Note independent verification that may run concurrently.
 5. Save `<project-root>/.plans/plans/<YYYYMMDD>_<short_title>.md` from main, not a worktree, and do not commit it.
 6. Remove placeholders and fix requirement, interface, naming, scope, and verification gaps.
-7. Invoke one complete `adversarial-doc-review` on the plan and spec. Address confirmed blockers before implementation approval; follow up only for a contract-changing repair or unresolved blocker.
+7. Invoke `adversarial-doc-review` on the plan and spec as one review unit with at most two completed passes. Address confirmed pass-one blockers; use pass two only for a contract-changing repair or unresolved blocker. After pass two, advance if clear or stop and give the required ELI5 blocker explanation; never dispatch pass three.
 
 ## Plan structure
 

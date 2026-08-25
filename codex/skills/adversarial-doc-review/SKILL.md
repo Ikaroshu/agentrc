@@ -18,7 +18,7 @@ Use the configured native `doc_reviewer`; never substitute a generic or CLI revi
 
 ## Dispatch
 
-Dispatch a fresh, uniquely named task containing the absolute paths and optional focus with `agent_type="doc_reviewer"`, `fork_turns="none"`, and the selected exact model and effort.
+Dispatch a fresh, uniquely named task containing a stable review-unit identity, pass number, absolute paths, and optional focus with `agent_type="doc_reviewer"`, `fork_turns="none"`, and the selected exact model and effort. Start at pass one; a follow-up is pass two for the same unit even when the reviewer is replaced.
 
 If input is missing or empty, or the runtime cannot dispatch the exact role, fail loudly. Ordinary scheduling or transport failures may be retried with the same exact role; never weaken the role requirement.
 
@@ -26,4 +26,6 @@ If input is missing or empty, or the runtime cannot dispatch the exact role, fai
 
 Wait for completion, then verify every finding against the documents and repository. Classify it as confirmed blocking, accepted non-blocking deferral, rejected with evidence, or needing clarification before editing.
 
-One complete review is the default. Follow up only when a repair materially changes the contract or an unresolved blocker needs confirmation; reuse the reviewer when practical, otherwise use a fresh exact reviewer. Non-blocking suggestions, documented limitations, and implementation-only questions do not keep review open. Record revised sections and dispositions, report residual risk, and move to implementation approval once blockers are resolved.
+Treat the supplied spec and plan as one document review unit with a hard budget of two completed review passes, including the initial review. Repairs, replacement reviewers, and follow-up turns do not reset the count. Pass one is the default; advance immediately if it is clear, and use pass two only when a repair materially changes the contract or an unresolved blocker needs confirmation. Reuse the reviewer when practical, otherwise use a fresh exact reviewer. Non-blocking suggestions, documented limitations, and implementation-only questions do not keep review open.
+
+If pass two is clear, move to implementation approval. If a confirmed blocker or material uncertainty remains, stop the review workflow and do not dispatch a third review. Explain the blocker in ELI5 terms with the relevant context, evidence, impact, what the two passes tried, what remains unclear, and the user decision or external change needed. Record revised sections, review counts, dispositions, and residual risk.
