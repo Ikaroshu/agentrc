@@ -239,13 +239,14 @@ behavior_contract=(
   'ask once and end the turn'
   'Do not poll or try workarounds'
   'unprivileged path directly only if it is equivalent'
-  'at most one `command_runner` with `fork_turns="none"` per session'
-  'reuse its canonical target through `followup_task`'
-  'including noisy test suites'
-  'all environment setup in its command string'
-  'without command-status queries, partial-transcript inspection, main-thread terminal polling, or child-output relay'
-  'platform-required bounded wait or commentary event is not completion evidence'
-  'verify the returned exit evidence before continuing'
+  'long-running or high-output commands, including noisy tests'
+  'at most one lazily spawned `command_runner` per session'
+  '(`fork_turns="none"`), and reuse it via `followup_task`'
+  'quick, interactive, or live-judgment commands direct'
+  'exact command (including environment setup), cwd, supported permissions, and required evidence'
+  'Wait without polling or relaying output'
+  'bounded wait or commentary events are non-terminal'
+  'verify the exit result'
 )
 for required_text in "${behavior_contract[@]}"; do
   grep -F -- "$required_text" "$ROOT_DIR/codex/AGENTS.md" >/dev/null
