@@ -36,7 +36,7 @@ Ground everything in code you actually read:
 
 ## Report
 
-Lead with a concise, `file:line`-precise verdict:
+Lead with a concise, beginner-friendly explanation of what happened, how the relevant components normally work together, and where and why that flow breaks. Do not make the user reconstruct the conclusion from jargon, file references, or an evidence dump. Then support it with compact `file:line` evidence covering:
 
 - real symptom versus root cause, including conflated axes;
 - enabling construct and blast radius with counts;

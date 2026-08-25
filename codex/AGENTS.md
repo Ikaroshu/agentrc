@@ -13,6 +13,10 @@
 - Resolve material uncertainty from context or ask. Test one hypothesis at a time and revert failed experiments. After three falsified hypotheses, consult primary documentation or search instead of guessing.
 - Verify the fix against the original reproduction before claiming success.
 
+## Communication
+
+- After exploration, issue triage, or debugging, concisely explain the relevant infrastructure and root cause in beginner-friendly language. Keep the key technical facts and clearly separate what is proven, inferred, and still unknown.
+
 ## Development Workflow
 
 - Implement clear, low-complexity changes directly and scale verification and review to impact. Use brainstorming only when consequential uncertainty needs user input; use planning and document review only when settled complexity warrants phases. Ask before optional workflows.
