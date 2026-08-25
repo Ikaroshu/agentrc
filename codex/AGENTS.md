@@ -20,13 +20,13 @@
 ## Development Workflow
 
 - Implement clear, low-complexity changes directly and scale verification and review to impact. Use brainstorming only when consequential uncertainty needs user input; use planning and document review only when settled complexity warrants phases. Ask before optional workflows.
+- When chosen, follow **[brainstorm ->] plan -> doc-review -> worktree -> implement -> code-review -> merge**; the agent invokes each skill and lets it own its stage. Get design approval during brainstorming, implementation approval after doc review, and merge approval after final code review. Add no other reconfirmation gates.
 - Center plans and reviews on the primary outcome. Handle an edge case now only for an active requirement or plausible material failure worth its cost; otherwise note the limitation and concrete revisit condition briefly or, when separately authorized, open a follow-up issue. Never defer plausible security, data-loss, irreversible, or active-contract failures merely because the fix is large.
+- Keep plans and specs uncommitted on `main`; put planned implementation worktrees under `<project-root>/.worktrees/`. When a worktree's resolved Git directory is outside the writable roots, request scoped escalation on the first Git metadata write.
 - After one complete review and resolution of required findings, advance. Rereview only code-changing repairs or unresolved blockers; use working code and focused checks for questions prose cannot settle. For non-trivial behavior changes, leave the smallest focused regression check and scale surrounding verification to risk.
 - Treat agents and long commands as event-driven. Wait for the requested owner, reviewer, or process; handle unrelated events and resume. Use the longest supported empty terminal wait. Do not poll or narrate unchanged state; check separately only after abnormal duration or a concrete signal.
 - Route known long-running or high-output commands, including noisy tests, through at most one lazily spawned `command_runner` per session (`fork_turns="none"`), and reuse it via `followup_task`; keep quick, interactive, or live-judgment commands direct. Pass the exact command (including environment setup), cwd, supported permissions, and required evidence. Wait without polling or relaying output; bounded wait or commentary events are non-terminal, and verify the exit result.
 - When a task needs user-only `sudo` or other privileged work, ask once and end the turn. Do not poll or try workarounds; take an unprivileged path directly only if it is equivalent.
-- When chosen, follow **[brainstorm ->] plan -> doc-review -> worktree -> implement -> code-review -> merge**; the agent invokes each skill and lets it own its stage. Get design approval during brainstorming, implementation approval after doc review, and merge approval after final code review. Add no other reconfirmation gates.
-- Keep plans and specs uncommitted on `main`; put planned implementation worktrees under `<project-root>/.worktrees/`. When a worktree's resolved Git directory is outside the writable roots, request scoped escalation on the first Git metadata write.
 
 ## GitHub Issues
 
