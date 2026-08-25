@@ -32,6 +32,7 @@ scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
 scp -q "$REPO_DIR/agents/doc_reviewer.toml" "$REMOTE:~/.codex/agents/doc_reviewer.toml"
 scp -q "$REPO_DIR/agents/code_reviewer.toml" "$REMOTE:~/.codex/agents/code_reviewer.toml"
 scp -q "$REPO_DIR/agents/implementer.toml" "$REMOTE:~/.codex/agents/implementer.toml"
+scp -q "$REPO_DIR/agents/command_runner.toml" "$REMOTE:~/.codex/agents/command_runner.toml"
 scp -q "$REPO_DIR/agents/research_worker.toml" "$REMOTE:~/.codex/agents/research_worker.toml"
 
 for skill in "${SKILLS[@]}"; do
