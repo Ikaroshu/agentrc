@@ -23,7 +23,7 @@ Turn settled requirements into a plan a fresh owner can execute without rediscov
 1. Read settled requirements, any approved spec, repository instructions, code, tests, and relevant history.
 2. Split independent or unreviewably large workstreams. Make explicit include-or-defer judgments and keep every plan working and testable.
 3. Map exact files, responsibilities, interfaces, and phase dependencies without unrelated restructuring.
-4. Define ordered outcome phases under one persistent owner. Group coherent phases into commit checkpoints; add intermediate review only where a foundational contract must clear before dependent work, then cumulative final review. Note independent verification that may run concurrently.
+4. Define ordered outcome phases under one persistent owner. Group coherent phases into commit checkpoints and add intermediate review only where a foundational contract must clear before dependent work. After every phase and repair is complete, settle one clean immutable candidate through complete verification, then run cumulative final review as the last technical gate immediately before merge approval. Note independent verification that may run concurrently.
 5. Save `<project-root>/.plans/plans/<YYYYMMDD>_<short_title>.md` from main, not a worktree, and do not commit it.
 6. Remove placeholders and fix requirement, interface, naming, scope, and verification gaps.
 7. Invoke `adversarial-doc-review` on the plan and spec as one review unit with at most two completed passes. Address confirmed pass-one blockers; use pass two only for a contract-changing repair or unresolved blocker. After pass two, advance if clear or stop and give the required ELI5 blocker explanation; never dispatch pass three.
