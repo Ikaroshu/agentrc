@@ -61,7 +61,6 @@ required_files=(
   codex/agents/doc_reviewer.toml
   codex/agents/code_reviewer.toml
   codex/agents/implementer.toml
-  codex/agents/command_runner.toml
   codex/agents/research_worker.toml
   scripts/merge-codex-config.py
   scripts/test-merge-codex-config.py
@@ -180,32 +179,22 @@ recursive_skills = {
     "claude-code-review",
 }
 role_specs = {
-    "doc_reviewer.toml": ("doc_reviewer", True, None, None),
-    "code_reviewer.toml": ("code_reviewer", True, None, None),
-    "implementer.toml": ("implementer", True, None, None),
-    "command_runner.toml": ("command_runner", True, "gpt-5.6-luna", "max"),
-    "research_worker.toml": ("research_worker", False, None, None),
+    "doc_reviewer.toml": ("doc_reviewer", True),
+    "code_reviewer.toml": ("code_reviewer", True),
+    "implementer.toml": ("implementer", True),
+    "research_worker.toml": ("research_worker", False),
 }
 
-for filename, (expected_name, blocks_recursion, expected_model, expected_effort) in role_specs.items():
+for filename, (expected_name, blocks_recursion) in role_specs.items():
     with (root / "codex/agents" / filename).open("rb") as role_file:
         role = tomllib.load(role_file)
     expected_keys = {"name", "description", "developer_instructions"}
     if blocks_recursion:
         expected_keys.add("skills")
-    if expected_model is not None:
-        expected_keys.update({"model", "model_reasoning_effort"})
     if set(role) != expected_keys:
         raise SystemExit(f"{filename}: unexpected top-level keys: {sorted(role)}")
     if role["name"] != expected_name:
         raise SystemExit(f"{filename}: expected role name {expected_name!r}")
-    if expected_model is not None and (
-        role["model"] != expected_model
-        or role["model_reasoning_effort"] != expected_effort
-    ):
-        raise SystemExit(
-            f"{filename}: expected model {expected_model!r} at effort {expected_effort!r}"
-        )
     for field in ("description", "developer_instructions"):
         if not isinstance(role[field], str) or not role[field].strip():
             raise SystemExit(f"{filename}: {field} must be a non-empty string")
@@ -239,38 +228,9 @@ behavior_contract=(
   'ask once and end the turn'
   'Do not poll or try workarounds'
   'unprivileged path directly only if it is equivalent'
-  'long-running or high-output commands, including noisy tests'
-  'at most one lazily spawned `command_runner` per session'
-  '(`fork_turns="none"`), and reuse it via `followup_task`'
-  'quick, interactive, or live-judgment commands direct'
-  'exact command (including environment setup), cwd, supported permissions, and required evidence'
-  'Wait without polling or relaying output'
-  'bounded wait or commentary events are non-terminal'
-  'verify the exit result'
 )
 for required_text in "${behavior_contract[@]}"; do
   grep -F -- "$required_text" "$ROOT_DIR/codex/AGENTS.md" >/dev/null
-done
-
-command_runner="$ROOT_DIR/codex/agents/command_runner.toml"
-command_runner_contract=(
-  'exactly one parent-supplied command per turn'
-  'all environment setup encoded in that string'
-  'Run that command in the foreground without rewriting, splitting, retrying, diagnosing'
-  "never broaden its authorization"
-  'longest supported empty terminal wait'
-  'Do not inspect process or log status merely because the command is still running'
-  'platform-required bounded wait timeout or commentary event is not completion evidence'
-  'terminal exit code or signal'
-  'elapsed time'
-  'relevant failure details'
-  'output-truncation disclosure'
-  'Complete logs are available only when the exact command itself persists them'
-  'Do not delegate or invoke implementation, review, handoff, commit, merge'
-  'main-context isolation for one foreground command'
-)
-for required_text in "${command_runner_contract[@]}"; do
-  grep -F -- "$required_text" "$command_runner" >/dev/null
 done
 
 implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"

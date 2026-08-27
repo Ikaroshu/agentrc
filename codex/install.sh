@@ -17,7 +17,6 @@ CODEX_COPY_FILES=(
   agents/doc_reviewer.toml
   agents/code_reviewer.toml
   agents/implementer.toml
-  agents/command_runner.toml
   agents/research_worker.toml
 )
 
