@@ -6,7 +6,7 @@
 - Put broader semantic, integrity, provenance, and consistency audits in tests or explicit maintenance commands. Do not reread, recompute, rehash, or traverse trusted data merely to prove its producer worked; construct immutable artifacts and required identity once.
 - Prefer current code over legacy readers, migrations, aliases, shims, or compatibility branches unless requested or required by an active consumer. Disclose required rebuilds or reruns before a breaking change. Use versions only for active generic protocols or meaningful provider versions; record actual provenance and source revisions directly.
 - Prefer clear names and structure over comments. Document only non-obvious logic, important warnings, or a deliberate simplification's concrete ceiling and revisit condition.
-- Avoid SHA-256 and other hashing unless absolutely necessary. Obtain user approval before using SHA-256.
+- Do not invent assurance machinery without a real requirement. Obtain user approval before adding assurance machinery.
 
 ## Debugging
 
