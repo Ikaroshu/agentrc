@@ -13,7 +13,8 @@ Execute an approved plan in its worktree through one persistent owner. The imple
 
 1. Read the absolute plan and approved spec in full and confirm they still match the repository and agreement.
 2. Use the agreed worktree, record the immutable review base, map one or more ordered plan phases into each coherent checkpoint commit, and mark only foundational checkpoints that must clear review before dependent work.
-3. Require exact native `agent_type="implementer"`; fail loudly rather than substituting a generic agent or harness.
+3. Before implementation starts, select the implementation review tier from the approved plan and the full implementation's overall complexity, including every checkpoint and cumulative integration. Lock that exact model and effort for the persistent reviewer chain; never infer the tier from the first checkpoint or recalculate it per checkpoint.
+4. Require exact native `agent_type="implementer"`; fail loudly rather than substituting a generic agent or harness.
 
 ## Persistent owner
 
