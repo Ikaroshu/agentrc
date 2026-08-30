@@ -14,7 +14,7 @@ Give one persistent owner the settled design, outcome, and verification. An appr
 1. Collect the settled **design**, **outcome**, and **verification** from the approved spec or direct user agreement. Confirm they still match the repository and governing instructions.
 2. Use the agreed worktree and record the immutable review base.
 3. Require exact native `agent_type="implementer"`; fail loudly rather than substituting a generic agent or harness.
-4. Prompt with the absolute worktree, the spec path when present, the settled design, outcome, and verification, relevant repository context, and the shared-worktree warning. Give the implementer discretion over implementation approach, sequencing, tools, delegation, tests, and commit structure. It remains accountable for the integrated result and evidence.
+4. Prompt with the absolute worktree, the spec path when present, the settled design, outcome, and verification, relevant repository context, and the shared-worktree warning. Give the implementer discretion over implementation approach, sequencing, tools, bounded helper delegation, tests, and commit structure. It remains accountable for the integrated result and evidence and does not delegate overall ownership or recursively invoke implementation or review workflows.
 5. Dispatch exactly:
 
    ```text

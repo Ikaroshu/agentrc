@@ -252,10 +252,12 @@ done
 
 grep -F 'followup_task' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 grep -F 'Own delivery of the supplied design, outcome, and verification' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
+grep -F 'Do not delegate overall ownership or invoke an implementer or reviewer role' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
 grep -F 'same commit and tree' "$ROOT_DIR/codex/skills/merge/SKILL.md" >/dev/null
 grep -F 'full immutable review-base-to-candidate diff' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 grep -F '[brainstorm ->] worktree -> implement -> code-review -> merge' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
 grep -F 'settle the **goal** with the user first' "$ROOT_DIR/codex/skills/brainstorming/SKILL.md" >/dev/null
+grep -F 'code-review pass two requires a pass-one repair' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
 if rg -n 'cumulative|checkpoint|incremental review' "$ROOT_DIR/codex/AGENTS.md" "$ROOT_DIR/codex/agents" "$ROOT_DIR/codex/skills"; then
   echo "Active workflow still contains retired multi-stage code-review language" >&2
   exit 1
