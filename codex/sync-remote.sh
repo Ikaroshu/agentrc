@@ -17,7 +17,6 @@ trap cleanup EXIT
 SKILLS=(
   adversarial-doc-review
   brainstorming
-  planning
   code-review
   commit
   handoff
@@ -26,7 +25,8 @@ SKILLS=(
   issue
 )
 
-ssh "$REMOTE" 'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/handoff ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
+ssh "$REMOTE" 'rm -f ~/.agents/skills/planning/SKILL.md'
+ssh "$REMOTE" 'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/handoff ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
 
 scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
 scp -q "$REPO_DIR/agents/doc_reviewer.toml" "$REMOTE:~/.codex/agents/doc_reviewer.toml"

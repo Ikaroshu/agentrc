@@ -17,9 +17,9 @@ Resolve the exact branch or PR and local-versus-PR mode from the request and rep
 
 ## Verify the candidate
 
-Resolve clean feature `HEAD` and tree. Require complete-verification evidence for the same commit and tree, recorded after the last code change and immediately before the accepted cumulative final review. If that evidence is absent or mismatched, stop and return the candidate to implementation settlement and cumulative review before a new merge-approval request; do not substitute a post-review test run. Run only checks that repository instructions explicitly assign to the merge stage.
+Resolve clean feature `HEAD` and tree. Require settled verification evidence for the same commit and tree, recorded after the last code change and immediately before the accepted code review. If that evidence is absent or mismatched, stop and return the candidate to implementation and code review before a new merge-approval request; do not substitute a post-review test run. Run only checks that repository instructions explicitly assign to the merge stage.
 
-Treat merge-stage check failures as evidence: diagnose relevance, fix in-scope regressions, and do not merge a candidate whose settled verification or cumulative acceptance is invalidated.
+Treat merge-stage check failures as evidence: diagnose relevance, fix in-scope regressions, and do not merge a candidate whose settled verification or code-review acceptance is invalidated.
 
 ## Merge
 

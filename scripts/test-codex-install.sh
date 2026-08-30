@@ -12,6 +12,7 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$TEST_HOME/.codex/rules" "$TEST_HOME/.agents/skills/unrelated" "$TEST_HOME/.claude" "$TEST_HOME/.omp/agent"
+ln -s "$ROOT_DIR/codex/skills/planning" "$TEST_HOME/.agents/skills/planning"
 
 cat >"$TEST_HOME/.codex/config.toml" <<'EOF'
 model = "machine-model"
@@ -74,7 +75,7 @@ for role in doc_reviewer.toml code_reviewer.toml implementer.toml research_worke
   fi
 done
 
-for skill in adversarial-doc-review brainstorming planning code-review commit handoff implement merge issue; do
+for skill in adversarial-doc-review brainstorming code-review commit handoff implement merge issue; do
   target="$TEST_HOME/.agents/skills/$skill"
   expected="$ROOT_DIR/codex/skills/$skill"
   if [ ! -L "$target" ] || [ "$(readlink "$target")" != "$expected" ]; then
@@ -82,6 +83,10 @@ for skill in adversarial-doc-review brainstorming planning code-review commit ha
     exit 1
   fi
 done
+if [ -e "$TEST_HOME/.agents/skills/planning" ] || [ -L "$TEST_HOME/.agents/skills/planning" ]; then
+  echo "Installer preserved the retired planning skill link" >&2
+  exit 1
+fi
 if [ -e "$TEST_HOME/.agents/skills/general-auto-research" ]; then
   echo "Installer recreated retired general-auto-research skill" >&2
   exit 1

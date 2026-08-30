@@ -23,13 +23,16 @@ CODEX_COPY_FILES=(
 SKILLS=(
   adversarial-doc-review
   brainstorming
-  planning
   code-review
   commit
   handoff
   implement
   merge
   issue
+)
+
+RETIRED_SKILL_LINKS=(
+  planning
 )
 
 link_file() {
@@ -132,6 +135,17 @@ link_path() {
   echo "LINK $rel"
 }
 
+remove_retired_skill_link() {
+  local skill="$1"
+  local dst="$SKILLS_TARGET_DIR/$skill"
+  local retired_src="$REPO_DIR/skills/$skill"
+
+  if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$retired_src" ]; then
+    rm "$dst"
+    echo "DROP $skill"
+  fi
+}
+
 echo "Installing Codex settings from $REPO_DIR -> $CODEX_TARGET_DIR"
 echo
 
@@ -149,6 +163,9 @@ echo
 
 for skill in "${SKILLS[@]}"; do
   link_path "$REPO_DIR/skills/$skill" "$SKILLS_TARGET_DIR/$skill" "$skill"
+done
+for skill in "${RETIRED_SKILL_LINKS[@]}"; do
+  remove_retired_skill_link "$skill"
 done
 
 echo

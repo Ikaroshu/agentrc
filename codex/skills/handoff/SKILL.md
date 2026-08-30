@@ -21,7 +21,7 @@ Create a fresh task in the saved parent project and Local environment with a sel
 
 Read current task evidence and repository state. Capture:
 
-- requested scope, goal or issue, and governing plan/spec/handoff paths;
+- requested scope, goal or issue, and governing spec or handoff paths;
 - completed and remaining work, actual verification, blockers, approval boundaries, and retained evidence; and
 - the parent path plus each relevant worktree's path, branch, HEAD, and status.
 
