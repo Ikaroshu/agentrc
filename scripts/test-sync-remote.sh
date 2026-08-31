@@ -35,7 +35,8 @@ command="${2:?missing command}"
 printf '%s\t%s\n' "$remote" "$command" >>"$SYNC_SSH_LOG"
 
 case "$command" in
-  'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/handoff ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue') ;;
+  'rm -f ~/.agents/skills/planning/SKILL.md') rm -f "$SYNC_REMOTE_HOME/.agents/skills/planning/SKILL.md" ;;
+  'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/handoff ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue') ;;
   'cat ~/.codex/config.toml 2>/dev/null || true') cat "$SYNC_REMOTE_BASELINE" ;;
   'cat > ~/.codex/config.toml') cat >"$SYNC_REMOTE_RESULT" ;;
   *)
@@ -74,7 +75,7 @@ write_expected_scp() {
     printf '%s\n' "-q $ROOT_DIR/codex/agents/code_reviewer.toml test:~/.codex/agents/code_reviewer.toml"
     printf '%s\n' "-q $ROOT_DIR/codex/agents/implementer.toml test:~/.codex/agents/implementer.toml"
     printf '%s\n' "-q $ROOT_DIR/codex/agents/research_worker.toml test:~/.codex/agents/research_worker.toml"
-    for skill in adversarial-doc-review brainstorming planning code-review commit handoff implement merge issue; do
+    for skill in adversarial-doc-review brainstorming code-review commit handoff implement merge issue; do
       printf '%s\n' "-q $ROOT_DIR/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
     done
   } >"$output"
@@ -84,7 +85,8 @@ write_expected_ssh() {
   local output="$1"
 
   {
-    printf '%s\t%s\n' test 'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/planning ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/handoff ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
+    printf '%s\t%s\n' test 'rm -f ~/.agents/skills/planning/SKILL.md'
+    printf '%s\t%s\n' test 'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/handoff ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
     printf '%s\t%s\n' test 'cat ~/.codex/config.toml 2>/dev/null || true'
     printf '%s\t%s\n' test 'cat > ~/.codex/config.toml'
   } >"$output"
@@ -105,7 +107,8 @@ run_sync_test() {
 
   : >"$scp_log"
   : >"$ssh_log"
-  mkdir -p "$remote_home"
+  mkdir -p "$remote_home/.agents/skills/planning"
+  printf 'retired managed skill\n' >"$remote_home/.agents/skills/planning/SKILL.md"
   PATH="$BIN_DIR:$PATH" \
     SYNC_SCP_LOG="$scp_log" \
     SYNC_SSH_LOG="$ssh_log" \
@@ -129,6 +132,10 @@ run_sync_test() {
     echo "$name sync did not merge from the remote machine baseline" >&2
     exit 1
   fi
+  if [ -e "$remote_home/.agents/skills/planning/SKILL.md" ]; then
+    echo "$name sync preserved the retired planning skill" >&2
+    exit 1
+  fi
   for role in implementer.toml research_worker.toml; do
     if [ ! -f "$remote_home/.codex/agents/$role" ] ||
        [ -L "$remote_home/.codex/agents/$role" ] ||
@@ -143,4 +150,4 @@ run_sync_test() {
 run_sync_test root "$ROOT_DIR/sync-remote.sh"
 run_sync_test codex "$ROOT_DIR/codex/sync-remote.sh"
 
-echo "Remote sync test passed (14 exact destinations, 3 exact commands)."
+echo "Remote sync test passed (13 exact destinations, 4 exact commands)."

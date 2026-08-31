@@ -1,59 +1,49 @@
 ---
 name: implement
-description: Execute an approved plan through one persistent exact implementer, checkpoint commits, persistent review, and exact-candidate acceptance evidence.
+description: Deliver a settled design and outcome through one exact xhigh implementer, verify it, and send the completed implementation through one code review.
 ---
 
 # Implement
 
-Execute an approved plan in its worktree through one persistent owner. The implementer owns code, helper integration, checks, and checkpoint commits; the main agent owns scope, review dispositions, and acceptance.
+Give one persistent owner the settled design, outcome, and verification. An approved spec may supply that contract, but direct implementation does not require a spec. The implementer chooses how to deliver it.
 
-**Announce at start:** "Using the implement skill with one persistent implementer and reviewer."
+**Announce at start:** "Using the implement skill with one xhigh implementer, followed by one code review."
 
-## Setup
+## Start
 
-1. Read the absolute plan and approved spec in full and confirm they still match the repository and agreement.
-2. Use the agreed worktree, record the immutable review base, map one or more ordered plan phases into each coherent checkpoint commit, and mark only foundational checkpoints that must clear review before dependent work.
-3. Before implementation starts, select the implementation review tier from the approved plan and the full implementation's overall complexity, including every checkpoint and cumulative integration. Lock that exact model and effort for the persistent reviewer chain; never infer the tier from the first checkpoint or recalculate it per checkpoint.
-4. Require exact native `agent_type="implementer"`; fail loudly rather than substituting a generic agent or harness.
-
-## Persistent owner
-
-1. Prompt with absolute worktree, plan/spec paths, assigned phase range, dependencies, checkpoint and commit ownership, focused checks, permitted read-only helpers, and shared-worktree warning. Require all helpers and commands to finish, then return phase range, checkpoint commit SHA, changed paths, actual check output, any accepted temporary failures with their evidence and expected settling phase or rerun, risks, and helper integration.
-2. Dispatch exactly:
+1. Collect the settled **design**, **outcome**, and **verification** from the approved spec or direct user agreement. Confirm they still match the repository and governing instructions.
+2. Use the agreed worktree and record the immutable review base.
+3. Require exact native `agent_type="implementer"`; fail loudly rather than substituting a generic agent or harness.
+4. Prompt with the absolute worktree, the spec path when present, the settled design, outcome, and verification, relevant repository context, and the shared-worktree warning. Give the implementer discretion over implementation approach, sequencing, tools, bounded helper delegation, tests, and commit structure. It remains accountable for the integrated result and evidence and does not delegate overall ownership or recursively invoke implementation or review workflows.
+5. Dispatch exactly:
 
    ```text
    spawn_agent(
      agent_type="implementer",
      fork_turns="none",
      model="gpt-5.6-sol",
-     reasoning_effort="high",
-     message=<dynamic-phase-prompt>,
-     task_name=<clear-plan-name>,
+     reasoning_effort="xhigh",
+     message=<dynamic-contract-prompt>,
+     task_name=<clear-outcome-name>,
    )
    ```
 
-3. Use `followup_task` for every later checkpoint and confirmed repair. Replace the owner only if unavailable, supplying the full plan and accepted history.
+Block until the requested implementer returns. Handle unrelated events and resume; do not inspect partial Git state while it or its collaborators work.
 
-## Checkpoint loop
+## Design flaws
 
-For each checkpoint:
+The implementer stops further implementation and reports when repository evidence shows that the settled design cannot achieve the outcome or verification, violates a material constraint, or requires a material contract change. It must not improvise a replacement design. Its report includes the evidence, impact, options worth discussing, and exact worktree state.
 
-1. The implementer writes the assigned phases and may spawn only independent, non-modifying verification helpers; it remains sole writer and commit owner.
-2. It waits for all helpers and commands, integrates evidence, runs focused and required checkpoint checks, inspects the diff, stages only intended paths, and commits. A checkpoint may carry a failing check when evidence shows that the failure comes from work intentionally left to a later phase or a transient tool or environment condition, rather than a product bug, design flaw, or material risk. Record the failing command and output, why it is non-blocking, and the later phase or rerun expected to settle it. Do not add workaround or product code solely to make an intermediate checkpoint green.
-3. Block until the requested implementer returns. Handle unrelated events and resume; never inspect partial Git state while it or helpers work. Then inspect clean status, exact commit, and evidence.
-4. Run `code-review` only on marked foundational intermediate commits. Start the persistent reviewer at the first review and reuse it; add no user approval gate.
-5. Track the checkpoint's two-pass review budget. Verify dispositions after pass one; send only confirmed repairs to the same implementer with `followup_task`, require a repair commit, and use pass two to review it. Repairs and replacement reviewers do not reset the budget. Continue when required repairs are gone. If pass two leaves a confirmed repair or material uncertainty, stop the implementation workflow, dispatch no third review, and explain the blocker in ELI5 terms with the relevant context, evidence, impact, what the two passes tried, what remains unclear, and the user decision or external change needed. Keep accepted deferrals brief or in separately authorized issues.
+Verify the reported flaw, then discuss it with the user. Settle a correction or revise the design and any spec before using `followup_task` to resume the same implementer. Ordinary implementation choices that preserve the settled design, outcome, and verification do not need orchestration.
 
-## Rules
+## Verify the result
 
-- Keep one implementer and one reviewer for the chain. Preserve unrelated work and reconcile overlaps.
-- Use focused checks unless repository instructions require more. Treat failures as evidence and keep unresolved risk visible. Repair product bugs and design flaws before proceeding; carry only evidenced temporary checkpoint failures that later planned work or a clean rerun should settle.
-- No recursive implementation or review roles/workflows. The implementer owns commits; the orchestrator owns scope and review decisions.
+When implementation completes, inspect the clean worktree, full review-base-to-candidate diff, commit and tree identities, and returned evidence. Run the settled verification and every repository-required check on the exact candidate. Route missing outcome, implementation defects, or failed verification through the same implementer with `followup_task`, then verify the new candidate. Record the accepted candidate commit, tree, commands, and results.
 
-## After all phases
+## Review
 
-After every phase and checkpoint repair is complete, run complete repository verification on the exact clean candidate. Every temporary checkpoint failure must now be settled. Resolve product failures before cumulative review; for an unrelated transient tool or environment failure, rerun the same check after the condition clears instead of changing product code. Repeat focused work and complete verification until no implementation, repair, or check-settling work remains. Record the candidate commit, tree, command, and successful result.
+Invoke `code-review` once on the full immutable review-base-to-candidate diff, supplying the settled design, outcome, verification, candidate identity, implementation commits, and actual verification evidence. This is one review unit with at most two passes.
 
-Only then reuse the reviewer, or start it if none exists, for cumulative integration over the full immutable review-base-to-candidate diff. Supply base, candidate commit and tree, accepted checkpoints, the recorded complete-verification evidence, `git diff --stat --find-renames <base>...<candidate>`, `git diff --find-renames <base>...<candidate>`, and `git rev-parse <candidate>^{tree}`; one commit is never sufficient. The cumulative review is the last technical gate and has a hard two-pass budget independent of checkpoint budgets.
+Verify every finding. Route confirmed pass-one repairs through the same implementer, then rerun the settled and repository-required verification before pass two. If pass two leaves a confirmed repair or material uncertainty, stop, dispatch no third pass, and explain the blocker in ELI5 terms with the relevant context, evidence, impact, what the two passes tried, what remains unclear, and the user decision or external change needed.
 
-Route confirmed pass-one repairs through the same implementer and a repair commit. Run the applicable checks and complete repository verification on the repaired clean candidate before using pass two to review the repair and plausible interactions without reopening accepted scope; repairs and reviewer replacement do not reset the count. If pass two leaves a confirmed repair or material uncertainty, stop, dispatch no third review, and explain the blocker in ELI5 terms with the relevant context, evidence, impact, what the two passes tried, what remains unclear, and the user decision or external change needed. When a cumulative pass is clear, record its accepted commit and tree and ask for merge approval immediately. Schedule no implementation, repair, or verification work between acceptance and that request. Any later code or configuration change or failed check invalidates cumulative acceptance and returns the candidate to settlement; it does not reset an exhausted review budget without a new user decision.
+When the review is clear, record its accepted commit and tree and ask for merge approval immediately. Schedule no implementation, repair, or verification work between acceptance and that request. Any later code or configuration change or failed check invalidates acceptance and returns the candidate to implementation; it does not reset an exhausted review budget without a new user decision.
