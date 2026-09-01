@@ -251,13 +251,43 @@ for required_text in "${implement_contract[@]}"; do
 done
 
 grep -F 'followup_task' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
-grep -F 'Own delivery of the supplied design, outcome, and verification' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
+grep -F 'Own delivery of the supplied design, outcome, and truthful verification evidence' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
 grep -F 'Do not delegate overall ownership or invoke an implementer or reviewer role' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
+grep -F 'exact clean status' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
+grep -F 'own the technical inspection and the quality and actionability of every finding' "$ROOT_DIR/codex/agents/code_reviewer.toml" >/dev/null
 grep -F 'same commit and tree' "$ROOT_DIR/codex/skills/merge/SKILL.md" >/dev/null
+grep -F "Accept that recorded evidence without inspecting the implementation diff or rerunning its verification" "$ROOT_DIR/codex/skills/merge/SKILL.md" >/dev/null
 grep -F 'full immutable review-base-to-candidate diff' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
+grep -F 'does not inspect the implementation diff, reproduce reviewer findings, rerun verification' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
+grep -F 'do not inspect or review the implementation diff, rerun its verification' "$implement_skill" >/dev/null
+grep -F 'disputes an actionable reviewer finding with concrete technical evidence' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
+grep -F 'this follow-up does not consume or become pass two' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
+for workflow_contract in "$implement_skill" "$ROOT_DIR/codex/skills/code-review/SKILL.md"; do
+  grep -F 'forward that evidence unchanged to the same reviewer with `followup_task` for clarification and reconsideration within pass one before any repair' "$workflow_contract" >/dev/null
+  grep -F 'reviewer remains the technical adjudicator and may uphold, revise, or withdraw the finding' "$workflow_contract" >/dev/null
+done
+grep -F 'A clarification or reconsideration follow-up remains within pass one and does not consume or become pass two' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
+grep -F 'Pass two starts only after an actual pass-one repair and is repair-only' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 grep -F '[brainstorm ->] worktree -> implement -> code-review -> merge' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
+grep -F 'at most read-only candidate identity and status checks for coordination' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
 grep -F 'settle the **goal** with the user first' "$ROOT_DIR/codex/skills/brainstorming/SKILL.md" >/dev/null
 grep -F 'code-review pass two requires a pass-one repair' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
+old_orchestrator_contract=(
+  'inspect the clean worktree'
+  'Run the settled verification and every repository-required check'
+  'Verify every finding'
+  'rerun the settled and repository-required verification'
+)
+for forbidden_text in "${old_orchestrator_contract[@]}"; do
+  if grep -F -- "$forbidden_text" "$implement_skill" "$ROOT_DIR/codex/skills/code-review/SKILL.md"; then
+    echo "Active workflow still assigns implementation or review verification to the orchestrator" >&2
+    exit 1
+  fi
+done
+if grep -F 'Run the same tests on main.' "$ROOT_DIR/codex/skills/merge/SKILL.md"; then
+  echo "Merge workflow still duplicates accepted implementation verification" >&2
+  exit 1
+fi
 if rg -n 'cumulative|checkpoint|incremental review' "$ROOT_DIR/codex/AGENTS.md" "$ROOT_DIR/codex/agents" "$ROOT_DIR/codex/skills"; then
   echo "Active workflow still contains retired multi-stage code-review language" >&2
   exit 1

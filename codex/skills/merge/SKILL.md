@@ -17,9 +17,9 @@ Resolve the exact branch or PR and local-versus-PR mode from the request and rep
 
 ## Verify the candidate
 
-Resolve clean feature `HEAD` and tree. Require settled verification evidence for the same commit and tree, recorded after the last code change and immediately before the accepted code review. If that evidence is absent or mismatched, stop and return the candidate to implementation and code review before a new merge-approval request; do not substitute a post-review test run. Run only checks that repository instructions explicitly assign to the merge stage.
+Resolve clean feature `HEAD` and tree. Require the implementer's recorded settled verification evidence for the same commit and tree, recorded after the last code change and immediately before the accepted code review. Accept that recorded evidence without inspecting the implementation diff or rerunning its verification. If the evidence is absent or mismatched, stop and return the candidate to implementation and code review before a new merge-approval request; do not substitute a post-review test run. Run only checks that repository instructions explicitly assign to the merge stage.
 
-Treat merge-stage check failures as evidence: diagnose relevance, fix in-scope regressions, and do not merge a candidate whose settled verification or code-review acceptance is invalidated.
+Treat merge-stage check failures as evidence: return candidate-related technical diagnosis and repair to the same implementer, and do not merge a candidate whose settled verification or code-review acceptance is invalidated.
 
 ## Merge
 
@@ -36,7 +36,7 @@ gh pr merge --merge
 
 ## Verify main
 
-Run the same tests on main. Diagnose failures immediately and never push a known regression; disclose unrelated or pre-existing failures before deciding whether authorization covers the push.
+Run only checks that repository instructions explicitly assign after merge; do not rerun implementation verification merely to duplicate the accepted evidence. Stop on failure, return candidate-related technical diagnosis and repair to the same implementer, and never push a known regression; disclose unrelated or pre-existing failures before deciding whether authorization covers the push.
 
 ## Push
 
