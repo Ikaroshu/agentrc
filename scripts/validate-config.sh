@@ -260,6 +260,14 @@ grep -F "Accept that recorded evidence without inspecting the implementation dif
 grep -F 'full immutable review-base-to-candidate diff' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 grep -F 'does not inspect the implementation diff, reproduce reviewer findings, rerun verification' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 grep -F 'do not inspect or review the implementation diff, rerun its verification' "$implement_skill" >/dev/null
+grep -F 'disputes an actionable reviewer finding with concrete technical evidence' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
+grep -F 'this follow-up does not consume or become pass two' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
+for workflow_contract in "$implement_skill" "$ROOT_DIR/codex/skills/code-review/SKILL.md"; do
+  grep -F 'forward that evidence unchanged to the same reviewer with `followup_task` for clarification and reconsideration within pass one before any repair' "$workflow_contract" >/dev/null
+  grep -F 'reviewer remains the technical adjudicator and may uphold, revise, or withdraw the finding' "$workflow_contract" >/dev/null
+done
+grep -F 'A clarification or reconsideration follow-up remains within pass one and does not consume or become pass two' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
+grep -F 'Pass two starts only after an actual pass-one repair and is repair-only' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 grep -F '[brainstorm ->] worktree -> implement -> code-review -> merge' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
 grep -F 'at most read-only candidate identity and status checks for coordination' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
 grep -F 'settle the **goal** with the user first' "$ROOT_DIR/codex/skills/brainstorming/SKILL.md" >/dev/null
