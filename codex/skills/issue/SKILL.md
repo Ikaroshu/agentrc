@@ -54,4 +54,4 @@ Discuss only outcome-changing decisions, one fork at a time.
 - Include valid non-code outcomes: document a limitation, rescope the issue, or close it when current code subsumes it.
 - Offer separate deferred issues for out-of-scope findings. Unless asked otherwise, their bodies contain only problem, context, and `file:line` evidence.
 
-Once aligned, stop and let the user choose specification or direct implementation.
+Once aligned, stop and let the user choose specification or implementation through the `implement` skill.
