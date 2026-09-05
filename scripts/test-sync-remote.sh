@@ -19,6 +19,10 @@ cat >"$REMOTE_BASELINE" <<'EOF'
 model = "remote-model"
 remote_marker = true
 
+[desktop]
+mac-menu-bar-enabled = true
+ambient-suggestions-enabled = false
+
 [projects."/remote/project"]
 trust_level = "trusted"
 EOF

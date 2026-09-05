@@ -11,7 +11,7 @@ Use the configured native `code_reviewer`; never substitute a generic or CLI rev
 
 - Review exactly one non-empty completed scope. For implementation, use the full immutable review-base-to-candidate diff after the owner reports a clean committed candidate, successful verification, and no remaining work. For standalone review, use the requested range, commit, or uncommitted tree.
 - Select an implementation-review tier from the settled design, outcome, verification, and owner's scoped diff summary without inspecting the diff. For standalone review, use the complete requested scope.
-- Use `model="gpt-5.6-sol"` with `reasoning_effort="xhigh"` for bounded established work; use `reasoning_effort="max"` for materially difficult contracts, state, security, irreversibility, blast radius, or unfamiliar architecture. Tell the user the tier and short rationale before dispatch.
+- Use `model="gpt-6-astra"` with `reasoning_effort="xhigh"` for bounded established work; use `reasoning_effort="max"` for materially difficult contracts, state, security, irreversibility, blast radius, or unfamiliar architecture. Tell the user the tier and short rationale before dispatch.
 
 ## Dispatch
 
