@@ -9,54 +9,17 @@ ROOT_DIR="$(cd "$REPO_DIR/.." && pwd)"
 CODEX_TARGET_DIR="$HOME/.codex"
 SKILLS_TARGET_DIR="$HOME/.agents/skills"
 
-CODEX_LINK_FILES=(
-  AGENTS.md
-)
+ROLE_FILES=()
+for role_file in "$REPO_DIR"/agents/*.toml; do
+  ROLE_FILES+=("${role_file##*/}")
+done
 
-CODEX_COPY_FILES=(
-  agents/doc_reviewer.toml
-  agents/code_reviewer.toml
-  agents/implementer.toml
-  agents/research_worker.toml
-)
-
-SKILLS=(
-  adversarial-doc-review
-  brainstorming
-  code-review
-  commit
-  handoff
-  implement
-  merge
-  issue
-)
-
-RETIRED_SKILL_LINKS=(
-  planning
-)
-
-link_file() {
-  local rel="$1"
-  local src="$REPO_DIR/$rel"
-  local dst="$CODEX_TARGET_DIR/$rel"
-
-  if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then
-    echo "  OK $rel"
-    return
+SKILLS=()
+for skill_dir in "$REPO_DIR"/skills/*; do
+  if [ -f "$skill_dir/SKILL.md" ]; then
+    SKILLS+=("${skill_dir##*/}")
   fi
-
-  mkdir -p "$(dirname "$dst")"
-
-  if [ -f "$dst" ] && [ ! -L "$dst" ]; then
-    mv "$dst" "$dst.bak"
-    echo "BACK $rel -> $dst.bak"
-  elif [ -L "$dst" ]; then
-    rm "$dst"
-  fi
-
-  ln -s "$src" "$dst"
-  echo "LINK $rel"
-}
+done
 
 copy_file() {
   local rel="$1"
@@ -135,25 +98,12 @@ link_path() {
   echo "LINK $rel"
 }
 
-remove_retired_skill_link() {
-  local skill="$1"
-  local dst="$SKILLS_TARGET_DIR/$skill"
-  local retired_src="$REPO_DIR/skills/$skill"
-
-  if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$retired_src" ]; then
-    rm "$dst"
-    echo "DROP $skill"
-  fi
-}
-
 echo "Installing Codex settings from $REPO_DIR -> $CODEX_TARGET_DIR"
 echo
 
-for file in "${CODEX_LINK_FILES[@]}"; do
-  link_file "$file"
-done
-for file in "${CODEX_COPY_FILES[@]}"; do
-  copy_file "$file"
+link_path "$REPO_DIR/AGENTS.md" "$CODEX_TARGET_DIR/AGENTS.md" "AGENTS.md"
+for role in "${ROLE_FILES[@]}"; do
+  copy_file "agents/$role"
 done
 install_config
 
@@ -163,9 +113,6 @@ echo
 
 for skill in "${SKILLS[@]}"; do
   link_path "$REPO_DIR/skills/$skill" "$SKILLS_TARGET_DIR/$skill" "$skill"
-done
-for skill in "${RETIRED_SKILL_LINKS[@]}"; do
-  remove_retired_skill_link "$skill"
 done
 
 echo

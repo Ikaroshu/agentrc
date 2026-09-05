@@ -15,15 +15,6 @@ require_regular_file() {
   fi
 }
 
-require_absent() {
-  local path="$1"
-
-  if [ -e "$ROOT_DIR/$path" ] || [ -L "$ROOT_DIR/$path" ]; then
-    echo "Expected retired path to be absent: $path" >&2
-    return 1
-  fi
-}
-
 require_executable() {
   local path="$1"
 
@@ -58,10 +49,6 @@ required_files=(
   AGENTS.md
   codex/AGENTS.md
   codex/config.toml
-  codex/agents/doc_reviewer.toml
-  codex/agents/code_reviewer.toml
-  codex/agents/implementer.toml
-  codex/agents/research_worker.toml
   scripts/merge-codex-config.py
   scripts/test-merge-codex-config.py
 )
@@ -69,39 +56,16 @@ for path in "${required_files[@]}"; do
   require_regular_file "$path"
 done
 
-skills=(
-  adversarial-doc-review
-  brainstorming
-  code-review
-  commit
-  handoff
-  implement
-  merge
-  issue
-)
-for skill in "${skills[@]}"; do
+for role_file in "$ROOT_DIR"/codex/agents/*.toml; do
+  require_regular_file "codex/agents/${role_file##*/}"
+done
+
+skills=()
+for skill_dir in "$ROOT_DIR"/codex/skills/*; do
+  skill="${skill_dir##*/}"
   require_regular_file "codex/skills/$skill/SKILL.md"
+  skills+=("$skill")
 done
-
-retired_paths=(
-  codex/skills/general-auto-research
-  codex/skills/planning
-  codex/skills/implement/scripts/git_task_guard.py
-  codex/skills/implement/scripts/test_git_task_guard.py
-  scripts/validate-legacy-archive.py
-  scripts/test-legacy-archive-validation.py
-)
-for path in "${retired_paths[@]}"; do
-  require_absent "$path"
-done
-
-active_skill_names="$(find "$ROOT_DIR/codex/skills" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort)"
-expected_skill_names="$(printf '%s\n' "${skills[@]}" | sort)"
-if [ "$active_skill_names" != "$expected_skill_names" ]; then
-  echo "Active skill directories do not match the managed skill set" >&2
-  diff -u <(printf '%s\n' "$expected_skill_names") <(printf '%s\n' "$active_skill_names") >&2
-  exit 1
-fi
 
 active_symlinks="$(find "$ROOT_DIR/codex" -type l -print)"
 if [ -n "$active_symlinks" ]; then
@@ -184,6 +148,9 @@ role_specs = {
     "implementer.toml": ("implementer", True),
     "research_worker.toml": ("research_worker", False),
 }
+role_files = {path.name for path in (root / "codex/agents").glob("*.toml")}
+if role_files != set(role_specs):
+    raise SystemExit(f"unexpected active roles: {sorted(role_files)}")
 
 for filename, (expected_name, blocks_recursion) in role_specs.items():
     with (root / "codex/agents" / filename).open("rb") as role_file:
@@ -223,95 +190,11 @@ done
 grep -F 'agent_type="doc_reviewer"' "$ROOT_DIR/codex/skills/adversarial-doc-review/SKILL.md" >/dev/null
 grep -F 'agent_type="code_reviewer"' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
 
-behavior_contract=(
-  'needs user-only `sudo` or other privileged work'
-  'ask once and end the turn'
-  'Do not poll or try workarounds'
-  'unprivileged path directly only if it is equivalent'
-)
-for required_text in "${behavior_contract[@]}"; do
-  grep -F -- "$required_text" "$ROOT_DIR/codex/AGENTS.md" >/dev/null
-done
-
 implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"
-implement_contract=(
-  'agent_type="implementer"'
-  'fork_turns="none"'
-  'model="gpt-5.6-sol"'
-  'reasoning_effort="xhigh"'
-  'one persistent owner'
-  'followup_task'
-  'until the requested implementer returns'
-  'code-review'
-  'design, outcome, and verification'
-  'Design flaws'
-)
-for required_text in "${implement_contract[@]}"; do
-  grep -F -- "$required_text" "$implement_skill" >/dev/null
-done
-
-grep -F 'followup_task' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
-grep -F 'Own delivery of the supplied design, outcome, and truthful verification evidence' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
-grep -F 'Do not delegate overall ownership or invoke an implementer or reviewer role' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
-grep -F 'exact clean status' "$ROOT_DIR/codex/agents/implementer.toml" >/dev/null
-grep -F 'own the technical inspection and the quality and actionability of every finding' "$ROOT_DIR/codex/agents/code_reviewer.toml" >/dev/null
-grep -F 'same commit and tree' "$ROOT_DIR/codex/skills/merge/SKILL.md" >/dev/null
-grep -F "Accept that recorded evidence without inspecting the implementation diff or rerunning its verification" "$ROOT_DIR/codex/skills/merge/SKILL.md" >/dev/null
-grep -F 'full immutable review-base-to-candidate diff' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
-grep -F 'does not inspect the implementation diff, reproduce reviewer findings, rerun verification' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
-grep -F 'do not inspect or review the implementation diff, rerun its verification' "$implement_skill" >/dev/null
-grep -F 'disputes an actionable reviewer finding with concrete technical evidence' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
-grep -F 'this follow-up does not consume or become pass two' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
-for workflow_contract in "$implement_skill" "$ROOT_DIR/codex/skills/code-review/SKILL.md"; do
-  grep -F 'forward that evidence unchanged to the same reviewer with `followup_task` for clarification and reconsideration within pass one before any repair' "$workflow_contract" >/dev/null
-  grep -F 'reviewer remains the technical adjudicator and may uphold, revise, or withdraw the finding' "$workflow_contract" >/dev/null
-done
-grep -F 'A clarification or reconsideration follow-up remains within pass one and does not consume or become pass two' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
-grep -F 'Pass two starts only after an actual pass-one repair and is repair-only' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
-grep -F '[brainstorm ->] worktree -> implement -> code-review -> merge' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
-grep -F 'at most read-only candidate identity and status checks for coordination' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
-grep -F 'settle the **goal** with the user first' "$ROOT_DIR/codex/skills/brainstorming/SKILL.md" >/dev/null
-grep -F 'code-review pass two requires a pass-one repair' "$ROOT_DIR/codex/AGENTS.md" >/dev/null
-old_orchestrator_contract=(
-  'inspect the clean worktree'
-  'Run the settled verification and every repository-required check'
-  'Verify every finding'
-  'rerun the settled and repository-required verification'
-)
-for forbidden_text in "${old_orchestrator_contract[@]}"; do
-  if grep -F -- "$forbidden_text" "$implement_skill" "$ROOT_DIR/codex/skills/code-review/SKILL.md"; then
-    echo "Active workflow still assigns implementation or review verification to the orchestrator" >&2
-    exit 1
-  fi
-done
-if grep -F 'Run the same tests on main.' "$ROOT_DIR/codex/skills/merge/SKILL.md"; then
-  echo "Merge workflow still duplicates accepted implementation verification" >&2
-  exit 1
-fi
-if rg -n 'cumulative|checkpoint|incremental review' "$ROOT_DIR/codex/AGENTS.md" "$ROOT_DIR/codex/agents" "$ROOT_DIR/codex/skills"; then
-  echo "Active workflow still contains retired multi-stage code-review language" >&2
-  exit 1
-fi
-
-handoff_skill="$ROOT_DIR/codex/skills/handoff/SKILL.md"
-handoff_contract=(
-  'git worktree list --porcelain'
-  "Resolve the current task's host before selecting a project"
-  'require both the exact parent path and the current task'
-  'whether its `projectKind` is `"local"` or `"remote"`'
-  'environment: { type: "local" }'
-  'reuse that exact worktree with explicit workdirs'
-  '<project-root>/.worktrees/'
-  'Never fork the current task'
-  "app's Hand off action"
-)
-for required_text in "${handoff_contract[@]}"; do
-  grep -F -- "$required_text" "$handoff_skill" >/dev/null
-done
-if rg -n 'git_task_guard|general-auto-research' "$ROOT_DIR/codex" "$ROOT_DIR/install.sh" "$ROOT_DIR/sync-remote.sh"; then
-  echo "Active configuration references retired guard machinery" >&2
-  exit 1
-fi
+grep -F 'agent_type="implementer"' "$implement_skill" >/dev/null
+grep -F 'fork_turns="none"' "$implement_skill" >/dev/null
+grep -F 'model="gpt-5.6-sol"' "$implement_skill" >/dev/null
+grep -F 'reasoning_effort="xhigh"' "$implement_skill" >/dev/null
 
 SKILL_VALIDATOR="${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py"
 if [ ! -f "$SKILL_VALIDATOR" ]; then

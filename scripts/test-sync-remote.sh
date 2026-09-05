@@ -32,13 +32,32 @@ set -euo pipefail
 
 remote="${1:?missing remote}"
 command="${2:?missing command}"
-printf '%s\t%s\n' "$remote" "$command" >>"$SYNC_SSH_LOG"
+if [ "$remote" != "test" ]; then
+  echo "Unexpected remote: $remote" >&2
+  exit 1
+fi
 
 case "$command" in
-  'rm -f ~/.agents/skills/planning/SKILL.md') rm -f "$SYNC_REMOTE_HOME/.agents/skills/planning/SKILL.md" ;;
-  'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/handoff ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue') ;;
-  'cat ~/.codex/config.toml 2>/dev/null || true') cat "$SYNC_REMOTE_BASELINE" ;;
-  'cat > ~/.codex/config.toml') cat >"$SYNC_REMOTE_RESULT" ;;
+  'mkdir -p '*)
+    directories="${command#mkdir -p }"
+    for directory in $directories; do
+      relative_directory="${directory#\~/}"
+      if [ "$relative_directory" = "$directory" ]; then
+        echo "Unexpected remote directory: $directory" >&2
+        exit 1
+      fi
+      mkdir -p "$SYNC_REMOTE_HOME/$relative_directory"
+    done
+    ;;
+  'cat ~/.codex/config.toml 2>/dev/null || true')
+    if [ -f "$SYNC_REMOTE_HOME/.codex/config.toml" ]; then
+      cat "$SYNC_REMOTE_HOME/.codex/config.toml"
+    fi
+    ;;
+  'cat > ~/.codex/config.toml')
+    mkdir -p "$SYNC_REMOTE_HOME/.codex"
+    cat >"$SYNC_REMOTE_HOME/.codex/config.toml"
+    ;;
   *)
     echo "Unexpected remote command: $command" >&2
     exit 1
@@ -51,8 +70,6 @@ cat >"$BIN_DIR/scp" <<'EOF'
 
 set -euo pipefail
 
-printf '%s\n' "$*" >>"$SYNC_SCP_LOG"
-
 source_path="$2"
 destination="$3"
 relative_destination="${destination#test:~/}"
@@ -60,88 +77,71 @@ if [ "$relative_destination" = "$destination" ]; then
   echo "Unexpected copy destination: $destination" >&2
   exit 1
 fi
-mkdir -p "$SYNC_REMOTE_HOME/$(dirname "$relative_destination")"
+destination_directory="$SYNC_REMOTE_HOME/$(dirname "$relative_destination")"
+if [ ! -d "$destination_directory" ]; then
+  echo "Missing remote destination directory: $destination_directory" >&2
+  exit 1
+fi
 cp "$source_path" "$SYNC_REMOTE_HOME/$relative_destination"
 EOF
 
 chmod +x "$BIN_DIR/ssh" "$BIN_DIR/scp"
 
-write_expected_scp() {
-  local output="$1"
-
-  {
-    printf '%s\n' "-q $ROOT_DIR/codex/AGENTS.md test:~/.codex/AGENTS.md"
-    printf '%s\n' "-q $ROOT_DIR/codex/agents/doc_reviewer.toml test:~/.codex/agents/doc_reviewer.toml"
-    printf '%s\n' "-q $ROOT_DIR/codex/agents/code_reviewer.toml test:~/.codex/agents/code_reviewer.toml"
-    printf '%s\n' "-q $ROOT_DIR/codex/agents/implementer.toml test:~/.codex/agents/implementer.toml"
-    printf '%s\n' "-q $ROOT_DIR/codex/agents/research_worker.toml test:~/.codex/agents/research_worker.toml"
-    for skill in adversarial-doc-review brainstorming code-review commit handoff implement merge issue; do
-      printf '%s\n' "-q $ROOT_DIR/codex/skills/$skill/SKILL.md test:~/.agents/skills/$skill/SKILL.md"
-    done
-  } >"$output"
-}
-
-write_expected_ssh() {
-  local output="$1"
-
-  {
-    printf '%s\t%s\n' test 'rm -f ~/.agents/skills/planning/SKILL.md'
-    printf '%s\t%s\n' test 'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/handoff ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
-    printf '%s\t%s\n' test 'cat ~/.codex/config.toml 2>/dev/null || true'
-    printf '%s\t%s\n' test 'cat > ~/.codex/config.toml'
-  } >"$output"
-}
-
-EXPECTED_SCP="$TEST_DIR/expected-scp.log"
-EXPECTED_SSH="$TEST_DIR/expected-ssh.log"
-write_expected_scp "$EXPECTED_SCP"
-write_expected_ssh "$EXPECTED_SSH"
-
 run_sync_test() {
   local name="$1"
   local script="$2"
-  local scp_log="$TEST_DIR/$name-scp.log"
-  local ssh_log="$TEST_DIR/$name-ssh.log"
-  local remote_result="$TEST_DIR/$name-remote-result.toml"
   local remote_home="$TEST_DIR/$name-remote-home"
 
-  : >"$scp_log"
-  : >"$ssh_log"
-  mkdir -p "$remote_home/.agents/skills/planning"
-  printf 'retired managed skill\n' >"$remote_home/.agents/skills/planning/SKILL.md"
-  PATH="$BIN_DIR:$PATH" \
-    SYNC_SCP_LOG="$scp_log" \
-    SYNC_SSH_LOG="$ssh_log" \
-    SYNC_REMOTE_BASELINE="$REMOTE_BASELINE" \
-    SYNC_REMOTE_RESULT="$remote_result" \
-    SYNC_REMOTE_HOME="$remote_home" \
-    "$script" test >/dev/null
+  mkdir -p "$remote_home/.codex/agents" "$remote_home/.codex/rules" \
+    "$remote_home/.agents/skills/unrelated"
+  cp "$REMOTE_BASELINE" "$remote_home/.codex/config.toml"
+  printf 'unrelated role\n' >"$remote_home/.codex/agents/unrelated.toml"
+  printf 'unrelated rule\n' >"$remote_home/.codex/rules/unrelated.rules"
+  printf 'unrelated skill\n' >"$remote_home/.agents/skills/unrelated/SKILL.md"
+  cp "$remote_home/.codex/agents/unrelated.toml" "$remote_home/role-before"
+  cp "$remote_home/.codex/rules/unrelated.rules" "$remote_home/rule-before"
+  cp "$remote_home/.agents/skills/unrelated/SKILL.md" "$remote_home/skill-before"
 
-  if ! cmp -s "$EXPECTED_SCP" "$scp_log"; then
-    diff -u "$EXPECTED_SCP" "$scp_log" >&2
-    echo "$name sync used unexpected copy sources or destinations" >&2
+  PATH="$BIN_DIR:$PATH" SYNC_REMOTE_HOME="$remote_home" "$script" test >/dev/null
+  PATH="$BIN_DIR:$PATH" SYNC_REMOTE_HOME="$remote_home" "$script" test >/dev/null
+
+  if ! cmp -s "$REMOTE_EXPECTED" "$remote_home/.codex/config.toml"; then
+    diff -u "$REMOTE_EXPECTED" "$remote_home/.codex/config.toml" >&2
+    echo "$name sync did not preserve and merge remote config" >&2
     exit 1
   fi
-  if ! cmp -s "$EXPECTED_SSH" "$ssh_log"; then
-    diff -u "$EXPECTED_SSH" "$ssh_log" >&2
-    echo "$name sync used an unexpected remote command" >&2
+  if ! cmp -s "$ROOT_DIR/codex/AGENTS.md" "$remote_home/.codex/AGENTS.md"; then
+    echo "$name sync did not deploy Codex instructions" >&2
     exit 1
   fi
-  if ! cmp -s "$REMOTE_EXPECTED" "$remote_result"; then
-    diff -u "$REMOTE_EXPECTED" "$remote_result" >&2
-    echo "$name sync did not merge from the remote machine baseline" >&2
-    exit 1
-  fi
-  if [ -e "$remote_home/.agents/skills/planning/SKILL.md" ]; then
-    echo "$name sync preserved the retired planning skill" >&2
-    exit 1
-  fi
-  for role in implementer.toml research_worker.toml; do
-    if [ ! -f "$remote_home/.codex/agents/$role" ] ||
-       [ -L "$remote_home/.codex/agents/$role" ] ||
-       ! cmp -s "$ROOT_DIR/codex/agents/$role" \
-         "$remote_home/.codex/agents/$role"; then
+
+  for source in "$ROOT_DIR"/codex/agents/*.toml; do
+    role="${source##*/}"
+    target="$remote_home/.codex/agents/$role"
+    if [ ! -f "$target" ] || [ -L "$target" ] || ! cmp -s "$source" "$target"; then
       echo "$name sync did not deploy an exact regular role: $role" >&2
+      exit 1
+    fi
+  done
+  for source in "$ROOT_DIR"/codex/skills/*/SKILL.md; do
+    skill="$(basename "$(dirname "$source")")"
+    target="$remote_home/.agents/skills/$skill/SKILL.md"
+    if [ ! -f "$target" ] || [ -L "$target" ] || ! cmp -s "$source" "$target"; then
+      echo "$name sync did not deploy an exact regular skill: $skill" >&2
+      exit 1
+    fi
+  done
+
+  preserved_paths=(
+    ".codex/agents/unrelated.toml:role-before"
+    ".codex/rules/unrelated.rules:rule-before"
+    ".agents/skills/unrelated/SKILL.md:skill-before"
+  )
+  for pair in "${preserved_paths[@]}"; do
+    synced="${pair%%:*}"
+    before="${pair#*:}"
+    if ! cmp -s "$remote_home/$synced" "$remote_home/$before"; then
+      echo "$name sync changed unrelated remote state: $synced" >&2
       exit 1
     fi
   done
@@ -150,4 +150,4 @@ run_sync_test() {
 run_sync_test root "$ROOT_DIR/sync-remote.sh"
 run_sync_test codex "$ROOT_DIR/codex/sync-remote.sh"
 
-echo "Remote sync test passed (13 exact destinations, 4 exact commands)."
+echo "Remote sync test passed (active sources deployed and unrelated state preserved across repeated sync)."

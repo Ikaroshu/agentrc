@@ -11,8 +11,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$TEST_HOME/.codex/rules" "$TEST_HOME/.agents/skills/unrelated" "$TEST_HOME/.claude" "$TEST_HOME/.omp/agent"
-ln -s "$ROOT_DIR/codex/skills/planning" "$TEST_HOME/.agents/skills/planning"
+mkdir -p "$TEST_HOME/.codex/rules" "$TEST_HOME/.codex/agents" "$TEST_HOME/.agents/skills/unrelated" "$TEST_HOME/.claude" "$TEST_HOME/.omp/agent"
 
 cat >"$TEST_HOME/.codex/config.toml" <<'EOF'
 model = "machine-model"
@@ -41,17 +40,20 @@ enabled = false
 memories = false
 EOF
 printf 'prefix_rule(pattern=["custom"], decision="allow")\n' >"$TEST_HOME/.codex/rules/custom.rules"
+printf 'unrelated role\n' >"$TEST_HOME/.codex/agents/unrelated.toml"
 printf 'unrelated skill\n' >"$TEST_HOME/.agents/skills/unrelated/SKILL.md"
 printf 'legacy claude state\n' >"$TEST_HOME/.claude/settings.json"
 printf 'legacy omp state\n' >"$TEST_HOME/.omp/agent/.env"
 
 cp "$TEST_HOME/.codex/config.toml" "$TEST_HOME/config-before.toml"
 cp "$TEST_HOME/.codex/rules/custom.rules" "$TEST_HOME/rules-before"
+cp "$TEST_HOME/.codex/agents/unrelated.toml" "$TEST_HOME/role-before"
 cp "$TEST_HOME/.agents/skills/unrelated/SKILL.md" "$TEST_HOME/skill-before"
 cp "$TEST_HOME/.claude/settings.json" "$TEST_HOME/claude-before"
 cp "$TEST_HOME/.omp/agent/.env" "$TEST_HOME/omp-before"
 python3 "$ROOT_DIR/scripts/merge-codex-config.py" "$TEST_HOME/config-before.toml" "$ROOT_DIR/codex/config.toml" >"$TEST_HOME/config-expected.toml"
 
+HOME="$TEST_HOME" "$ROOT_DIR/codex/install.sh" >/dev/null
 HOME="$TEST_HOME" "$ROOT_DIR/codex/install.sh" >/dev/null
 
 if [ -L "$TEST_HOME/.codex/config.toml" ] ||
@@ -66,34 +68,29 @@ if [ ! -L "$TEST_HOME/.codex/AGENTS.md" ] ||
   exit 1
 fi
 
-for role in doc_reviewer.toml code_reviewer.toml implementer.toml research_worker.toml; do
+for source in "$ROOT_DIR"/codex/agents/*.toml; do
+  role="${source##*/}"
   target="$TEST_HOME/.codex/agents/$role"
   if [ ! -f "$target" ] || [ -L "$target" ] ||
-     ! cmp -s "$target" "$ROOT_DIR/codex/agents/$role"; then
+     ! cmp -s "$target" "$source"; then
     echo "Expected exact regular Codex role copy: $role" >&2
     exit 1
   fi
 done
 
-for skill in adversarial-doc-review brainstorming code-review commit handoff implement merge issue; do
+for source in "$ROOT_DIR"/codex/skills/*/SKILL.md; do
+  skill="$(basename "$(dirname "$source")")"
   target="$TEST_HOME/.agents/skills/$skill"
-  expected="$ROOT_DIR/codex/skills/$skill"
+  expected="${source%/SKILL.md}"
   if [ ! -L "$target" ] || [ "$(readlink "$target")" != "$expected" ]; then
     echo "Unexpected active Codex skill link: $skill" >&2
     exit 1
   fi
 done
-if [ -e "$TEST_HOME/.agents/skills/planning" ] || [ -L "$TEST_HOME/.agents/skills/planning" ]; then
-  echo "Installer preserved the retired planning skill link" >&2
-  exit 1
-fi
-if [ -e "$TEST_HOME/.agents/skills/general-auto-research" ]; then
-  echo "Installer recreated retired general-auto-research skill" >&2
-  exit 1
-fi
 
 preserved_paths=(
   ".codex/rules/custom.rules:rules-before"
+  ".codex/agents/unrelated.toml:role-before"
   ".agents/skills/unrelated/SKILL.md:skill-before"
   ".claude/settings.json:claude-before"
   ".omp/agent/.env:omp-before"

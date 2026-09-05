@@ -54,16 +54,15 @@ Run every remaining authorized Git Workflow requirement, such as deployment, syn
 
 Cleanup is part of an authorized merge and needs no separate approval. After merge, required verification, and applicable push succeed, remove the merged branch and clean owned worktree unless retention was requested. Stop if the worktree is dirty, the branch is not fully merged, or ownership is ambiguous.
 
-Delete the feature branch:
+Remove an owned clean worktree before deleting the branch checked out there:
 
 ```bash
-git branch -d <feature-branch>
-git push origin --delete <feature-branch>
 git worktree list
 git worktree remove <worktree-path>
+git branch -d <feature-branch>
 ```
 
-Verify remote deletion when applicable. After removing a worktree, remove its saved local Codex project registration; if unavailable, report the exact stale project path.
+Delete the remote branch only when it exists and remote deletion is authorized, then verify its absence. After removing a worktree, remove its saved local Codex project registration; if unavailable, report the exact stale project path.
 
 ## Close linked issues
 

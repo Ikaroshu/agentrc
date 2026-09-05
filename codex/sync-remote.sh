@@ -14,25 +14,27 @@ cleanup() {
 }
 trap cleanup EXIT
 
-SKILLS=(
-  adversarial-doc-review
-  brainstorming
-  code-review
-  commit
-  handoff
-  implement
-  merge
-  issue
-)
+ROLE_FILES=()
+for role_file in "$REPO_DIR"/agents/*.toml; do
+  ROLE_FILES+=("${role_file##*/}")
+done
 
-ssh "$REMOTE" 'rm -f ~/.agents/skills/planning/SKILL.md'
-ssh "$REMOTE" 'mkdir -p ~/.codex/agents ~/.agents/skills/adversarial-doc-review ~/.agents/skills/brainstorming ~/.agents/skills/code-review ~/.agents/skills/commit ~/.agents/skills/handoff ~/.agents/skills/implement ~/.agents/skills/merge ~/.agents/skills/issue'
+SKILLS=()
+REMOTE_DIRS="~/.codex/agents"
+for skill_dir in "$REPO_DIR"/skills/*; do
+  if [ -f "$skill_dir/SKILL.md" ]; then
+    skill="${skill_dir##*/}"
+    SKILLS+=("$skill")
+    REMOTE_DIRS+=" ~/.agents/skills/$skill"
+  fi
+done
+
+ssh "$REMOTE" "mkdir -p $REMOTE_DIRS"
 
 scp -q "$REPO_DIR/AGENTS.md" "$REMOTE:~/.codex/AGENTS.md"
-scp -q "$REPO_DIR/agents/doc_reviewer.toml" "$REMOTE:~/.codex/agents/doc_reviewer.toml"
-scp -q "$REPO_DIR/agents/code_reviewer.toml" "$REMOTE:~/.codex/agents/code_reviewer.toml"
-scp -q "$REPO_DIR/agents/implementer.toml" "$REMOTE:~/.codex/agents/implementer.toml"
-scp -q "$REPO_DIR/agents/research_worker.toml" "$REMOTE:~/.codex/agents/research_worker.toml"
+for role in "${ROLE_FILES[@]}"; do
+  scp -q "$REPO_DIR/agents/$role" "$REMOTE:~/.codex/agents/$role"
+done
 
 for skill in "${SKILLS[@]}"; do
   scp -q "$REPO_DIR/skills/$skill/SKILL.md" "$REMOTE:~/.agents/skills/$skill/SKILL.md"
