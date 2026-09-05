@@ -134,6 +134,9 @@ if set(config) != {
 }:
     raise SystemExit("codex/config.toml must contain only portable behavior and UI settings")
 
+if config["model"] != "gpt-6-astra" or config["model_reasoning_effort"] != "high":
+    raise SystemExit("expected Astra with high reasoning as the portable default")
+
 recursive_skills = {
     "implement",
     "handoff",
@@ -155,13 +158,16 @@ if role_files != set(role_specs):
 for filename, (expected_name, blocks_recursion) in role_specs.items():
     with (root / "codex/agents" / filename).open("rb") as role_file:
         role = tomllib.load(role_file)
-    expected_keys = {"name", "description", "developer_instructions"}
+    expected_keys = {"name", "description", "developer_instructions", "model", "model_reasoning_effort"}
     if blocks_recursion:
         expected_keys.add("skills")
     if set(role) != expected_keys:
         raise SystemExit(f"{filename}: unexpected top-level keys: {sorted(role)}")
     if role["name"] != expected_name:
         raise SystemExit(f"{filename}: expected role name {expected_name!r}")
+    expected_effort = "xhigh" if expected_name in {"doc_reviewer", "code_reviewer"} else "high"
+    if role["model"] != "gpt-6-astra" or role["model_reasoning_effort"] != expected_effort:
+        raise SystemExit(f"{filename}: expected Astra with {expected_effort} reasoning")
     for field in ("description", "developer_instructions"):
         if not isinstance(role[field], str) or not role[field].strip():
             raise SystemExit(f"{filename}: {field} must be a non-empty string")
@@ -183,7 +189,7 @@ PY
 for skill in adversarial-doc-review code-review; do
   skill_file="$ROOT_DIR/codex/skills/$skill/SKILL.md"
   grep -F 'fork_turns="none"' "$skill_file" >/dev/null
-  grep -F 'model="gpt-5.6-sol"' "$skill_file" >/dev/null
+  grep -F 'model="gpt-6-astra"' "$skill_file" >/dev/null
   grep -F 'reasoning_effort="xhigh"' "$skill_file" >/dev/null
   grep -F 'reasoning_effort="max"' "$skill_file" >/dev/null
 done
@@ -193,8 +199,8 @@ grep -F 'agent_type="code_reviewer"' "$ROOT_DIR/codex/skills/code-review/SKILL.m
 implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"
 grep -F 'agent_type="implementer"' "$implement_skill" >/dev/null
 grep -F 'fork_turns="none"' "$implement_skill" >/dev/null
-grep -F 'model="gpt-5.6-sol"' "$implement_skill" >/dev/null
-grep -F 'reasoning_effort="xhigh"' "$implement_skill" >/dev/null
+grep -F 'model="gpt-6-astra"' "$implement_skill" >/dev/null
+grep -F 'reasoning_effort="high"' "$implement_skill" >/dev/null
 
 SKILL_VALIDATOR="${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py"
 if [ ! -f "$SKILL_VALIDATOR" ]; then

@@ -15,6 +15,8 @@ This repository contains portable Codex configuration, not an application or pac
 
 ## Common Commands
 
+Installation and sync require `python3` with the standard-library `tomllib` module (Python 3.11+). Config merging preserves machine-only values within shared tables; repository settings override matching keys. The merged file uses normalized TOML formatting and omits source comments.
+
 ```bash
 ./install.sh
 ./sync-remote.sh <ssh-host>

@@ -26,6 +26,10 @@ network_access = true
 [permissions.machine-policy]
 extends = ":workspace"
 
+[desktop]
+mac-menu-bar-enabled = true
+ambient-suggestions-enabled = false
+
 [projects."/machine/project"]
 trust_level = "trusted"
 

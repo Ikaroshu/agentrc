@@ -11,7 +11,7 @@ Use the configured native `doc_reviewer`; never substitute a generic or CLI revi
 
 - From the main checkout, require one non-empty regular file with `--spec <path>` and resolve it to an absolute path.
 - Review the outcome, design, and verification as the complete contract. Focus text adds emphasis without narrowing scope.
-- Use `model="gpt-5.6-sol"` with `reasoning_effort="xhigh"` for an established, sufficiently specified design; use `reasoning_effort="max"` for materially difficult interacting contracts, irreversibility, concurrency, security, blast radius, or ambiguity.
+- Use `model="gpt-6-astra"` with `reasoning_effort="xhigh"` for an established, sufficiently specified design; use `reasoning_effort="max"` for materially difficult interacting contracts, irreversibility, concurrency, security, blast radius, or ambiguity.
 - Tell the user the tier and short rationale before dispatch.
 
 ## Dispatch

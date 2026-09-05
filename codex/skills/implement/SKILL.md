@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Deliver substantive or complex work through one exact xhigh implementer; allow the main agent to complete simple changes, then send the verified candidate through independent code review.
+description: Deliver substantive or complex work through one exact high-effort implementer; allow the main agent to complete simple changes, then send the verified candidate through independent code review.
 ---
 
 # Implement
@@ -24,8 +24,8 @@ Require the exact native role and dispatch one owner:
 spawn_agent(
   agent_type="implementer",
   fork_turns="none",
-  model="gpt-5.6-sol",
-  reasoning_effort="xhigh",
+  model="gpt-6-astra",
+  reasoning_effort="high",
   message=<dynamic-contract-prompt>,
   task_name=<clear-outcome-name>,
 )

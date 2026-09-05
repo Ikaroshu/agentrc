@@ -2,118 +2,70 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
-from dataclasses import dataclass
+import tomllib
+from datetime import date, datetime, time
 from pathlib import Path
+from typing import Any
 
 
-SECTION_RE = re.compile(r"^(\[\[?.+\]\]?)$")
-TOP_LEVEL_KEY_RE = re.compile(r"^([A-Za-z0-9_-]+)\s*=")
+MACHINE_PATHS = {("projects",), ("notice",), ("marketplaces",), ("skills", "config")}
 
 
-@dataclass(frozen=True)
-class Block:
-    header: str
-    lines: list[str]
-
-    @property
-    def name(self) -> str:
-        if self.header.startswith("[["):
-            return self.header[2:-2].strip()
-
-        return self.header[1:-1].strip()
-
-
-def split_blocks(text: str) -> tuple[list[str], list[Block]]:
-    top_lines: list[str] = []
-    blocks: list[Block] = []
-    current_header: str | None = None
-    current_lines: list[str] = []
-
-    for line in text.splitlines():
-        match = SECTION_RE.match(line)
-        if match:
-            if current_header is not None:
-                blocks.append(Block(current_header, current_lines))
-
-            current_header = match.group(1)
-            current_lines = [line]
+def merge_settings(machine: dict[str, Any], repo: dict[str, Any], path: tuple[str, ...] = ()) -> dict[str, Any]:
+    merged = dict(machine)
+    for key, value in repo.items():
+        key_path = (*path, key)
+        if key_path in MACHINE_PATHS:
             continue
-
-        if current_header is None:
-            top_lines.append(line)
+        if isinstance(value, dict):
+            current = merged.get(key, {})
+            merged[key] = merge_settings(current if isinstance(current, dict) else {}, value, key_path)
         else:
-            current_lines.append(line)
-
-    if current_header is not None:
-        blocks.append(Block(current_header, current_lines))
-
-    return trim_blank_edges(top_lines), blocks
+            merged[key] = value
+    return merged
 
 
-def trim_blank_edges(lines: list[str]) -> list[str]:
-    start = 0
-    end = len(lines)
-
-    while start < end and lines[start] == "":
-        start += 1
-
-    while end > start and lines[end - 1] == "":
-        end -= 1
-
-    return lines[start:end]
+def quoted_string(value: str) -> str:
+    # TOML basic strings share JSON escapes, but also require escaping DEL.
+    return json.dumps(value, ensure_ascii=False).replace("\x7f", "\\u007f")
 
 
-def is_machine_specific(name: str) -> bool:
-    return (
-        name.startswith("projects.")
-        or name.startswith("notice.")
-        or name.startswith("marketplaces.")
-        or name == "skills.config"
-    )
+def format_key(key: str) -> str:
+    return key if re.fullmatch(r"[A-Za-z0-9_-]+", key) else quoted_string(key)
 
 
-def append_block(output: list[str], block: Block) -> None:
-    if output and output[-1] != "":
-        output.append("")
+def format_value(value: Any) -> str:
+    if isinstance(value, str):
+        return quoted_string(value)
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return repr(value)
+    if isinstance(value, (datetime, date, time)):
+        return value.isoformat()
+    if isinstance(value, list):
+        return "[" + ", ".join(format_value(item) for item in value) + "]"
+    return "{ " + ", ".join(f"{format_key(key)} = {format_value(item)}" for key, item in value.items()) + " }"
 
-    output.extend(block.lines)
+
+def format_table(table: dict[str, Any], path: tuple[str, ...] = ()) -> list[str]:
+    lines = ["[" + ".".join(format_key(key) for key in path) + "]"] if path else []
+    for key, value in table.items():
+        if not isinstance(value, dict):
+            lines.append(f"{format_key(key)} = {format_value(value)}")
+    for key, value in table.items():
+        if isinstance(value, dict):
+            lines.extend(["", *format_table(value, (*path, key))])
+    return lines
 
 
 def merge(remote_text: str, repo_text: str) -> str:
-    repo_top, repo_blocks = split_blocks(repo_text)
-    remote_top, remote_blocks = split_blocks(remote_text)
-
-    repo_top_keys = {
-        match.group(1)
-        for line in repo_top
-        if (match := TOP_LEVEL_KEY_RE.match(line)) is not None
-    }
-    remote_machine_top = [
-        line
-        for line in remote_top
-        if (match := TOP_LEVEL_KEY_RE.match(line)) is not None
-        and match.group(1) not in repo_top_keys
-    ]
-
-    repo_shared_blocks = [block for block in repo_blocks if not is_machine_specific(block.name)]
-    repo_shared_names = {block.name for block in repo_shared_blocks}
-
-    output = list(repo_top)
-
-    if remote_machine_top:
-        output.append("")
-        output.extend(remote_machine_top)
-
-    for block in repo_shared_blocks:
-        append_block(output, block)
-
-    for block in remote_blocks:
-        if is_machine_specific(block.name) or block.name not in repo_shared_names:
-            append_block(output, block)
-
-    return "\n".join(output).rstrip() + "\n"
+    """Merge values, normalizing TOML layout and discarding source comments."""
+    merged = merge_settings(tomllib.loads(remote_text), tomllib.loads(repo_text))
+    return "\n".join(format_table(merged)).strip() + "\n"
 
 
 def main() -> None:
