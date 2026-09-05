@@ -92,7 +92,7 @@ local_datetime = 2026-09-05T12:30:45
 utc_datetime = 2026-09-05T12:30:45Z
 offset_datetime = 2026-09-05T12:30:45-04:00
 nested_arrays = [[1, 2], [3]]
-inline_tables = [{ key = "value", nested = { enabled = true } }]
+inline_tables = [{ key = "value", nested = { enabled = true } }, { key = "second", nested = { enabled = false } }]
 '''
     repo_text = '''
 model = "gpt-6-astra"
@@ -130,6 +130,9 @@ enabled = true
         directory = Path(tmp)
         merged = run_merge(directory, machine_text, repo_text)
         assert tomllib.loads(merged) == expected
+        # The app-server skill editor requires this representation to remove/add selectors.
+        assert merged.count("[[skills.config]]") == 2
+        assert "config = [" not in merged
         assert run_merge(directory, merged, repo_text) == merged
         assert run_merge(directory, merged, "") == merged
         assert tomllib.loads(run_merge(directory, "", repo_text)) == tomllib.loads('''

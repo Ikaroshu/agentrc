@@ -51,14 +51,23 @@ def format_value(value: Any) -> str:
     return "{ " + ", ".join(f"{format_key(key)} = {format_value(item)}" for key, item in value.items()) + " }"
 
 
-def format_table(table: dict[str, Any], path: tuple[str, ...] = ()) -> list[str]:
-    lines = ["[" + ".".join(format_key(key) for key in path) + "]"] if path else []
+def is_table_array(value: Any) -> bool:
+    return isinstance(value, list) and bool(value) and all(isinstance(item, dict) for item in value)
+
+
+def format_table(table: dict[str, Any], path: tuple[str, ...] = (), array: bool = False) -> list[str]:
+    header = ".".join(format_key(key) for key in path)
+    lines = [("[[" + header + "]]" if array else "[" + header + "]")] if path else []
     for key, value in table.items():
-        if not isinstance(value, dict):
+        if not isinstance(value, dict) and not is_table_array(value):
             lines.append(f"{format_key(key)} = {format_value(value)}")
     for key, value in table.items():
         if isinstance(value, dict):
             lines.extend(["", *format_table(value, (*path, key))])
+        elif is_table_array(value):
+            # Codex edits skill selectors as arrays of tables, not inline arrays.
+            for item in value:
+                lines.extend(["", *format_table(item, (*path, key), array=True)])
     return lines
 
 
