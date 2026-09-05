@@ -1,11 +1,11 @@
 ---
 name: implement
-description: Deliver a settled change directly in the main agent or through one exact xhigh implementer for delegated work, then send the verified candidate through independent code review.
+description: Deliver substantive or complex work through one exact xhigh implementer; allow the main agent to complete simple changes, then send the verified candidate through independent code review.
 ---
 
 # Implement
 
-Keep one persistent owner for the settled design, outcome, and verification. For direct implementation, the main agent is the owner; do not spawn an implementer subagent. For delegated work, the implementer subagent is the owner. An approved spec may supply the contract, but direct implementation does not require a spec.
+Keep one persistent owner for the settled design, outcome, and verification. Use the implementer subagent for substantive or complex work. Simple changes with a straightforward design and verification may stay with the main agent. A settled design or absence of a spec does not by itself make work simple. For direct implementation, the main agent is the owner; do not spawn an implementer subagent. For delegated work, the implementer subagent is the owner. An approved spec may supply the contract, but direct implementation does not require a spec.
 
 **Announce at start:** State whether implementation is direct or delegated, followed by code review.
 

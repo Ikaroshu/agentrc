@@ -1,6 +1,6 @@
 ---
 name: brainstorming
-description: Settle an uncertain user goal first, then the design, outcome, and verification, and write an implementation-ready spec when one is needed. Do not use when the request is already settled enough for direct implementation.
+description: Settle an uncertain user goal first, then the design, outcome, and verification, and write an implementation-ready spec when one is needed. Do not use when the request is already settled enough for implementation and no spec is needed.
 ---
 
 # Brainstorming
@@ -11,7 +11,7 @@ Turn material user uncertainty into an approved implementation contract, writing
 
 ## Boundaries
 
-- Use this skill when the user's goal is materially uncertain or implementation needs a spec. If neither is true, implement directly.
+- Use this skill when the user's goal is materially uncertain or implementation needs a spec. If neither is true, proceed to the `implement` skill, which chooses main-agent or implementer ownership based on the work's complexity.
 - Inspect relevant code, docs, history, and repository rules, but edit no implementation files and create no worktree.
 - Keep the user in the reasoning. Ask one consequential question at a time, explain the current view, and invite correction. Resolve uncertainty from context or safe assumptions when it does not need a user choice.
 - Exclude unrelated improvements. Keep implementation sequencing and commit structure out of the spec.
@@ -35,4 +35,4 @@ When a durable spec is needed, save the approved contract to `<project-root>/.pl
 
 Include only context needed to understand those sections. Describe what must be true without prescribing implementation phases, task choreography, commit boundaries, or code structure that the design does not require.
 
-Invoke `adversarial-doc-review` on a written spec. After confirmed findings are resolved, ask for implementation approval. When no spec is needed, proceed to direct implementation after the user approves the settled contract.
+Invoke `adversarial-doc-review` on a written spec. After confirmed findings are resolved, ask for implementation approval. When no spec is needed, proceed to the `implement` skill after the user approves the settled contract; skipping a spec does not imply main-agent implementation.
