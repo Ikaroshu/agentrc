@@ -38,7 +38,17 @@ if [ "$remote" != "test" ]; then
 fi
 
 case "$command" in
-  'mkdir -p '*) ;;
+  'mkdir -p '*)
+    directories="${command#mkdir -p }"
+    for directory in $directories; do
+      relative_directory="${directory#\~/}"
+      if [ "$relative_directory" = "$directory" ]; then
+        echo "Unexpected remote directory: $directory" >&2
+        exit 1
+      fi
+      mkdir -p "$SYNC_REMOTE_HOME/$relative_directory"
+    done
+    ;;
   'cat ~/.codex/config.toml 2>/dev/null || true')
     if [ -f "$SYNC_REMOTE_HOME/.codex/config.toml" ]; then
       cat "$SYNC_REMOTE_HOME/.codex/config.toml"
@@ -67,7 +77,11 @@ if [ "$relative_destination" = "$destination" ]; then
   echo "Unexpected copy destination: $destination" >&2
   exit 1
 fi
-mkdir -p "$SYNC_REMOTE_HOME/$(dirname "$relative_destination")"
+destination_directory="$SYNC_REMOTE_HOME/$(dirname "$relative_destination")"
+if [ ! -d "$destination_directory" ]; then
+  echo "Missing remote destination directory: $destination_directory" >&2
+  exit 1
+fi
 cp "$source_path" "$SYNC_REMOTE_HOME/$relative_destination"
 EOF
 
