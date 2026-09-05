@@ -35,9 +35,9 @@ Prefer the root entrypoints for machine setup; use the Codex scripts directly wh
 
 ## Testing
 
-There is no app test suite. `./scripts/validate-config.sh` checks topology, permissions, syntax, config merging, local installation, and exact remote-sync behavior.
+There is no app test suite. `./scripts/validate-config.sh` checks topology, permissions, syntax, config merging, local installation, and remote-sync behavior.
 
 ## Git Workflow
 
 - Run `./scripts/validate-config.sh` before committing. Never install or sync from a feature worktree.
-- After a merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from main without separate authorization. Verify local and remote active files match committed sources without disturbing unrelated state, then start a fresh global task or process for installed-role canaries. Fix canary failures forward; never leave installation pointing at a deleted worktree. A remote live-role canary is required only where the collaboration runtime exists.
+- After a merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from main without separate authorization. Verify local and remote active files match committed sources without disturbing unrelated state. When changes affect roles, dispatch, or installation, start fresh installed-role canaries locally and remotely where the collaboration runtime exists. Fix canary failures forward; never leave installation pointing at a deleted worktree.
