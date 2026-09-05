@@ -5,7 +5,7 @@ description: Deliver substantive or complex work through one exact xhigh impleme
 
 # Implement
 
-Keep one persistent owner for the settled design, outcome, and verification. Use the implementer subagent for substantive or complex work; keep simple work with straightforward design and verification with the main agent. A settled design or absence of a spec does not itself make work simple.
+Keep one persistent owner for the settled design, outcome, and verification. Before choosing an implementation owner, inspect enough context to identify the smallest likely change and how to verify it. Use the implementer subagent for substantive or complex work; keep simple work with straightforward design and verification with the main agent. Base delegation on concrete implementation or verification complexity; shared code, potential impact, or file count alone do not make a change complex. A settled design or absence of a spec does not itself make work simple.
 
 **Announce at start:** State whether implementation is direct or delegated, followed by code review.
 
