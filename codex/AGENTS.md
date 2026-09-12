@@ -22,23 +22,25 @@
 
 ## Development Workflow
 
-- Before choosing an implementation owner, inspect enough context to identify the smallest likely change and how to verify it. Use the implementer subagent for substantive or complex implementation. Keep simple changes with straightforward design and verification with the main agent. Base delegation on concrete implementation or verification complexity; shared code, potential impact, or file count alone do not make a change complex. A settled design or absence of a spec does not by itself make work simple. When user intent is materially uncertain, use brainstorming to settle the goal, design, outcome, and verification; write and review a spec when the contract needs to be durable. Ask before optional workflows.
-- Follow **[brainstorm ->] worktree -> implement -> code-review -> merge** and let each skill own its stage. Approval of a settled contract is sufficient when no spec is written; get implementation approval after document review when there is a spec, and merge approval after code review. Add no other reconfirmation gates.
-- Center specs and reviews on the primary outcome. Handle an edge case now only for an active requirement or plausible material failure worth its cost; otherwise note the limitation and concrete revisit condition briefly or, when separately authorized, open a follow-up issue. Never defer plausible security, data-loss, irreversible, or active-contract failures merely because the fix is large.
-- Keep specs uncommitted on `main`; put implementation worktrees under `<project-root>/.worktrees/`. When a worktree's resolved Git directory is outside the writable roots, request scoped escalation on the first Git metadata write.
-- Give each document or code review unit at most two completed passes, including its initial review. Repairs, replacement reviewers, and follow-up turns do not reset the budget. Use document-review pass two only for a materially changed repair or unresolved blocker; code-review pass two requires a pass-one repair and covers that repair. If pass two is not clear, stop without a third review and explain the context, evidence, impact, what the passes tried, what remains unresolved, and the user decision or external change needed. Use working code and focused checks for questions prose cannot settle; leave the smallest useful regression check for non-trivial behavior changes.
-- The implementation owner delivers the clean committed candidate and truthful verification evidence. For delegated work, the orchestrator records that evidence and performs only read-only identity and status checks. Native document and code reviewers own technical inspection and findings. Route definite findings to the responsible owner. When an owner disputes an actionable finding with concrete evidence, send it to the same reviewer for clarification within the current pass; the reviewer may uphold, revise, or withdraw the finding. Route upheld findings for repair, and take material contract changes to the user.
-- Dispatch code review only for a clean immutable candidate with completed verification and no unresolved work. Treat acceptance as the last technical gate and ask for merge approval immediately. Any later code or configuration change, or failed check, invalidates acceptance.
+- Read governing instructions and task-relevant code, callers, tests, docs, and history. Expand inspection when evidence calls for it; reading the whole repository is not a prerequisite to editing.
+- Follow **[brainstorm ->] worktree -> implement -> code-review -> merge**, using each skill for its stage. Use brainstorming for material uncertainty or a durable spec. Approval of a settled contract suffices without a spec; with a spec, get implementation approval after document review. Get merge approval after clear code review. Ask before optional workflows; add no reconfirmation gates for authorized in-scope work, verification, or repairs.
+- Before choosing an implementation owner, identify the smallest likely change and how to verify it. Keep simple work with straightforward design and verification with the main agent; use the implementer for substantive or complex work. Shared code, potential impact, file count, a settled design, or absence of a spec alone does not determine complexity.
+- Keep specs uncommitted on `main` and implementation worktrees under `<project-root>/.worktrees/`. Request scoped escalation on the first Git metadata write when the worktree's resolved Git directory is outside writable roots.
+- Center specs and reviews on the primary outcome. Address active requirements and plausible material failures now; otherwise note a useful limitation and concrete revisit condition, or open a separately authorized follow-up. Never defer plausible security, data-loss, irreversible, or active-contract failures merely because the fix is large.
+- The implementation owner completes authorized work through integration, verification, commits, and review repairs, delivering a clean committed candidate with truthful evidence. For delegated work, the orchestrator records that evidence and performs only read-only identity and status checks; native reviewers own technical inspection and findings.
+- Each document or code review unit gets at most two completed passes; repairs, replacements, and follow-ups do not reset the count. The review skills own clarification, repair scope, and stopping rules. Dispatch implementation review only for a clean immutable candidate with completed verification and no unresolved work. Acceptance is the last technical gate: ask for merge approval immediately. Later code or configuration changes or failed checks invalidate acceptance.
 - Treat agents and long commands as event-driven. Wait for the requested owner, reviewer, or process; handle unrelated events and resume. Use the longest supported empty terminal wait. Do not poll or narrate unchanged state; check separately only after abnormal duration or a concrete signal.
-- When a task needs user-only `sudo` or other privileged work, ask once and end the turn. Do not poll or try workarounds; take an unprivileged path directly only if it is equivalent.
+- For user-only `sudo` or privileged work, ask once and end the turn. Do not poll or try workarounds; use an unprivileged path directly only if equivalent.
+
+## Verification
+
+- Choose checks that demonstrate the requested behavior and plausible regressions. Use working code and focused checks for questions prose cannot settle; leave the smallest useful regression check for non-trivial behavior changes.
+- Run settled and repository-required checks after the final change and review repairs. Once they pass, broaden or repeat only for new changes, failures, unresolved concerns, or an explicitly required later-stage check.
+- Treat failures as evidence: diagnose relevance, fix in-scope regressions, disclose unresolved failures before consequential actions, and proceed only when authorization covers that evidence.
 
 ## GitHub Issues
 
 - Unless asked otherwise, issue bodies contain only the problem and relevant context, not solutions or acceptance criteria.
-
-## Check Failures
-
-- Treat checks as evidence, not harness vetoes. Diagnose relevance, fix in-scope regressions, disclose unresolved failures before consequential actions, and proceed only when authorization covers that evidence.
 
 ## Python Style
 

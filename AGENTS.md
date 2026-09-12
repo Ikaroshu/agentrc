@@ -35,6 +35,12 @@ Prefer the root entrypoints for machine setup; use the Codex scripts directly wh
 - Paths inside portable config should prefer `~/` when Codex supports it. Absolute paths are acceptable only for machine-local state that Codex itself records.
 - Shell scripts use `set -euo pipefail` and remain simple enough to review without a framework.
 
+## Instruction Authoring
+
+- Keep durable cross-project preferences and stage routing in `codex/AGENTS.md`; keep stage-specific mechanics in the owning skill and role-specific obligations in the native role.
+- Write short, discriminating skill descriptions. Prefer outcomes and decision criteria to generic advice, repeated procedure, or fixed announcement scripts. Preserve real requirements and authorization boundaries.
+- Keep short skills self-contained. Use linked references for substantial conditional detail and load only the relevant reference.
+
 ## Testing
 
 There is no app test suite. `./scripts/validate-config.sh` checks topology, permissions, syntax, config merging, local installation, and remote-sync behavior.

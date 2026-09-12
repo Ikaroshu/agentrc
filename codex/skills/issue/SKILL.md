@@ -1,13 +1,11 @@
 ---
 name: issue
-description: Triage a GitHub issue against current code and report the verified problem. Use only when explicitly invoked or when the requested action is issue triage; do not activate merely because a prompt mentions an issue. Stop before specification or implementation.
+description: Triage a GitHub issue against current code. Use for explicit invocation or a triage request, not an issue mention; stop at diagnosis.
 ---
 
 # Issue Triage
 
 Use this read-only workflow only when the user explicitly invokes it or asks to triage an issue. An issue reference within another request does not select it.
-
-**Announce at start:** "Running issue workflow."
 
 ## Read
 

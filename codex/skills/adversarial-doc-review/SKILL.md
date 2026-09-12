@@ -1,6 +1,6 @@
 ---
 name: adversarial-doc-review
-description: Review an implementation-ready spec before implementation with the exact native doc_reviewer role and coordinate its findings.
+description: Review an implementation-ready spec with the native doc_reviewer before implementation approval.
 ---
 
 # Adversarial Doc Review
@@ -26,4 +26,4 @@ Wait for completion without polling. Route definite blocking findings to the spe
 
 Treat the supplied spec as one review unit with at most two completed passes. Repairs, replacement reviewers, and follow-up turns do not reset the count. Clarification stays within the current pass. Use pass two only when a repair materially changes the contract or an unresolved blocker needs confirmation. Reuse the reviewer when practical. Non-blocking suggestions, documented limitations, and implementation-only questions do not keep review open.
 
-When review is clear, ask for implementation approval. If pass two leaves a blocker or material uncertainty, stop without a third review and report it using the global communication guidance. Record review counts, dispositions, and residual risk.
+When review is clear, ask for implementation approval. If pass two leaves a blocker or material uncertainty, stop without a third review and report the context, evidence, impact, what both passes tried, unresolved questions, and the user decision or external change needed. Record review counts, dispositions, and residual risk.

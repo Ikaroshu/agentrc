@@ -1,31 +1,24 @@
 ---
 name: commit
-description: Run Shu's repository commit workflow to validate, stage explicitly, commit, complete required post-commit actions, and push main automatically or another branch when authorized.
+description: Validate and commit repository changes, run required post-commit actions, and push main or an authorized feature branch.
 ---
 
 # Commit Workflow
 
 Validate, commit, complete repository-required post-commit actions, then push `main` automatically or another branch when authorized.
 
-**Announce at start:** "Running commit workflow."
+## Prepare and verify
 
-## Workflow
+Read repository instructions (`AGENTS.md`, or `CLAUDE.md` when applicable), including the complete Git Workflow requirements for checks, hooks, deployment, sync, and push. Run prescribed checks; otherwise choose proportionate verification and report the gap. Reuse successful checks for the unchanged candidate unless a later-stage rerun is required. Diagnose failures and fix in-scope regressions before proceeding; disclose unresolved failures and require authorization covering that evidence.
 
-1. Read repository instructions, preferring `AGENTS.md` then `CLAUDE.md`, and the complete Git Workflow equivalent. Capture:
+## Commit
 
-   - pre-stage checks (default none);
-   - prescribed validation and tests (default none);
-   - enforced pre-commit hooks (default no); and
-   - required post-commit deployment, sync, or verification (default none).
+Review `git status` and `git diff`. Stage relevant files by name, never `git add -A` or `git add .`, preserving unrelated changes. Commit with a concise message in repository style.
 
-2. Run the repository-prescribed checks. If none exist, choose verification proportionate to the change and report the gap. Treat failures as evidence: diagnose relevance, fix in-scope regressions, disclose unresolved failures, and proceed only when authorization covers that evidence.
+Run hooks normally in their required environment on the first attempt. For a uv/direnv repository, use `direnv exec . env -u PYTHONPATH -u VIRTUAL_ENV uv run git commit ...`. After a hook failure, fix, restage, and create a new commit.
 
-3. Review `git status` and `git diff`; stage relevant files by name, never `git add -A` or `git add .`, and preserve unrelated changes. Write a concise message in repository style and commit. When repository hooks depend on the same environment used for validation, run Git through that environment on the first attempt; for a uv/direnv repository, use `direnv exec . env -u PYTHONPATH -u VIRTUAL_ENV uv run git commit ...` instead of trying plain `git commit` first. Hooks run normally; after a hook failure, fix, restage, and create a new commit.
+## Complete
 
-4. Run required post-commit actions in order. Invoking this workflow authorizes actions the repository explicitly requires for commit completion; infer no other external mutation.
+Run repository-required post-commit actions in order. Invoking this workflow authorizes actions explicitly required for commit completion, not other external mutations.
 
-5. Re-resolve the branch and inspect unpublished commits. If a push would publish unrelated commits, disclose them and ask. Otherwise push `origin main` automatically on `main`; on another branch, push only when the user or repository workflow authorizes it:
-
-   ```bash
-   git push origin $(git branch --show-current)
-   ```
+Re-resolve the branch and inspect unpublished commits. If a push would publish unrelated commits, disclose them and ask. Otherwise push `origin main` automatically on `main`; on another branch, push only when the user or repository workflow authorizes it.
