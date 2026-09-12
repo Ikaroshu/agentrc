@@ -1,6 +1,6 @@
 ---
 name: issue
-description: Triage a GitHub issue against current code. Use for explicit invocation or a triage request, not an issue mention; stop at diagnosis.
+description: Triage a GitHub issue against current code and recommend a next step. Use for explicit invocation or a triage request, not an issue mention.
 ---
 
 # Issue Triage
@@ -22,6 +22,8 @@ Treat the issue as a hypothesis rather than a specification.
 
 ## Report
 
-Lead with the verified finding. Explain how the relevant components normally work, where that flow breaks, why it breaks, and the practical effect. Support the conclusion with compact file, line, issue, history, and reproduction evidence. Distinguish confirmed facts, inferences, and unresolved questions, including whether the issue is stale, subsumed, partly fixed, complete, or still present.
+Start by explaining the issue's reported problem or request and why it matters, assuming the user has not read it. Use plain language or a visualization when it makes the problem clearer; distinguish the issue's claims from verified facts.
 
-Stop after reporting the diagnosis. Do not select a solution, write a spec, edit code, or perform issue administration as part of triage.
+Then present the verified diagnosis. Explain how the relevant components normally work, where that flow breaks, why it breaks, and the practical effect. Support the conclusion with compact file, line, issue, history, and reproduction evidence. Distinguish confirmed facts, inferences, and unresolved questions, including whether the issue is stale, subsumed, partly fixed, complete, or still present.
+
+End with a short recommendation for the next step and why it follows from the diagnosis. Keep it advisory: do not write a spec, edit code, or perform issue administration as part of triage.
