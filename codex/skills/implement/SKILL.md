@@ -1,20 +1,17 @@
 ---
 name: implement
-description: Deliver substantive or complex work through one exact high-effort implementer; allow the main agent to complete simple changes, then send the verified candidate through independent code review.
+description: Deliver an approved implementation contract with complexity-based ownership, a verified committed candidate, and independent code review.
 ---
 
 # Implement
 
-Keep one persistent owner for the settled design, outcome, and verification. Before choosing an implementation owner, inspect enough context to identify the smallest likely change and how to verify it. Use the implementer subagent for substantive or complex work; keep simple work with straightforward design and verification with the main agent. Base delegation on concrete implementation or verification complexity; shared code, potential impact, or file count alone do not make a change complex. A settled design or absence of a spec does not itself make work simple.
-
-**Announce at start:** State whether implementation is direct or delegated, followed by code review.
+Keep one persistent owner for delivery and review repairs. Inspect enough context to identify the smallest likely change and its verification before choosing ownership: main for simple work with straightforward design and verification; the implementer for substantive or complex work. Shared code, potential impact, file count, settled design, or lack of a spec alone does not determine complexity.
 
 ## Start
 
-1. Collect the approved **design**, **outcome**, and **verification** from the spec or user agreement. Confirm they still match the repository and governing instructions.
-2. Use the agreed worktree and record the immutable review base.
-3. For direct work, the main agent owns editing, integration, verification, commits, and review repairs. Complete and record the same candidate evidence required below.
-4. For delegated work, follow the dispatch instructions below. The implementer owns editing, integration, verification, commits, and review repairs; the orchestrator coordinates its recorded result.
+Use the approved **design**, **outcome**, and **verification** from the spec or user agreement, checking that they match current repository evidence and governing instructions. State whether ownership is direct or delegated. Use the agreed worktree and record the immutable review base.
+
+The owner handles editing, integration, verification, commits, and repairs through completion. Ordinary in-scope decisions and fixes need no repeat approval. For direct work, the main agent records the candidate evidence below; for delegated work, dispatch one implementer and coordinate its report.
 
 ## Delegated implementation
 

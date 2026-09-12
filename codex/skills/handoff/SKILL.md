@@ -1,13 +1,11 @@
 ---
 name: handoff
-description: Transfer requested work to a normal fresh Codex task in the exact saved parent project and Local environment. Do not use for forks, internal delegation, or the app's Hand off action between Local and Worktree.
+description: Create a requested fresh Codex task in the exact saved parent project on the current host, using Local. Excludes forks, delegation, and the app’s Hand off action.
 ---
 
 # Handoff
 
 Create a fresh task in the saved parent project and Local environment with a self-contained continuation prompt.
-
-**Announce at start:** "Using the handoff skill to create a fresh local task."
 
 ## Resolve
 

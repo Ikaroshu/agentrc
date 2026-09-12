@@ -1,13 +1,11 @@
 ---
 name: merge
-description: Merge, finish, or clean up a branch or pull request through Shu's workflow by verifying the exact candidate and main, running authorized follow-ups, and cleaning up safely.
+description: Merge or clean up a reviewed branch or pull request, verify its recorded candidate, and complete authorized follow-ups.
 ---
 
 # Merge Workflow
 
 Verify the candidate, merge locally or through a PR, verify main, run authorized follow-ups, and clean up. The implementation owner is the main agent for direct work or the implementer subagent for delegated work.
-
-**Announce at start:** "Running merge workflow."
 
 ## Prepare
 
