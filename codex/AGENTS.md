@@ -38,10 +38,6 @@
 - Run settled and repository-required checks after the final change and review repairs. Once they pass, broaden or repeat only for new changes, failures, unresolved concerns, or an explicitly required later-stage check.
 - Treat failures as evidence: diagnose relevance, fix in-scope regressions, disclose unresolved failures before consequential actions, and proceed only when authorization covers that evidence.
 
-## GitHub Issues
-
-- Unless asked otherwise, issue bodies describe the problem or requested change and relevant context, not implementation solutions or acceptance criteria. For feature and refactoring requests, state the intended outcome and motivation without implying existing behavior is broken.
-
 ## Python Style
 
 - Type public functions directly. Use `snake_case` for modules/functions, `PascalCase` for classes, and `UPPER_SNAKE_CASE` for constants; include physical units when ambiguous.
