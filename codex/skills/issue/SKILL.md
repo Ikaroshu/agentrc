@@ -9,21 +9,21 @@ Use this read-only workflow only when the user explicitly invokes it or asks to 
 
 ## Read
 
-Fetch the issue and all comments with `gh issue view <number> --comments`. Accept a URL, `owner/repo#number`, or bare number; use `--repo` when needed. Read relevant linked issues and references that affect the claim, noting duplicates, closures, sequencing, and later changes.
+Fetch the issue and all comments with `gh issue view <number> --comments`. Accept a URL, `owner/repo#number`, or bare number; use `--repo` when needed. Read relevant linked issues and references that affect the assessment, noting duplicates, closures, sequencing, and later changes. Identify whether the issue reports a bug, requests a feature, proposes refactoring, or combines these.
 
 ## Verify
 
-Treat the issue as a hypothesis rather than a specification.
+Verify the issue's factual claims and assumptions against current code while preserving the user's stated goal. A feature or refactoring request does not imply existing behavior is broken, and a proposed approach is not automatically an implementation specification.
 
 - Read every cited location and the relevant current implementation, callers, consumers, tests, and history.
-- Check each material claim and identify contradictions, stale assumptions, partial fixes, and affected behavior.
-- Reproduce surprising behavior or run a focused non-mutating check when useful before explaining the cause.
+- Check each material claim and identify contradictions, stale assumptions, work already completed, and affected behavior or structure.
+- Reproduce reported bugs or run a focused non-mutating check when useful to assess current behavior, capabilities, or structure.
 - Use helpers only for broad, separable read-only searches.
 
 ## Report
 
-Start by explaining the issue's reported problem or request and why it matters, assuming the user has not read it. Use plain language or a visualization when it makes the problem clearer; distinguish the issue's claims from verified facts.
+Start by explaining the issue's reported behavior or proposed change, intended outcome, and motivation, assuming the user has not read it. Use plain language or a visualization when it makes the issue clearer; distinguish the issue's claims and goals from verified facts.
 
-Then present the verified diagnosis. Explain how the relevant components normally work, where that flow breaks, why it breaks, and the practical effect. Support the conclusion with compact file, line, issue, history, and reproduction evidence. Distinguish confirmed facts, inferences, and unresolved questions, including whether the issue is stale, subsumed, partly fixed, complete, or still present.
+Then present an evidence-based assessment of the current state relative to the issue's goal. For a bug, explain the expected and actual behavior, any verified cause, and practical effect. For a feature or refactoring request, explain the relevant existing capabilities or structure, what would change, and material gaps, constraints, or tradeoffs. Support the conclusion with compact file, line, issue, history, and focused-check evidence. Distinguish confirmed facts, inferences, and unresolved questions; describe status in terms appropriate to the issue, such as a bug still present, a capability already supported, or a refactoring goal partly achieved.
 
-End with a short recommendation for the next step and why it follows from the diagnosis. Keep it advisory: do not write a spec, edit code, or perform issue administration as part of triage.
+End with a short recommendation for the next step and why it follows from the assessment. Keep it advisory: do not write a spec, edit code, or perform issue administration as part of triage.
