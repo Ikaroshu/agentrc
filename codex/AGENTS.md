@@ -40,7 +40,7 @@
 
 ## GitHub Issues
 
-- Unless asked otherwise, issue bodies contain only the problem and relevant context, not solutions or acceptance criteria.
+- Unless asked otherwise, issue bodies describe the problem or requested change and relevant context, not implementation solutions or acceptance criteria. For feature and refactoring requests, state the intended outcome and motivation without implying existing behavior is broken.
 
 ## Python Style
 
