@@ -21,8 +21,8 @@ Require the exact native role and dispatch one owner:
 spawn_agent(
   agent_type="implementer",
   fork_turns="none",
-  model="gpt-6-astra",
-  reasoning_effort="high",
+  model="gpt-6-sol",
+  reasoning_effort="xhigh",
   message=<dynamic-contract-prompt>,
   task_name=<clear-outcome-name>,
 )
