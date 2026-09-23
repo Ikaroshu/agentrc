@@ -146,16 +146,16 @@ recursive_skills = {
     "claude-code-review",
 }
 role_specs = {
-    "doc_reviewer.toml": ("doc_reviewer", True),
-    "code_reviewer.toml": ("code_reviewer", True),
-    "implementer.toml": ("implementer", True),
-    "research_worker.toml": ("research_worker", False),
+    "doc_reviewer.toml": ("doc_reviewer", True, "gpt-6-astra", "xhigh"),
+    "code_reviewer.toml": ("code_reviewer", True, "gpt-6-astra", "xhigh"),
+    "implementer.toml": ("implementer", True, "gpt-6-sol", "xhigh"),
+    "research_worker.toml": ("research_worker", False, "gpt-6-astra", "high"),
 }
 role_files = {path.name for path in (root / "codex/agents").glob("*.toml")}
 if role_files != set(role_specs):
     raise SystemExit(f"unexpected active roles: {sorted(role_files)}")
 
-for filename, (expected_name, blocks_recursion) in role_specs.items():
+for filename, (expected_name, blocks_recursion, expected_model, expected_effort) in role_specs.items():
     with (root / "codex/agents" / filename).open("rb") as role_file:
         role = tomllib.load(role_file)
     expected_keys = {"name", "description", "developer_instructions", "model", "model_reasoning_effort"}
@@ -165,9 +165,8 @@ for filename, (expected_name, blocks_recursion) in role_specs.items():
         raise SystemExit(f"{filename}: unexpected top-level keys: {sorted(role)}")
     if role["name"] != expected_name:
         raise SystemExit(f"{filename}: expected role name {expected_name!r}")
-    expected_effort = "xhigh" if expected_name in {"doc_reviewer", "code_reviewer"} else "high"
-    if role["model"] != "gpt-6-astra" or role["model_reasoning_effort"] != expected_effort:
-        raise SystemExit(f"{filename}: expected Astra with {expected_effort} reasoning")
+    if role["model"] != expected_model or role["model_reasoning_effort"] != expected_effort:
+        raise SystemExit(f"{filename}: expected {expected_model} with {expected_effort} reasoning")
     for field in ("description", "developer_instructions"):
         if not isinstance(role[field], str) or not role[field].strip():
             raise SystemExit(f"{filename}: {field} must be a non-empty string")
@@ -199,8 +198,8 @@ grep -F 'agent_type="code_reviewer"' "$ROOT_DIR/codex/skills/code-review/SKILL.m
 implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"
 grep -F 'agent_type="implementer"' "$implement_skill" >/dev/null
 grep -F 'fork_turns="none"' "$implement_skill" >/dev/null
-grep -F 'model="gpt-6-astra"' "$implement_skill" >/dev/null
-grep -F 'reasoning_effort="high"' "$implement_skill" >/dev/null
+grep -F 'model="gpt-6-sol"' "$implement_skill" >/dev/null
+grep -F 'reasoning_effort="xhigh"' "$implement_skill" >/dev/null
 
 SKILL_VALIDATOR="${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py"
 if [ ! -f "$SKILL_VALIDATOR" ]; then
