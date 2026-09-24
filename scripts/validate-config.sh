@@ -49,8 +49,13 @@ required_files=(
   AGENTS.md
   codex/AGENTS.md
   codex/config.toml
+  claude/AGENTS.md
+  claude/settings.json
+  claude/statusline.sh
   scripts/merge-codex-config.py
   scripts/test-merge-codex-config.py
+  scripts/merge-claude-settings.py
+  scripts/test-merge-claude-settings.py
 )
 for path in "${required_files[@]}"; do
   require_regular_file "$path"
@@ -67,9 +72,20 @@ for skill_dir in "$ROOT_DIR"/codex/skills/*; do
   skills+=("$skill")
 done
 
-active_symlinks="$(find "$ROOT_DIR/codex" -type l -print)"
+for agent_file in "$ROOT_DIR"/claude/agents/*.md; do
+  require_regular_file "claude/agents/${agent_file##*/}"
+done
+
+claude_skills=()
+for skill_dir in "$ROOT_DIR"/claude/skills/*; do
+  skill="${skill_dir##*/}"
+  require_regular_file "claude/skills/$skill/SKILL.md"
+  claude_skills+=("$skill")
+done
+
+active_symlinks="$(find "$ROOT_DIR/codex" "$ROOT_DIR/claude" -type l -print)"
 if [ -n "$active_symlinks" ]; then
-  echo "Active Codex sources must be regular files:" >&2
+  echo "Active Codex and Claude sources must be regular files:" >&2
   echo "$active_symlinks" >&2
   exit 1
 fi
@@ -79,11 +95,17 @@ executables=(
   sync-remote.sh
   codex/install.sh
   codex/sync-remote.sh
+  claude/install.sh
+  claude/sync-remote.sh
+  claude/statusline.sh
   scripts/validate-config.sh
   scripts/test-codex-install.sh
+  scripts/test-claude-install.sh
   scripts/test-sync-remote.sh
   scripts/merge-codex-config.py
   scripts/test-merge-codex-config.py
+  scripts/merge-claude-settings.py
+  scripts/test-merge-claude-settings.py
 )
 for path in "${executables[@]}"; do
   require_executable "$path"
@@ -94,8 +116,12 @@ shell_scripts=(
   sync-remote.sh
   codex/install.sh
   codex/sync-remote.sh
+  claude/install.sh
+  claude/sync-remote.sh
+  claude/statusline.sh
   scripts/validate-config.sh
   scripts/test-codex-install.sh
+  scripts/test-claude-install.sh
   scripts/test-sync-remote.sh
 )
 for path in "${shell_scripts[@]}"; do
@@ -106,13 +132,17 @@ runtime_paths=(
   "$ROOT_DIR/install.sh"
   "$ROOT_DIR/sync-remote.sh"
   "$ROOT_DIR/codex"
+  "$ROOT_DIR/claude"
   "$ROOT_DIR/scripts/merge-codex-config.py"
   "$ROOT_DIR/scripts/test-merge-codex-config.py"
+  "$ROOT_DIR/scripts/merge-claude-settings.py"
+  "$ROOT_DIR/scripts/test-merge-claude-settings.py"
   "$ROOT_DIR/scripts/test-codex-install.sh"
+  "$ROOT_DIR/scripts/test-claude-install.sh"
   "$ROOT_DIR/scripts/test-sync-remote.sh"
 )
 if rg -n 'archive/' "${runtime_paths[@]}"; then
-  echo "Active Codex code references the inert archive" >&2
+  echo "Active Codex or Claude code references the inert archive" >&2
   exit 1
 fi
 
@@ -203,6 +233,61 @@ grep -F 'fork_turns="none"' "$implement_skill" >/dev/null
 grep -F 'model="gpt-6-sol"' "$implement_skill" >/dev/null
 grep -F 'reasoning_effort="xhigh"' "$implement_skill" >/dev/null
 
+"$PYTHON_YAML_BIN" - "$ROOT_DIR" <<'PY'
+from pathlib import Path
+import json
+import sys
+import yaml
+
+root = Path(sys.argv[1])
+
+settings = json.loads((root / "claude/settings.json").read_text())
+if settings != {
+    "model": "opus",
+    "effortLevel": "high",
+    "statusLine": {"type": "command", "command": "bash ~/.claude/statusline.sh"},
+}:
+    raise SystemExit("claude/settings.json must contain only the portable model, effort, and status line")
+
+agent_specs = {
+    "code-reviewer.md": ("xhigh", "Agent, Skill"),
+    "doc-reviewer.md": ("xhigh", "Agent, Skill"),
+    "implementer.md": ("medium", "Skill"),
+    "research-worker.md": ("high", None),
+    "explorer.md": ("low", None),
+    "worker.md": ("medium", None),
+}
+agent_files = {path.name for path in (root / "claude/agents").glob("*.md")}
+if agent_files != set(agent_specs):
+    raise SystemExit(f"unexpected active Claude subagents: {sorted(agent_files)}")
+
+for filename, (expected_effort, expected_disallowed) in agent_specs.items():
+    text = (root / "claude/agents" / filename).read_text()
+    _, frontmatter, body = text.split("---\n", 2)
+    agent = yaml.safe_load(frontmatter)
+    expected_keys = {"name", "description", "model", "effort"}
+    if expected_disallowed:
+        expected_keys.add("disallowedTools")
+    if set(agent) != expected_keys:
+        raise SystemExit(f"{filename}: unexpected frontmatter keys: {sorted(agent)}")
+    if agent["name"] != filename.removesuffix(".md"):
+        raise SystemExit(f"{filename}: name must match the filename")
+    if agent["model"] != "opus" or agent["effort"] != expected_effort:
+        raise SystemExit(f"{filename}: expected opus with {expected_effort} effort")
+    if agent.get("disallowedTools") != expected_disallowed:
+        raise SystemExit(f"{filename}: expected disallowedTools {expected_disallowed!r}")
+    if not isinstance(agent["description"], str) or not agent["description"].strip() or not body.strip():
+        raise SystemExit(f"{filename}: description and instructions must be non-empty")
+PY
+
+grep -F 'subagent_type="doc-reviewer"' "$ROOT_DIR/claude/skills/adversarial-doc-review/SKILL.md" >/dev/null
+grep -F 'subagent_type="code-reviewer"' "$ROOT_DIR/claude/skills/code-review/SKILL.md" >/dev/null
+grep -F 'subagent_type="implementer"' "$ROOT_DIR/claude/skills/implement/SKILL.md" >/dev/null
+if rg -n -i 'codex|gpt-|spawn_agent|followup_task|fork_turns|\bagent_type=' "$ROOT_DIR/claude"; then
+  echo "Active Claude sources reference Codex-only runtime constructs" >&2
+  exit 1
+fi
+
 SKILL_VALIDATOR="${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py"
 if [ ! -f "$SKILL_VALIDATOR" ]; then
   echo "Skill validator is unavailable: $SKILL_VALIDATOR" >&2
@@ -211,10 +296,16 @@ fi
 for skill in "${skills[@]}"; do
   "$PYTHON_YAML_BIN" "$SKILL_VALIDATOR" "$ROOT_DIR/codex/skills/$skill"
 done
+for skill in "${claude_skills[@]}"; do
+  "$PYTHON_YAML_BIN" "$SKILL_VALIDATOR" "$ROOT_DIR/claude/skills/$skill"
+done
 
-python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py" "$ROOT_DIR/scripts/test-merge-codex-config.py"
+python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py" "$ROOT_DIR/scripts/test-merge-codex-config.py" \
+  "$ROOT_DIR/scripts/merge-claude-settings.py" "$ROOT_DIR/scripts/test-merge-claude-settings.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
+python3 "$ROOT_DIR/scripts/test-merge-claude-settings.py"
 "$ROOT_DIR/scripts/test-codex-install.sh"
+"$ROOT_DIR/scripts/test-claude-install.sh"
 "$ROOT_DIR/scripts/test-sync-remote.sh"
 
 echo "Config repository validation passed."
