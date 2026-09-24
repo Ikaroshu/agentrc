@@ -55,5 +55,6 @@ There is no app test suite. `./scripts/validate-config.sh` checks topology, perm
 
 ## Git Workflow
 
+- This repository overrides the cross-project development workflow: skip the brainstorm, worktree, implement, code-review, and merge stages and their skills unless the user asks for them. Edit directly on `main`, validate, and commit.
 - Run `./scripts/validate-config.sh` before committing. Never install or sync from a feature worktree.
 - After a merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from main without separate authorization. Verify local and remote active files match committed sources without disturbing unrelated state. When changes affect roles, dispatch, or installation, start fresh installed-role canaries for each affected harness locally and remotely where its runtime exists. Fix canary failures forward; never leave installation pointing at a deleted worktree.
