@@ -245,9 +245,10 @@ settings = json.loads((root / "claude/settings.json").read_text())
 if settings != {
     "model": "opus",
     "effortLevel": "high",
+    "env": {"CLAUDE_CODE_AUTO_CONNECT_IDE": "false", "CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL": "1"},
     "statusLine": {"type": "command", "command": "bash ~/.claude/statusline.sh"},
 }:
-    raise SystemExit("claude/settings.json must contain only the portable model, effort, and status line")
+    raise SystemExit("claude/settings.json must contain only the portable model, effort, IDE opt-out env, and status line")
 
 agent_specs = {
     "code-reviewer.md": ("xhigh", "Agent, Skill"),
