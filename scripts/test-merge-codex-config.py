@@ -147,7 +147,9 @@ desktop.appearanceDarkChromeTheme.accent = "#ffffff"
         baseline = (ROOT_DIR / "codex/config.toml").read_text()
         installed = tomllib.loads(run_merge(directory, machine_text, baseline))
         expected["desktop"]["appearanceDarkChromeTheme"]["accent"] = "#1f6feb"
-        expected["tui"]["status_line"] = tomllib.loads(baseline)["tui"]["status_line"]
+        expected["tui"] = tomllib.loads(machine_text)["tui"]
+        assert installed["tui"] == expected["tui"], "Deployment must preserve machine-local TUI preferences"
+        assert "tui" not in tomllib.loads(run_merge(directory, "", baseline))
         assert installed == expected
         # Shared settings can switch between inline and ordinary table syntax.
         assert tomllib.loads(run_merge(directory, 'desktop = { keep = false, replace = 1 }',

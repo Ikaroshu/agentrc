@@ -2,8 +2,5 @@ model = "gpt-6-astra"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 
-[tui]
-status_line = ["model-with-reasoning", "current-dir", "git-branch", "context-used"]
-
 [desktop]
 mac-menu-bar-enabled = false

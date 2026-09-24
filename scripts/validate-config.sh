@@ -159,7 +159,6 @@ if set(config) != {
     "model",
     "model_reasoning_effort",
     "personality",
-    "tui",
     "desktop",
 }:
     raise SystemExit("codex/config.toml must contain only portable behavior and UI settings")
