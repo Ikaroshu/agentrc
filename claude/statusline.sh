@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
-# Claude Code status line: model, directory, Git branch, and context used.
+# Claude Code status line: model + reasoning effort, directory basename, and Git branch.
 
 set -euo pipefail
 
 input="$(cat)"
 model="$(jq -r '.model.display_name' <<<"$input")"
 cwd="$(jq -r '.workspace.current_dir // .cwd' <<<"$input")"
-context="$(jq -r '.context_window.used_percentage // 0 | floor' <<<"$input")"
-branch="$(git -C "$cwd" branch --show-current 2>/dev/null || true)"
+effort="$(jq -r '.effort.level // empty' <<<"$input")"
+if [ -z "$effort" ]; then
+  effort="$(jq -r '.effortLevel // empty' ~/.claude/settings.json 2>/dev/null || true)"
+fi
+dir="$(basename "$cwd")"
+branch="$(git -C "$cwd" --no-optional-locks branch --show-current 2>/dev/null || true)"
 
-line="$model | ${cwd/#"$HOME"/\~}"
+line="$model"
+if [ -n "$effort" ]; then
+  line+=" ($effort)"
+fi
+line+=" | $dir"
 if [ -n "$branch" ]; then
   line+=" | $branch"
 fi
-printf '%s | %s%% context\n' "$line" "$context"
+printf '%s\n' "$line"
