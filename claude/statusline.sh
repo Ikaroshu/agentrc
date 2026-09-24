@@ -14,6 +14,8 @@ weekly_left="$(jq -r '.rate_limits.seven_day.used_percentage // empty | 100 - . 
 # undocumented endpoint behind /usage, shared across sessions and refreshed at most once a minute.
 usage_cache="${TMPDIR:-/tmp}/claude-statusline-usage.json"
 if [ ! -f "$usage_cache" ] || [ -n "$(find "$usage_cache" -mmin +1)" ]; then
+  # Count attempts, not successes, so a failing endpoint is not retried on every redraw.
+  touch "$usage_cache"
   token="$(security find-generic-password -s "Claude Code-credentials" -w | jq -r '.claudeAiOauth.accessToken')"
   usage="$(printf 'Authorization: Bearer %s\n' "$token" | curl -fsS --max-time 3 -H @- \
     -H "anthropic-beta: oauth-2025-04-20" https://api.anthropic.com/api/oauth/usage)"
