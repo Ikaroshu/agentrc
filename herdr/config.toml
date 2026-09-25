@@ -1,15 +1,51 @@
 onboarding = false
 
 [theme]
-name = "catppuccin"
+name = "one-dark"
 auto_switch = false
 
+# UI colors from the installed VS Code One Dark Pro theme.
+[theme.custom]
+panel_bg = "#282c34"
+sidebar_bg = "#21252b"
+active_row_bg = "#2c313a"
+selection_bg = "#323842"
+text = "#abb2bf"
+accent = "#61afef"
+
 [ui]
+sidebar_width = 36
+sidebar_min_width = 36
+sidebar_max_width = 44
 prompt_new_tab_name = false
+
 status_indicators = "symbols"
+
+[keys]
+prefix = 'ctrl+\'
 
 [[keys.command]]
 key = "prefix+e"
 type = "plugin_action"
 command = "herdr-sidebar.open-sidebar"
 description = "Toggle file sidebar"
+
+[ui.sidebar.agents]
+row_gap = 1
+rows = [
+  ["state_icon", "agent", "state_text"],
+  ["terminal_title_stripped"],
+  ["machine", "workspace"],
+]
+
+[ui.sidebar.agents.rows_by_agent]
+codex = [
+  ["state_icon", { token = "agent", fg = "#61afef", bold = true }, "state_text"],
+  ["terminal_title_stripped"],
+  ["machine", { token = "workspace", dim = true }],
+]
+claude = [
+  ["state_icon", { token = "agent", fg = "#d99a78", bold = true }, "state_text"],
+  ["terminal_title_stripped"],
+  ["machine", { token = "workspace", dim = true }],
+]

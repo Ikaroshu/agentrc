@@ -111,6 +111,7 @@ executables=(
   scripts/test-merge-claude-settings.py
   herdr/install.sh
   herdr/activate.sh
+  herdr/sync-remote.sh
 )
 for path in "${executables[@]}"; do
   require_executable "$path"
@@ -130,6 +131,7 @@ shell_scripts=(
   scripts/test-sync-remote.sh
   herdr/install.sh
   herdr/activate.sh
+  herdr/sync-remote.sh
   herdr/automatic-rename.sh
 )
 for path in "${shell_scripts[@]}"; do
