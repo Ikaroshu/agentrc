@@ -7,7 +7,7 @@ checkouts, logs, or caches.
 
 ## Included settings
 
-- Built-in One Dark for Herdr; an optional One Dark Pro preset for iTerm panes.
+- Built-in One Dark for Herdr; optional One Dark Pro pane colors for Ghostty or iTerm.
 - Symbol status indicators and no new-tab name prompt.
 - **Ctrl+\, then E** controls the file sidebar; strict toggle mode is off.
 - Unified file/git sidebar on the right, width 36, opening automatically without
@@ -77,8 +77,8 @@ viewer command requiring control data; open a file through the sidebar instead.
 
 Use **MesloLGS NF**, including all four faces, from
 [Powerlevel10k's font instructions](https://github.com/romkatv/powerlevel10k#fonts).
-In iTerm, select it under **Settings → Profiles → Text**, including the separate
-Non-ASCII font if enabled. The previously installed **MesloLGS NF Herdr** also
+`ghostty.conf` selects it for Ghostty. In iTerm, select it under
+**Settings → Profiles → Text**, including the separate Non-ASCII font if enabled. The previously installed **MesloLGS NF Herdr** also
 remains usable. No custom font build or Node runtime is required.
 
 The font belongs on the machine rendering the terminal, even when Herdr runs on
@@ -137,6 +137,25 @@ leading spinner, not a trailing project name. Automatic rename's `TAB_CONTEXT`
 controls the tab label separately. In Codex, use `/title` and deselect Project
 while keeping Thread selected to remove `| workspace` from the second row.
 This is a machine-local Codex preference; it is not part of the Herdr config.
+
+## Ghostty
+
+`ghostty.conf` reproduces the iTerm profile in Ghostty: MesloLGS NF at 12 pt,
+a steady cursor, and the One Dark Pro pane colors below. Install it on the Mac
+rendering the terminal:
+
+```sh
+brew install --cask ghostty
+mkdir -p ~/.config/ghostty
+cp herdr/ghostty.conf ~/.config/ghostty/config
+/Applications/Ghostty.app/Contents/MacOS/ghostty +validate-config
+```
+
+Reload with **Cmd+Shift+,** or open a new window. The copy replaces any
+existing `~/.config/ghostty/config`. Ghostty sets `TERM=xterm-ghostty`; its
+`ssh-terminfo` shell integration installs that terminfo entry on SSH hosts such
+as mini on first connection, and `ssh-env` falls back to `xterm-256color` when
+it cannot. Option acts as a macOS Option key, as in the iTerm profile.
 
 ## Pane colors in iTerm
 
