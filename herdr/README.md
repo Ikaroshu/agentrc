@@ -141,7 +141,9 @@ This is a machine-local Codex preference; it is not part of the Herdr config.
 ## Ghostty
 
 `ghostty.conf` sets MesloLGS NF at 12 pt, the One Dark Pro pane colors below,
-and a blinking white block cursor, including at shell prompts. Install it on the Mac
+and a steady white block cursor, including at shell prompts. It does not blink
+because Ghostty restarts the blink cycle on output, so Herdr redraws make blinking
+irregular. Install it on the Mac
 rendering the terminal:
 
 ```sh
