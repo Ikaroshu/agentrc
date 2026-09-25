@@ -140,8 +140,8 @@ This is a machine-local Codex preference; it is not part of the Herdr config.
 
 ## Ghostty
 
-`ghostty.conf` reproduces the iTerm profile in Ghostty: MesloLGS NF at 12 pt,
-a steady cursor, and the One Dark Pro pane colors below. Install it on the Mac
+`ghostty.conf` sets MesloLGS NF at 12 pt, the One Dark Pro pane colors below,
+and a blinking white block cursor, including at shell prompts. Install it on the Mac
 rendering the terminal:
 
 ```sh
