@@ -1,0 +1,15 @@
+{
+  "merged": true,
+  "hotkeys": false,
+  "git_footer": true,
+  "auto_open": false,
+  "strict_toggle": true,
+  "focus_on_open": true,
+  "follow_cwd": true,
+  "git_deco": true,
+  "dock_right": false,
+  "sidebar_width": 32,
+  "colors": "vscode",
+  "preview_placement": "pane",
+  "custom_editor_on_click": false
+}

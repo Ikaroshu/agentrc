@@ -1,0 +1,15 @@
+onboarding = false
+
+[theme]
+name = "catppuccin"
+auto_switch = false
+
+[ui]
+prompt_new_tab_name = false
+status_indicators = "symbols"
+
+[[keys.command]]
+key = "prefix+e"
+type = "plugin_action"
+command = "herdr-sidebar.open-sidebar"
+description = "Toggle file sidebar"

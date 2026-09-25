@@ -16,6 +16,7 @@ This repository contains portable Codex and Claude Code configuration, not an ap
 - `claude/agents/*.md` — native subagents installed into `~/.claude/agents/`.
 - `claude/skills/` — skills installed into `~/.claude/skills/`.
 - `claude/install.sh`, `claude/sync-remote.sh` — Claude Code install and remote sync.
+- `herdr/` — optional terminal settings, plugin source revisions, fresh-machine setup, and font recipe; installed separately.
 - `scripts/` — validation and config-merge helpers.
 - `archive/` — inert documentation snapshots only. Follow their read-only inspection instructions; never extract, execute, source, install, sync, or copy them into active configuration.
 
