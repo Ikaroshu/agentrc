@@ -59,7 +59,6 @@ required_files=(
   herdr/config.toml
   herdr/plugins.tsv
   herdr/sidebar.json
-  herdr/radar.toml
 )
 for path in "${required_files[@]}"; do
   require_regular_file "$path"

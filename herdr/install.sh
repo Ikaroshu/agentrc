@@ -4,7 +4,6 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$0")" && pwd)"
 export PATH="$HOME/.local/bin:$PATH"
 command -v herdr
-command -v node
 command -v jq
 
 python3 - "$REPO_DIR" <<'PY'
@@ -17,11 +16,10 @@ home = Path.home()
 files = {
     'config.toml': '.config/herdr/config.toml',
     'automatic-rename.sh': '.config/herdr-automatic-rename/config.sh',
-    'radar.toml': '.config/herdr/plugins/config/hhdebb.herdr-radar/config.toml',
     'sidebar.json': '.local/state/herdr/plugins/herdr-sidebar/state.json',
     'shell.zsh': '.config/herdr/agentrc.zsh',
 }
-# Existing installations need a deliberate merge, including Radar's marker blocks.
+# Existing installations need a deliberate merge.
 targets = [home / target for target in files.values()] + [home / '.local/bin/herdr-sidebar']
 existing = [str(target) for target in targets if target.exists() or target.is_symlink()]
 if existing:

@@ -32,7 +32,6 @@ with Path(os.environ['HERDR_TEST_LOG']).open('a') as log:
     log.write(json.dumps([Path(sys.argv[0]).name, *args]) + '\\n')
 if args[:2] == ['plugin', 'install']:
     plugin = {'alexarthurs/herdr-sidebar/plugins/herdr-sidebar': 'herdr-sidebar',
-              'hhdebb/herdr-radar': 'hhdebb.herdr-radar',
               'qu8n/herdr-automatic-rename': 'herdr-automatic-rename'}[args[2]]
     root = home / '.config/herdr/plugins/github' / plugin
     root.mkdir(parents=True)
@@ -46,7 +45,6 @@ if args[:2] == ['plugin', 'install']:
     (root / 'automatic-rename.sh').write_text('exit 0\\n')
 ''')
         mock.chmod(0o755)
-        (bin_dir / 'node').symlink_to(mock)
         env = dict(os.environ, HOME=str(home), PATH=f'{bin_dir}:{os.environ["PATH"]}', HERDR_TEST_LOG=str(log))
         subprocess.run(['bash', str(ROOT / 'install.sh')], env=env, check=True, capture_output=True)
         config = tomllib.loads((home / '.config/herdr/config.toml').read_text())
@@ -70,10 +68,8 @@ if args[:2] == ['plugin', 'install']:
 
         subprocess.run(['bash', str(ROOT / 'activate.sh')], env=env, check=True, capture_output=True)
         calls = [json.loads(line) for line in log.read_text().splitlines()]
-        node_calls = [call for call in calls if call[0] == 'node']
-        assert node_calls[0][1].endswith('/hhdebb.herdr-radar/bin/configure.js')
-        assert node_calls[0][2:] == ['--apply', '--reload']
-        assert node_calls[1][1].endswith('/hhdebb.herdr-radar/bin/agent-state.js')
+        assert all(call[0] == 'herdr' for call in calls)
+        assert [call for call in calls if call[1:3] == ['server', 'reload-config']]
         assert calls[-1] == ['herdr', 'agent', 'list']
 
         if real_herdr:
