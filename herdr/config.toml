@@ -4,15 +4,6 @@ onboarding = false
 name = "one-dark"
 auto_switch = false
 
-# UI colors from the installed VS Code One Dark Pro theme.
-[theme.custom]
-panel_bg = "#282c34"
-sidebar_bg = "#21252b"
-active_row_bg = "#2c313a"
-selection_bg = "#323842"
-text = "#abb2bf"
-accent = "#61afef"
-
 [ui]
 sidebar_width = 36
 sidebar_min_width = 36

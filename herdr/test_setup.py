@@ -52,7 +52,6 @@ if args[:2] == ['plugin', 'install']:
         assert config['keys']['command'][0]['key'] == 'prefix+e'
         assert config['keys']['prefix'] == 'ctrl+\\'
         assert config['theme']['name'] == 'one-dark'
-        assert config['theme']['custom']['sidebar_bg'] == '#21252b'
         assert config['ui']['sidebar_width'] == 36
         assert (home / '.zshrc').read_text().startswith('export EXISTING_SETTING=keep\n')
         assert (home / '.local/bin/herdr-sidebar').resolve().is_file()

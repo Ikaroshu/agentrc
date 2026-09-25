@@ -7,8 +7,7 @@ checkouts, logs, or caches.
 
 ## Included settings
 
-- One Dark with UI background, selection, and text colors from the installed
-  VS Code One Dark Pro theme (`zhuangtongfa.material-theme` 3.20.2).
+- Built-in One Dark for Herdr; an optional One Dark Pro preset for iTerm panes.
 - Symbol status indicators and no new-tab name prompt.
 - **Ctrl+\, then E** toggles the file sidebar; one press opens or closes it.
 - Unified file/git sidebar on the left, width 32, opened manually, following the
@@ -137,3 +136,23 @@ leading spinner, not a trailing project name. Automatic rename's `TAB_CONTEXT`
 controls the tab label separately. In Codex, use `/title` and deselect Project
 while keeping Thread selected to remove `| workspace` from the second row.
 This is a machine-local Codex preference; it is not part of the Herdr config.
+
+## Pane colors in iTerm
+
+Herdr's theme controls its interface, not the default colors inside terminal
+panes. To match VS Code One Dark Pro, import `One Dark Pro.itermcolors` in iTerm:
+**Settings → Profiles → Colors → Color Presets → Import**, then select
+**One Dark Pro** from Color Presets for the profile running Herdr.
+It affects all sessions using that profile, including ordinary shells. If the
+current session has separate profile overrides, use **Session → Edit Session**
+to select the preset there too. Applications that draw explicit RGB colors
+still control those colors themselves.
+
+The preset uses the terminal palette from `zhuangtongfa.material-theme` 3.20.2;
+its translucent selection color is composited over the terminal background.
+It changes colors only, preserving font settings. Apply it on the machine
+rendering iTerm, not on mini. Remote deployment does not change the host terminal.
+
+The earlier Herdr custom-color trial has been removed. Merge installation
+preserves existing custom overrides; remove that trial's `[theme.custom]` block
+from existing configs before installing if it is still present.
