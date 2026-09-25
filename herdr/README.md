@@ -9,10 +9,11 @@ checkouts, logs, or caches.
 
 - Built-in One Dark for Herdr; an optional One Dark Pro preset for iTerm panes.
 - Symbol status indicators and no new-tab name prompt.
-- **Ctrl+\, then E** toggles the file sidebar; one press opens or closes it.
-- Unified file/git sidebar on the left, width 32, opened manually, following the
-  working directory. File previews open in a pane.
-- Agent sidebar width 36 (maximum 44), with three rows: agent/status, task title,
+- **Ctrl+\, then E** controls the file sidebar; strict toggle mode is off.
+- Unified file/git sidebar on the right, width 36, opening automatically without
+  taking focus and following the working directory. Uses Material icons; file
+  previews open in a pane.
+- Agent sidebar width 32 (maximum 40), with three rows: agent/status, task title,
   and machine/workspace. Codex and Claude have distinct label colors.
 - Automatic tab naming and tab context stay on; numeric prefixes are off.
 

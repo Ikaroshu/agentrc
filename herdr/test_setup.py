@@ -52,11 +52,11 @@ if args[:2] == ['plugin', 'install']:
         assert config['keys']['command'][0]['key'] == 'prefix+e'
         assert config['keys']['prefix'] == 'ctrl+\\'
         assert config['theme']['name'] == 'one-dark'
-        assert config['ui']['sidebar_width'] == 36
+        assert config['ui']['sidebar_width'] == 32
         assert (home / '.zshrc').read_text().startswith('export EXISTING_SETTING=keep\n')
         assert (home / '.local/bin/herdr-sidebar').resolve().is_file()
         sidebar = json.loads((home / '.local/state/herdr/plugins/herdr-sidebar/state.json').read_text())
-        assert sidebar['strict_toggle'] and not sidebar['auto_open']
+        assert sidebar == json.loads((ROOT / 'sidebar.json').read_text())
         calls = [json.loads(line) for line in log.read_text().splitlines()]
         expected = [['herdr', 'plugin', 'install', source, '--ref', revision, '--yes']
                     for _, source, revision in (line.split() for line in (ROOT / 'plugins.tsv').read_text().splitlines())]
@@ -81,11 +81,11 @@ if args[:2] == ['plugin', 'install']:
         merged = tomllib.loads(config_path.read_text())
         assert merged['terminal']['default_shell'] == '/bin/zsh'
         assert {command['key'] for command in merged['keys']['command']} == {'prefix+e', 'prefix+t'}
-        assert merged['ui']['sidebar_width'] == 36
+        assert merged['ui']['sidebar_width'] == 32
         assert 'MAX_TITLE_LEN=60' in rename_path.read_text()
         assert 'AUTO_INDEX=1' not in rename_path.read_text() and 'TAB_CONTEXT=0' not in rename_path.read_text()
         assert json.loads(sidebar_path.read_text())['view'] == 'git'
-        assert json.loads(sidebar_path.read_text())['sidebar_width'] == 32
+        assert json.loads(sidebar_path.read_text())['sidebar_width'] == 36
         assert (home / '.zshrc').read_text().count('source "$HOME/.config/herdr/agentrc.zsh"') == 1
         merged_files = {str(path): path.read_bytes() for path in
                         [config_path, rename_path, sidebar_path, home / '.zshrc']}
