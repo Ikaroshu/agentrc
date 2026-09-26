@@ -192,7 +192,7 @@ role_specs = {
     "implementer.toml": ("implementer", True, "gpt-6-sol", "xhigh"),
     "research_worker.toml": ("research_worker", False, "gpt-6-astra", "high"),
     "explorer.toml": ("explorer", False, "gpt-6-sol", "high"),
-    "worker.toml": ("worker", False, "gpt-6-sol", "high"),
+    "worker.toml": ("worker", False, "gpt-6-sol", "xhigh"),
 }
 role_files = {path.name for path in (root / "codex/agents").glob("*.toml")}
 if role_files != set(role_specs):
@@ -233,7 +233,10 @@ for skill in adversarial-doc-review code-review; do
   grep -F 'fork_turns="none"' "$skill_file" >/dev/null
   grep -F 'model="gpt-6-astra"' "$skill_file" >/dev/null
   grep -F 'reasoning_effort="xhigh"' "$skill_file" >/dev/null
-  grep -F 'reasoning_effort="max"' "$skill_file" >/dev/null
+  if grep -F 'reasoning_effort="max"' "$skill_file" >/dev/null; then
+    echo "Unexpected reviewer max tier: $skill_file" >&2
+    exit 1
+  fi
 done
 grep -F 'agent_type="doc_reviewer"' "$ROOT_DIR/codex/skills/adversarial-doc-review/SKILL.md" >/dev/null
 grep -F 'agent_type="code_reviewer"' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null

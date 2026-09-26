@@ -7,11 +7,10 @@ description: Review a completed implementation or requested code scope with the 
 
 Use the configured native `code_reviewer`; never substitute a generic or CLI reviewer. The reviewer owns technical inspection and findings. The implementation owner handles edits and verification; for delegated work, the orchestrator only coordinates recorded evidence and findings.
 
-## Scope and tier
+## Scope
 
 - Review exactly one non-empty completed scope. For implementation, use the full immutable review-base-to-candidate diff after the owner reports a clean committed candidate, successful verification, and no remaining work. For standalone review, use the requested range, commit, or uncommitted tree.
-- Select an implementation-review tier from the settled design, outcome, verification, and owner's scoped diff summary without inspecting the diff. For standalone review, use the complete requested scope.
-- Use `model="gpt-6-astra"` with `reasoning_effort="xhigh"` for bounded established work; use `reasoning_effort="max"` for materially difficult contracts, state, security, irreversibility, blast radius, or unfamiliar architecture. Tell the user the tier and short rationale before dispatch.
+- Do not inspect the implementation diff before dispatch. Use the configured `model="gpt-6-astra"` with `reasoning_effort="xhigh"` for every review.
 
 ## Dispatch
 
@@ -23,7 +22,7 @@ Supply the scope and matching inspection commands:
 
 For implementation review, also supply the settled design, outcome, verification, candidate commit and tree, implementation commits, exact successful verification commands and results, and confirmation that no implementation or verification work remains.
 
-Start pass one with a fresh, uniquely named task using `agent_type="code_reviewer"`, `fork_turns="none"`, and the selected exact model and effort. Include a stable review-unit identity and pass number. If the runtime cannot dispatch the exact role, fail loudly; retry transport failures only with that role.
+Start pass one with a fresh, uniquely named task using `agent_type="code_reviewer"`, `fork_turns="none"`, and the configured exact model and effort. Include a stable review-unit identity and pass number. If the runtime cannot dispatch the exact role, fail loudly; retry transport failures only with that role.
 
 ## Resolve
 

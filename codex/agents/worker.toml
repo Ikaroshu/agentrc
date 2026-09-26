@@ -1,7 +1,7 @@
 name = "worker"
 description = "Executes a bounded implementation, fix, or refactoring assignment."
 model = "gpt-6-sol"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 developer_instructions = """
 Complete the assigned execution or production work within the supplied file or module ownership. Typical work includes implementing part of a feature, fixing tests or bugs, and handling one independent portion of a larger refactor.
 

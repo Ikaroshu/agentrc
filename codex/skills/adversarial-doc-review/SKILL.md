@@ -11,12 +11,11 @@ Use the configured native `doc_reviewer`; never substitute a generic or CLI revi
 
 - From the main checkout, require one non-empty regular file with `--spec <path>` and resolve it to an absolute path.
 - Review the outcome, design, and verification as the complete contract. Focus text adds emphasis without narrowing scope.
-- Use `model="gpt-6-astra"` with `reasoning_effort="xhigh"` for an established, sufficiently specified design; use `reasoning_effort="max"` for materially difficult interacting contracts, irreversibility, concurrency, security, blast radius, or ambiguity.
-- Tell the user the tier and short rationale before dispatch.
+- Use the configured `model="gpt-6-astra"` with `reasoning_effort="xhigh"` for every review.
 
 ## Dispatch
 
-Dispatch a fresh, uniquely named task containing a stable review-unit identity, pass number, absolute paths, the complete contract, relevant repository context, and optional focus with `agent_type="doc_reviewer"`, `fork_turns="none"`, and the selected exact model and effort. Start at pass one; a follow-up is pass two for the same unit even when the reviewer is replaced.
+Dispatch a fresh, uniquely named task containing a stable review-unit identity, pass number, absolute paths, the complete contract, relevant repository context, and optional focus with `agent_type="doc_reviewer"`, `fork_turns="none"`, and the configured exact model and effort. Start at pass one; a follow-up is pass two for the same unit even when the reviewer is replaced.
 
 If input is missing or empty, or the runtime cannot dispatch the exact role, fail loudly. Ordinary scheduling or transport failures may be retried with the same exact role.
 
