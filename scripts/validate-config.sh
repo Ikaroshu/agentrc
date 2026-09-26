@@ -266,7 +266,8 @@ agent_specs = {
     "doc-reviewer.md": ("xhigh", "Agent, Skill"),
     "implementer.md": ("medium", "Skill"),
     "research-worker.md": ("high", None),
-    "explorer.md": ("low", None),
+    "Explore.md": ("low", "Agent, Edit, Write, NotebookEdit"),
+    "general-purpose.md": ("medium", None),
     "worker.md": ("medium", None),
 }
 agent_files = {path.name for path in (root / "claude/agents").glob("*.md")}

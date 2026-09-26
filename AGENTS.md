@@ -13,7 +13,7 @@ This repository contains portable Codex and Claude Code configuration, not an ap
 - `claude/AGENTS.md` — canonical cross-project instructions installed for Claude Code as `~/.claude/CLAUDE.md` (Claude Code does not load a user-level `AGENTS.md`).
 - `claude/settings.json` — portable baseline merged into machine-local `~/.claude/settings.json`.
 - `claude/statusline.sh` — status line installed to `~/.claude/statusline.sh`.
-- `claude/agents/*.md` — native subagents installed into `~/.claude/agents/`.
+- `claude/agents/*.md` — native subagents installed into `~/.claude/agents/`; `Explore.md` and `general-purpose.md` replace the Claude Code built-ins of those names to set their model and effort.
 - `claude/skills/` — skills installed into `~/.claude/skills/`.
 - `claude/install.sh`, `claude/sync-remote.sh` — Claude Code install and remote sync.
 - `herdr/` — optional terminal settings, plugin source revisions, and fresh-machine setup; installed separately.
