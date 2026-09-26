@@ -14,6 +14,8 @@ def merge_settings(machine: dict[str, Any], repo: dict[str, Any]) -> dict[str, A
         current = merged.get(key)
         if isinstance(value, dict) and isinstance(current, dict):
             merged[key] = merge_settings(current, value)
+        elif isinstance(value, list) and isinstance(current, list):
+            merged[key] = current + [item for item in value if item not in current]
         else:
             merged[key] = value
     return merged

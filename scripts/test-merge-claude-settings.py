@@ -36,12 +36,13 @@ def main() -> None:
     repo = {
         "model": "opus",
         "effortLevel": "high",
+        "permissions": {"allow": ["Bash", "Bash(gh issue close:*)"]},
         "statusLine": {"type": "command", "command": "bash ~/.claude/statusline.sh"},
     }
     expected = {
         "model": "opus",
         "env": {"TOKEN": "secret"},
-        "permissions": {"allow": ["Bash"], "defaultMode": "bypassPermissions"},
+        "permissions": {"allow": ["Bash", "Bash(gh issue close:*)"], "defaultMode": "bypassPermissions"},
         "statusLine": {"type": "command", "command": "bash ~/.claude/statusline.sh", "padding": 1},
         "enabledPlugins": {"plugin@market": True},
         "effortLevel": "high",

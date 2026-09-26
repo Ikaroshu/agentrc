@@ -22,7 +22,7 @@ This repository contains portable Codex and Claude Code configuration, not an ap
 
 ## Common Commands
 
-Installation and sync require `python3` with the standard-library `tomllib` module (Python 3.11+). Config merging preserves machine-only values within shared tables or objects; repository settings override matching keys. Merged files use normalized TOML or JSON formatting and omit source comments.
+Installation and sync require `python3` with the standard-library `tomllib` module (Python 3.11+). Config merging preserves machine-only values within shared tables or objects; repository settings override matching keys, except that Claude settings lists append missing repository entries to machine entries (removing a repository entry does not remove it from machines). Merged files use normalized TOML or JSON formatting and omit source comments.
 
 Codex TUI preferences are machine-local; keep `[tui]` out of the portable baseline so deployment preserves each machine's customizations.
 
