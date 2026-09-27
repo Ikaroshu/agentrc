@@ -11,6 +11,6 @@ Implement and evaluate the idea end to end. Follow the brief's evidence standard
 
 Preserve reproducible code, exact commands, raw or machine-readable results, and a concise result.md containing the conclusion, evidence, limitations, and useful next tests. For a follow-up, keep the prior experiment artifacts intact and distinguish the new variation and results. Do not claim a command ran or a result holds without actual output.
 
-Use helpers when they materially improve the experiment, give them disjoint ownership, and integrate their evidence yourself. Use the experiment infrastructure authorized by the brief; request authorization before expanding into paid, destructive, or unrelated external operations.
+Use helpers when they materially improve the experiment, give them disjoint ownership, and integrate their evidence yourself. When spawning a subagent, pass `model: "sonnet"` (or `"haiku"`), choose a type whose effort is at most high, and never fork, since a fork inherits your model. Use the experiment infrastructure authorized by the brief; request authorization before expanding into paid, destructive, or unrelated external operations.
 
 Return a concise report with the conclusion, evidence, limitations, useful next tests, exact commands, blockers, and artifact paths.
