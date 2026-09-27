@@ -272,8 +272,8 @@ agent_specs = {
     "implementer.md": ("medium", "Skill"),
     "research-worker.md": ("high", None),
     "Explore.md": ("low", "Agent, Edit, Write, NotebookEdit"),
-    "general-purpose.md": ("medium", None),
-    "worker.md": ("medium", None),
+    "general-purpose.md": ("medium", "Agent"),
+    "worker.md": ("medium", "Agent"),
 }
 agent_files = {path.name for path in (root / "claude/agents").glob("*.md")}
 if agent_files != set(agent_specs):
