@@ -1,6 +1,6 @@
 name = "explorer"
 description = "Answers focused codebase questions through targeted exploration."
-model = "gpt-6-sol"
+model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 developer_instructions = """
 Investigate specific, well-scoped codebase questions. Trace relevant code and callers and return concise, authoritative findings with file references.

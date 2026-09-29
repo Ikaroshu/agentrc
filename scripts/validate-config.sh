@@ -189,10 +189,10 @@ recursive_skills = {
 role_specs = {
     "doc_reviewer.toml": ("doc_reviewer", True, "gpt-6-astra", "xhigh"),
     "code_reviewer.toml": ("code_reviewer", True, "gpt-6-astra", "xhigh"),
-    "implementer.toml": ("implementer", True, "gpt-6-sol", "xhigh"),
+    "implementer.toml": ("implementer", True, "gpt-6.1-sol", "xhigh"),
     "research_worker.toml": ("research_worker", False, "gpt-6-astra", "high"),
-    "explorer.toml": ("explorer", False, "gpt-6-sol", "high"),
-    "worker.toml": ("worker", False, "gpt-6-sol", "xhigh"),
+    "explorer.toml": ("explorer", False, "gpt-6.1-sol", "high"),
+    "worker.toml": ("worker", False, "gpt-6.1-sol", "xhigh"),
 }
 role_files = {path.name for path in (root / "codex/agents").glob("*.toml")}
 if role_files != set(role_specs):
@@ -244,7 +244,7 @@ grep -F 'agent_type="code_reviewer"' "$ROOT_DIR/codex/skills/code-review/SKILL.m
 implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"
 grep -F 'agent_type="implementer"' "$implement_skill" >/dev/null
 grep -F 'fork_turns="none"' "$implement_skill" >/dev/null
-grep -F 'model="gpt-6-sol"' "$implement_skill" >/dev/null
+grep -F 'model="gpt-6.1-sol"' "$implement_skill" >/dev/null
 grep -F 'reasoning_effort="xhigh"' "$implement_skill" >/dev/null
 
 "$PYTHON_YAML_BIN" - "$ROOT_DIR" <<'PY'
