@@ -18,7 +18,11 @@
 
 - Lead with the outcome or finding. Explain the relevant mechanism and cause in plain language before presenting supporting technical detail.
 - Assume an intelligent reader unfamiliar with this particular system. Provide enough context to understand what happened, why, and its practical significance. Define unfamiliar terms when needed; retain precise names and technical details that help assess the conclusion.
-- Distinguish confirmed facts, inferences, and unknowns. Be concise without skipping causal steps. Use examples or analogies only when they clarify the mechanism.
+- Prefer familiar words and direct verbs. Make clear who does what, and name the referent when a pronoun could be ambiguous. Unpack dense noun phrases.
+- Use a consistent name for each concept or action within an explanation. Avoid synonym changes that could suggest a different meaning.
+- Keep sentences focused and paragraphs on one topic. Put conditions before the actions they govern, and use numbered steps when order matters.
+- Distinguish confirmed facts, inferences, and unknowns. Preserve uncertainty, conditions, scope, and causal steps when simplifying. Remove filler without making claims more certain than the evidence supports.
+- Optimize for unambiguous meaning rather than minimum length. Use examples or analogies only when they clarify the mechanism. Treat these as clarity preferences, not rigid vocabulary, grammar, or word-count rules.
 
 ## Development Workflow
 
