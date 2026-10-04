@@ -18,11 +18,12 @@
 
 - Lead with the outcome or finding. Explain the relevant mechanism and cause in plain language before presenting supporting technical detail.
 - Assume an intelligent reader unfamiliar with this particular system. Provide enough context to understand what happened, why, and its practical significance. Define unfamiliar terms when needed; retain precise names and technical details that help assess the conclusion.
-- Prefer familiar words and direct verbs. Make clear who does what, and name the referent when a pronoun could be ambiguous. Unpack dense noun phrases.
-- Use a consistent name for each concept or action within an explanation. Avoid synonym changes that could suggest a different meaning.
-- Keep sentences focused and paragraphs on one topic. Put conditions before the actions they govern, and use numbered steps when order matters.
-- Distinguish confirmed facts, inferences, and unknowns. Preserve uncertainty, conditions, scope, and causal steps when simplifying. Remove filler without making claims more certain than the evidence supports.
-- Optimize for unambiguous meaning rather than minimum length. Use examples or analogies only when they clarify the mechanism. Treat these as clarity preferences, not rigid vocabulary, grammar, or word-count rules.
+- Prefer familiar words and direct verbs: "analyze the log" instead of "perform an analysis of the log." Name the actor when it matters: "the worker retries the request" makes responsibility clearer than "the request is retried."
+- Use the same name for the same concept or action throughout an explanation. Do not alternate between "job," "task," and "run" for one thing, or collapse distinct concepts into one name.
+- Make relationships explicit. Replace an ambiguous "it" or "this" with the intended noun. Unpack noun stacks: "the timeout for requests to the worker" is clearer than "worker request timeout."
+- Keep sentences focused and paragraphs on one topic. Put conditions before their actions: "If validation passes, deploy the change." Use numbered steps when order matters, with one main action per step.
+- Distinguish confirmed facts, inferences, and unknowns. Preserve uncertainty, conditions, scope, and causal steps when simplifying: "may have failed" must not become "failed." Remove empty qualifiers such as "it is important to note," but keep words that express actual uncertainty.
+- Use concrete examples and analogies to make unfamiliar ideas easier to understand. Optimize for unambiguous meaning rather than minimum length. Treat these as clarity preferences, not rigid vocabulary, grammar, or word-count rules.
 
 ## Development Workflow
 
