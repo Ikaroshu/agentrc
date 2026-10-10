@@ -16,6 +16,7 @@
 
 ## Communication
 
+- Default to English in conversation unless the user asks otherwise. Keep language requirements for a particular task or artifact scoped to that output.
 - Lead with the outcome or finding. Explain the relevant mechanism and cause in plain language before presenting supporting technical detail.
 - Assume an intelligent reader unfamiliar with this particular system. Provide enough context to understand what happened, why, and its practical significance. Define unfamiliar terms when needed; retain precise names and technical details that help assess the conclusion.
 - Prefer familiar words and direct verbs: "analyze the log" instead of "perform an analysis of the log." Name the actor when it matters: "the worker retries the request" makes responsibility clearer than "the request is retried."
