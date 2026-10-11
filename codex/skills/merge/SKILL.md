@@ -21,7 +21,7 @@ Treat merge-stage check failures as evidence: return candidate-related technical
 
 ## Merge
 
-Never rebase unless requested; preserve history with a merge.
+Merge approval includes pushing the local merge to `origin/main` after required post-merge checks pass, unless the user explicitly requests a local-only merge. Never rebase unless requested; preserve history with a merge.
 
 ```bash
 # Local
@@ -36,9 +36,7 @@ gh pr merge --merge
 
 Run only checks that repository instructions explicitly assign after merge; do not rerun implementation verification merely to duplicate the accepted evidence. Stop on failure, return candidate-related technical diagnosis and repair to the same implementation owner, and never push a known regression; disclose unrelated or pre-existing failures before deciding whether authorization covers the push.
 
-## Push
-
-Push a local merge only when the request or repository workflow authorizes it; otherwise report that main is ahead.
+After the required checks pass, push the local merge as part of completing the merge:
 
 ```bash
 git push origin main
