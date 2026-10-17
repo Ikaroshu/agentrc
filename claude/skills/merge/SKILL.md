@@ -62,10 +62,10 @@ Delete the remote branch only when it exists and remote deletion is authorized, 
 
 ## Close linked issues
 
-After push, close linked issues only when authorized. Resolve them from branch and commit messages; close each distinct reference with the merge commit:
+For work requested to resolve an issue, merge is not the end of the task: complete the remaining in-scope recovery, reruns, and verification, then close the issue without asking for separate closure approval. Resolve target issues from the conversation as well as branch, commit, and PR references; omission from commit messages does not remove the obligation. Close only when the reported problem is resolved, with concise evidence and the merge commit:
 
 ```bash
 gh issue close <number> --comment "Resolved by <merge-commit-sha> on main."
 ```
 
-Skip when none are referenced. For PR closing keywords, verify GitHub's automatic closure and close manually only if still open.
+Verify GitHub reports each target issue closed, including when PR closing keywords should close it automatically. If required follow-up is blocked, report the exact blocker and next action and leave the issue open; do not present the merged fix as task completion. Skip issue administration for background references or explicitly investigation-only work.

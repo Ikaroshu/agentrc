@@ -1,11 +1,11 @@
 ---
 name: issue
-description: Triage a GitHub issue against current code and recommend a next step. Use for explicit invocation or a triage request, not an issue mention.
+description: Assess a GitHub issue and carry requested resolution work through closure. Use for explicit invocation, triage, or a request to work on an issue, not a background issue mention.
 ---
 
-# Issue Triage
+# Issue Workflow
 
-Use this read-only workflow only when the user explicitly invokes it or asks to triage an issue. An issue reference within another request does not select it.
+Distinguish investigation from resolution. An explicit triage or investigation-only request, including invoking this skill without asking for a fix, stays read-only. When the user asks to work on, fix, or resolve the issue, or approves proceeding after triage, own the issue through the applicable development workflow, necessary operational follow-ups, verification, and closure. A background issue reference does not select this workflow.
 
 ## Read
 
@@ -26,4 +26,10 @@ Start by explaining the issue's reported behavior or proposed change, intended o
 
 Then present an evidence-based assessment of the current state relative to the issue's goal. For a bug, explain the expected and actual behavior, any verified cause, and practical effect. For a feature or refactoring request, explain the relevant existing capabilities or structure, what would change, and material gaps, constraints, or tradeoffs. Support the conclusion with compact file, line, issue, history, and focused-check evidence. Distinguish confirmed facts, inferences, and unresolved questions; describe status in terms appropriate to the issue, such as a bug still present, a capability already supported, or a refactoring goal partly achieved.
 
-End with a short recommendation for the next step and why it follows from the assessment. Keep it advisory: do not write a spec, edit code, or perform issue administration as part of triage.
+For investigation-only scope, end with a short recommendation and keep it advisory: do not write a spec, edit code, or administer the issue. For resolution scope, continue the applicable development workflow; the assessment is a progress update, not the end of the task.
+
+## Finish the issue
+
+Carry the issue URL and unresolved outcome through implementation and merge even when branch names or commit messages omit it. Include necessary recovery, reruns, and verification in the work; do not stop at a merged fix when the reported failure still needs follow-up. Respect required approval gates, include known consequential follow-ups in the concrete approval request, and continue the approved sequence without another prompt.
+
+When the reported problem is resolved, post concise resolution evidence and the relevant commit or recovery result, close the issue, and verify GitHub reports it closed. A request to resolve the issue authorizes this follow-up; no separate closure approval is needed. If an actual blocker prevents resolution, report the exact blocker and next action and leave the issue open. Never claim completion while required work remains.
