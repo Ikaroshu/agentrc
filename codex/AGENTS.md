@@ -29,6 +29,7 @@
 
 ## Development Workflow
 
+- Use the full development workflow only for changes involving code; otherwise, apply checks relevant to the change.
 - When asked to work on, fix, or resolve an issue, own it through verification, necessary operational follow-ups, and GitHub closure. The task is not finished at implementation or merge while the issue remains open. This request includes posting resolution evidence and closing the issue once its reported problem is resolved; do not ask for separate closure approval or make the user chase already-authorized follow-ups. Preserve explicit investigation-only scope and required approvals for consequential actions. If blocked, state the exact blocker and next action, continue independent work, and resume the remaining steps when unblocked; never close an unresolved issue just to finish.
 - Read governing instructions and task-relevant code, callers, tests, docs, and history. Expand inspection when evidence calls for it; reading the whole repository is not a prerequisite to editing.
 - Follow **[brainstorm ->] worktree -> implement -> code-review -> merge**, using each skill for its stage. Use brainstorming for material uncertainty or a durable spec. Approval of a settled contract suffices without a spec; with a spec, get implementation approval after document review. Get merge approval after clear code review. Ask before optional workflows; add no reconfirmation gates for authorized in-scope work, verification, or repairs.
