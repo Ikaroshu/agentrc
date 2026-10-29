@@ -56,6 +56,10 @@ required_files=(
   scripts/test-merge-codex-config.py
   scripts/merge-claude-settings.py
   scripts/test-merge-claude-settings.py
+  herdr-app/layouts/main-titled.json
+  herdr-app/mods/tabs-titled/main.js
+  herdr-app/mods/files-plus/main.js
+  herdr-app/mods/file-view/main.js
 )
 for path in "${required_files[@]}"; do
   require_regular_file "$path"
@@ -106,6 +110,7 @@ executables=(
   scripts/test-merge-codex-config.py
   scripts/merge-claude-settings.py
   scripts/test-merge-claude-settings.py
+  herdr-app/install.sh
 )
 for path in "${executables[@]}"; do
   require_executable "$path"
@@ -123,10 +128,13 @@ shell_scripts=(
   scripts/test-codex-install.sh
   scripts/test-claude-install.sh
   scripts/test-sync-remote.sh
+  herdr-app/install.sh
 )
 for path in "${shell_scripts[@]}"; do
   bash -n "$ROOT_DIR/$path"
 done
+
+find "$ROOT_DIR/herdr-app" -name '*.json' -exec python3 -m json.tool {} \; >/dev/null
 
 runtime_paths=(
   "$ROOT_DIR/install.sh"

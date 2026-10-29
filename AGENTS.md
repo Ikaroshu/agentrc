@@ -16,6 +16,7 @@ This repository contains portable Codex and Claude Code configuration, not an ap
 - `claude/agents/*.md` — native subagents installed into `~/.claude/agents/`; `Explore.md` and `general-purpose.md` replace the Claude Code built-ins of those names to set their model and effort.
 - `claude/skills/` — skills installed into `~/.claude/skills/`.
 - `claude/install.sh`, `claude/sync-remote.sh` — Claude Code install and remote sync.
+- `herdr-app/` — Herdr app mods and layout for this Mac only; `herdr-app/install.sh` copies them into `~/.config/herdr-app/`. Remote machines run only herdr-core, so never sync these.
 - `scripts/` — validation and config-merge helpers.
 - `archive/` — inert documentation snapshots only. Follow their read-only inspection instructions; never extract, execute, source, install, sync, or copy them into active configuration.
 
@@ -32,6 +33,7 @@ Codex TUI preferences are machine-local; keep `[tui]` out of the portable baseli
 ./codex/sync-remote.sh <ssh-host>
 ./claude/install.sh
 ./claude/sync-remote.sh <ssh-host>
+./herdr-app/install.sh
 ./scripts/validate-config.sh
 ```
 
@@ -59,4 +61,4 @@ There is no app test suite. `./scripts/validate-config.sh` checks topology, perm
 
 - This repository overrides the cross-project development workflow: skip the brainstorm, worktree, implement, code-review, and merge stages and their skills unless the user asks for them. Edit directly on `main`, validate, commit, and push `main` to `origin` without separate authorization.
 - Run `./scripts/validate-config.sh` before committing. Never install or sync from a feature worktree.
-- After a merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from main without separate authorization. Verify local and remote active files match committed sources without disturbing unrelated state. When changes affect roles, dispatch, or installation, start fresh installed-role canaries for each affected harness locally and remotely where its runtime exists. Fix canary failures forward; never leave installation pointing at a deleted worktree.
+- After a merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from main without separate authorization, plus `./herdr-app/install.sh` on this Mac when `herdr-app/` changed. Edit the mods here, not in `~/.config/herdr-app/`, so installation does not overwrite live edits. Verify local and remote active files match committed sources without disturbing unrelated state. When changes affect roles, dispatch, or installation, start fresh installed-role canaries for each affected harness locally and remotely where its runtime exists. Fix canary failures forward; never leave installation pointing at a deleted worktree.
