@@ -15,25 +15,15 @@
           "type": "column",
           "children": [
             {
-              "id": "brand",
-              "type": "block",
-              "content": {
-                "mod": "sidebar-brand"
-              },
-              "size": {
-                "px": 46
-              },
-              "window_drag": true
-            },
-            {
               "id": "sidebar-tabs",
               "type": "block",
               "content": {
                 "mod": "sidebar-tabs"
               },
               "size": {
-                "px": 36
-              }
+                "px": 42
+              },
+              "window_drag": true
             },
             {
               "id": "sidebar-body",
