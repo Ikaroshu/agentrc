@@ -4,207 +4,204 @@
     "name": "main",
     "version": "0.1.7"
   },
-  "type": "row",
+  "type": "column",
   "children": [
     {
-      "id": "sidebar",
-      "type": "column",
+      "id": "body",
+      "type": "row",
+      "divider": {
+        "width": 1,
+        "color": "border"
+      },
       "children": [
         {
-          "id": "brand",
-          "type": "block",
-          "content": {
-            "mod": "workspace-chrome"
-          },
-          "size": {
-            "px": 46
-          },
-          "window_drag": true
-        },
-        {
-          "id": "sidebar-lists",
+          "id": "sidebar",
           "type": "column",
           "children": [
             {
-              "id": "spaces",
+              "id": "brand",
               "type": "block",
               "content": {
-                "mod": "spaces"
+                "mod": "workspace-chrome"
               },
               "size": {
-                "weight": 1
+                "px": 46
               },
-              "min": 90,
-              "border": {
-                "width": 1,
-                "color": "border"
-              },
-              "radius": 10
+              "window_drag": true
             },
             {
-              "id": "agents",
-              "type": "block",
-              "content": {
-                "mod": "agents-card"
-              },
-              "size": {
-                "weight": 1
-              },
-              "min": 90,
-              "border": {
-                "width": 1,
-                "color": "border"
-              },
-              "radius": 10
-            }
-          ],
-          "gap": 8,
-          "padding": [
-            0,
-            8
-          ]
-        },
-        {
-          "id": "sidebar-footer",
-          "type": "block",
-          "content": {
-            "mod": "sidebar-footer"
-          },
-          "size": {
-            "px": 40
-          }
-        }
-      ],
-      "size": {
-        "px": 268
-      },
-      "min": 44,
-      "max": 480,
-      "background": "chrome",
-      "resizable": false
-    },
-    {
-      "id": "work",
-      "type": "column",
-      "children": [
-        {
-          "id": "tabs",
-          "type": "block",
-          "content": {
-            "mod": "tabs-titled"
-          },
-          "size": {
-            "px": 42
-          },
-          "window_drag": true
-        },
-        {
-          "id": "work-body",
-          "type": "row",
-          "children": [
-            {
-              "id": "main",
-              "type": "block",
-              "content": {
-                "tab": "active",
-                "pane": {
-                  "header": {
-                    "content": {
-                      "mod": "pane"
-                    },
-                    "reveal": "always",
-                    "height": 30,
-                    "position": "top"
+              "id": "sidebar-lists",
+              "type": "column",
+              "children": [
+                {
+                  "id": "spaces",
+                  "type": "block",
+                  "content": {
+                    "mod": "spaces"
                   },
-                  "background": "background",
+                  "size": {
+                    "weight": 1
+                  },
+                  "min": 90,
                   "border": {
                     "width": 1,
                     "color": "border"
                   },
-                  "focus": {
-                    "width": 1,
-                    "color": "accent"
-                  },
-                  "radius": 10,
-                  "gap": 8,
-                  "lone": true
-                }
-              }
-            },
-            {
-              "id": "panel",
-              "type": "column",
-              "children": [
+                  "radius": 10
+                },
                 {
-                  "id": "panel-body",
-                  "type": "stack",
-                  "children": [
-                    {
-                      "id": "files",
-                      "type": "block",
-                      "content": {
-                        "mod": "files-plus"
-                      }
-                    },
-                    {
-                      "id": "changes",
-                      "type": "column",
-                      "gap": 8,
-                      "children": [
-                        {
-                          "id": "changes-work",
-                          "type": "block",
-                          "content": {
-                            "mod": "changes-plus"
-                          },
-                          "size": {
-                            "weight": 2
-                          },
-                          "min": 150
-                        },
-                        {
-                          "id": "changes-history",
-                          "type": "block",
-                          "content": {
-                            "mod": "changes-plus",
-                            "props": {
-                              "part": "history"
-                            }
-                          },
-                          "size": {
-                            "weight": 3
-                          },
-                          "min": 90
-                        }
-                      ]
-                    }
-                  ],
-                  "active": "files"
+                  "id": "agents",
+                  "type": "block",
+                  "content": {
+                    "mod": "agents-card"
+                  },
+                  "size": {
+                    "weight": 1
+                  },
+                  "min": 90,
+                  "border": {
+                    "width": 1,
+                    "color": "border"
+                  },
+                  "radius": 10
                 }
               ],
-              "size": {
-                "px": 368
-              },
-              "min": 280,
-              "max": 900,
-              "hidden": true
+              "gap": 8,
+              "padding": 8
             }
           ],
-          "padding": 8,
-          "gap": 8
+          "size": {
+            "px": 268
+          },
+          "min": 44,
+          "max": 480,
+          "background": "chrome",
+          "resizable": false
         },
         {
-          "id": "status",
-          "type": "block",
-          "content": {
-            "mod": "status-stats"
-          },
-          "size": {
-            "px": 28
-          }
+          "id": "work",
+          "type": "column",
+          "children": [
+            {
+              "id": "tabs",
+              "type": "block",
+              "content": {
+                "mod": "tabs-titled"
+              },
+              "size": {
+                "px": 42
+              },
+              "window_drag": true
+            },
+            {
+              "id": "work-body",
+              "type": "row",
+              "children": [
+                {
+                  "id": "main",
+                  "type": "block",
+                  "content": {
+                    "tab": "active",
+                    "pane": {
+                      "header": {
+                        "content": {
+                          "mod": "pane"
+                        },
+                        "reveal": "always",
+                        "height": 30,
+                        "position": "top"
+                      },
+                      "background": "background",
+                      "border": {
+                        "width": 1,
+                        "color": "border"
+                      },
+                      "focus": {
+                        "width": 1,
+                        "color": "accent"
+                      },
+                      "radius": 10,
+                      "gap": 8,
+                      "lone": true
+                    }
+                  }
+                },
+                {
+                  "id": "panel",
+                  "type": "column",
+                  "children": [
+                    {
+                      "id": "panel-body",
+                      "type": "stack",
+                      "children": [
+                        {
+                          "id": "files",
+                          "type": "block",
+                          "content": {
+                            "mod": "files-plus"
+                          }
+                        },
+                        {
+                          "id": "changes",
+                          "type": "column",
+                          "gap": 8,
+                          "children": [
+                            {
+                              "id": "changes-work",
+                              "type": "block",
+                              "content": {
+                                "mod": "changes-plus"
+                              },
+                              "size": {
+                                "weight": 2
+                              },
+                              "min": 150
+                            },
+                            {
+                              "id": "changes-history",
+                              "type": "block",
+                              "content": {
+                                "mod": "changes-plus",
+                                "props": {
+                                  "part": "history"
+                                }
+                              },
+                              "size": {
+                                "weight": 3
+                              },
+                              "min": 90
+                            }
+                          ]
+                        }
+                      ],
+                      "active": "files"
+                    }
+                  ],
+                  "size": {
+                    "px": 368
+                  },
+                  "min": 280,
+                  "max": 900,
+                  "hidden": true
+                }
+              ],
+              "padding": 8,
+              "gap": 8
+            }
+          ],
+          "resizable": false
         }
-      ],
-      "resizable": false
+      ]
+    },
+    {
+      "id": "status",
+      "type": "block",
+      "content": {
+        "mod": "status-stats"
+      },
+      "size": {
+        "px": 28
+      }
     }
   ],
   "background": "canvas",
@@ -212,10 +209,6 @@
     14,
     12
   ],
-  "divider": {
-    "width": 1,
-    "color": "border"
-  },
   "titlebar": "none",
   "traffic_lights": [
     12,
