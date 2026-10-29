@@ -18,7 +18,7 @@
               "id": "brand",
               "type": "block",
               "content": {
-                "mod": "workspace-chrome"
+                "mod": "sidebar-brand"
               },
               "size": {
                 "px": 46
@@ -33,7 +33,7 @@
                   "id": "spaces",
                   "type": "block",
                   "content": {
-                    "mod": "spaces"
+                    "mod": "spaces-card"
                   },
                   "size": {
                     "weight": 1

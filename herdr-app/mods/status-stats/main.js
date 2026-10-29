@@ -47,7 +47,7 @@ export default class StatusStats extends View {
       .child(div().text_color(percent >= 90 ? t.blocked : t.muted).child(value));
     const s = this.stats?.on === (space?.machine ?? null) ? this.stats : null;
     const gb = (bytes) => (bytes / 2 ** 30).toFixed(1);
-    return h_flex().size_full().px(14).gap(16).items_center().bg(t.chrome).text_size(11.8).text_color(t.muted)
+    return h_flex().size_full().px(14).gap(16).items_center().text_size(11.8).text_color(t.muted)
       .child(label(space?.machine ? "server" : "monitor", space?.machine ?? "This computer"))
       .when(Boolean(space?.branch), el => el.child(label("branch", space.branch)))
       .child(h_flex().gap(6).items_center().child(div().size(6).rounded(3).bg(t.dim)).child(`${list.length} agents`)

@@ -1,4 +1,5 @@
-// The shipped agents mod without its top border, for a layout that frames it as a card.
+// The shipped agents mod without its top border and filled with the cards' background color,
+// for a layout that frames it as a card.
 // Agents in grouped or priority views; parents take their most urgent sub-agent's place.
 // A viewed done agent stays in Done until left.
 
@@ -376,7 +377,7 @@ export default class Agents extends View {
     return v_flex()
       .size_full()
       .min_h(0)
-      .bg(t.chrome)
+      .bg(t.background)
       .text_size(13)
       .when(!collapsed, (el) =>
         el.child(
