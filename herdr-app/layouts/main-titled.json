@@ -136,10 +136,35 @@
                     },
                     {
                       "id": "changes",
-                      "type": "block",
-                      "content": {
-                        "mod": "changes-plus"
-                      }
+                      "type": "column",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "id": "changes-work",
+                          "type": "block",
+                          "content": {
+                            "mod": "changes-plus"
+                          },
+                          "size": {
+                            "weight": 2
+                          },
+                          "min": 150
+                        },
+                        {
+                          "id": "changes-history",
+                          "type": "block",
+                          "content": {
+                            "mod": "changes-plus",
+                            "props": {
+                              "part": "history"
+                            }
+                          },
+                          "size": {
+                            "weight": 3
+                          },
+                          "min": 90
+                        }
+                      ]
                     }
                   ],
                   "active": "files"

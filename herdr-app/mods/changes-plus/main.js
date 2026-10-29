@@ -1,8 +1,9 @@
-// Uncommitted changes and a commit box above recent history. Picking a changed file, or a file in
-// a commit, opens its diff in this tab's file-view pane.
+// Uncommitted changes and a commit box, or with props {part: "history"} recent history; the layout
+// stacks one copy of each so their boundary can be dragged. Picking a changed file, or a file in a
+// commit, opens its diff in this tab's file-view pane.
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list } from "gpui-base";
-import { spaces, panes, focused, exec, run, shared, setShared, watchFolder, theme } from "herdr";
+import { spaces, panes, focused, exec, run, shared, setShared, watchFolder, theme, props } from "herdr";
 
 const VIEW = "file-view", HISTORY = 200;
 
@@ -24,6 +25,7 @@ function ago(seconds) {
 
 export default class Changes extends View {
   init(_props, cx) {
+    this.history = props()?.part === "history";
     this.files = []; this.commits = []; this.expanded = null; this.commitFiles = []; this.message = ""; this.handle = cx.focus_handle();
     this.input = InputState.new({ placeholder: "Commit message" });
     this.input.on("change", (_e, cx) => { this.message = this.input.value(); cx.notify(); });
@@ -62,31 +64,32 @@ export default class Changes extends View {
         if (key() !== context) return;
         if (top.code !== 0) { this.root = null; this.files = []; this.commits = []; this.error = "Not a git repository"; return; }
         const root = top.stdout.trim(), git = (args) => exec("git", args, { cwd: root, on });
-        const status = await git(["status", "--porcelain=v1", "-z", "--no-renames", "--untracked-files=all"]);
-        if (status.code !== 0) throw new Error(status.stderr);
         const head = await git(["rev-parse", "--verify", "HEAD"]);
-        const stats = {};
-        const results = head.code === 0 ? [await git(["diff", "HEAD", "--numstat", "-z", "--no-renames"])] : [await git(["diff", "--cached", "--numstat", "-z", "--no-renames"]), await git(["diff", "--numstat", "-z", "--no-renames"])];
-        for (const result of results) {
-          if (result.code !== 0) throw new Error(result.stderr);
-          for (const entry of result.stdout.split("\0")) {
-            const [a, d, ...parts] = entry.split("\t");
-            if (!parts.length) continue;
-            const path = parts.join("\t"), old = stats[path] ?? { add: 0, del: 0 };
-            stats[path] = { add: old.add + (Number(a) || 0), del: old.del + (Number(d) || 0), binary: a === "-" };
+        const files = [], commits = [];
+        let entries = [];
+        if (!this.history) {
+          const status = await git(["status", "--porcelain=v1", "-z", "--no-renames", "--untracked-files=all"]);
+          if (status.code !== 0) throw new Error(status.stderr);
+          const stats = {};
+          const results = head.code === 0 ? [await git(["diff", "HEAD", "--numstat", "-z", "--no-renames"])] : [await git(["diff", "--cached", "--numstat", "-z", "--no-renames"]), await git(["diff", "--numstat", "-z", "--no-renames"])];
+          for (const result of results) {
+            if (result.code !== 0) throw new Error(result.stderr);
+            for (const entry of result.stdout.split("\0")) {
+              const [a, d, ...parts] = entry.split("\t");
+              if (!parts.length) continue;
+              const path = parts.join("\t"), old = stats[path] ?? { add: 0, del: 0 };
+              stats[path] = { add: old.add + (Number(a) || 0), del: old.del + (Number(d) || 0), binary: a === "-" };
+            }
           }
-        }
-        const files = [];
-        const entries = status.stdout.split("\0").filter(Boolean);
-        for (const entry of entries.slice(0, 1000)) {
-          const xy = entry.slice(0, 2), path = entry.slice(3), fresh = xy === "??";
-          const conflict = xy.includes("U") || xy === "AA" || xy === "DD";
-          const s = conflict ? "U" : xy.includes("D") ? "D" : fresh || xy.includes("A") ? "A" : "M";
-          const stat = stats[path] ?? { add: 0, del: 0 };
-          files.push({ path, status: s, fresh, ...stat });
-        }
-        const commits = [];
-        if (head.code === 0) {
+          entries = status.stdout.split("\0").filter(Boolean);
+          for (const entry of entries.slice(0, 1000)) {
+            const xy = entry.slice(0, 2), path = entry.slice(3), fresh = xy === "??";
+            const conflict = xy.includes("U") || xy === "AA" || xy === "DD";
+            const s = conflict ? "U" : xy.includes("D") ? "D" : fresh || xy.includes("A") ? "A" : "M";
+            const stat = stats[path] ?? { add: 0, del: 0 };
+            files.push({ path, status: s, fresh, ...stat });
+          }
+        } else if (head.code === 0) {
           const log = await git(["log", `--max-count=${HISTORY}`, "--no-color", "--format=%H%x1f%an%x1f%at%x1f%D%x1f%s%x1e"]);
           if (log.code !== 0) throw new Error(log.stderr);
           for (const record of log.stdout.split("\x1e")) {
@@ -195,11 +198,26 @@ export default class Changes extends View {
       .child(div().flex_none().text_size(11).text_color(t.dim).child(`${c.author.split(" ")[0]} · ${ago(c.time)}`));
   }
 
+  renderHistory(t) {
+    const active = (shared(VIEW) ?? {})[focused()?.tab]?.active, history = this.historyRows();
+    return v_flex().id("history").size_full().min_h(0).rounded(10).overflow_hidden().bg(t.background).border_1().border_color(t.border).text_color(t.foreground).text_size(13)
+      .child(h_flex().h(42).flex_none().px(14).gap(8).items_center().border_b(1).border_color(t.border)
+        .child(div().font_semibold().child("History"))
+        .child(div().flex_1())
+        .when(this.commits.length >= HISTORY, (e) => e.child(div().text_size(11).text_color(t.dim).child(`latest ${HISTORY}`))))
+      .child(div().flex_1().min_h(0).relative()
+        .child(div().size_full().px(6).py(4).child(v_virtual_list("changes-history", history.length, 28, (i) => history[i].key, (range) => history.slice(range.start, range.end).map((row) => this.historyRow(row, active, t)))
+          .on_item_click((key, cx) => { const row = history.find(r => r.key === key); if (row) this.pickHistory(row, cx); }).size_full()))
+        .child(Scrollbar.vertical("changes-history").viewport_from_layout().absolute().inset_0())
+        .when(!this.commits.length, (e) => e.child(div().absolute().top(6).px(12).text_color(t.dim).child(this.error || (this.loading ? "Loading history…" : this.root ? "No commits yet" : "No folder")))));
+  }
+
   render(cx) {
     if (key() !== this.context) this.refresh(cx);
+    if (this.history) return this.renderHistory(theme());
     const t = theme(), add = this.files.reduce((n, f) => n + f.add, 0), del = this.files.reduce((n, f) => n + f.del, 0);
     const enabled = Boolean(this.message.trim() && this.root && !this.busy && !this.loading);
-    const active = (shared(VIEW) ?? {})[focused()?.tab]?.active, history = this.historyRows();
+    const active = (shared(VIEW) ?? {})[focused()?.tab]?.active;
     return v_flex().id("changes").size_full().min_h(0).rounded(10).overflow_hidden().bg(t.background).border_1().border_color(t.border).text_color(t.foreground).text_size(13).track_focus(this.handle)
       .on_key_down((e, cx) => {
         if (e.key === "escape" && this.typing) { this.typing = false; this.handle.focus(); cx.stop_propagation(); cx.notify(); }
@@ -216,15 +234,6 @@ export default class Changes extends View {
       .when(Boolean(this.note), (e) => e.child(div().px(10).pb(8).text_size(11).text_color(t.ansi1).child(this.note)))
       .child(h_flex().flex_none().p(10).gap(8).border_t(1).border_color(t.border)
         .child(div().id("commit-message").flex_1().min_w(0).h(32).px(10).flex().items_center().rounded(8).border_1().border_color(this.typing ? t.accent : t.border).cursor_text().on_mouse_down("left", (_e, cx) => cx.stop_propagation()).child(Input.new(this.input).h_full().text_size(12).text_color(t.foreground)))
-        .child(div().id("commit").h(32).px(14).flex().items_center().rounded(8).bg(enabled ? t.solid : t.raised).text_color(enabled ? t.solid_foreground : t.dim).text_size(12).when(enabled, (e) => e.cursor_pointer()).on_click((_e, cx) => this.commit(cx)).child(this.busy ? "Committing…" : "Commit")))
-      .child(h_flex().h(34).flex_none().px(14).gap(8).items_center().border_t(1).border_b(1).border_color(t.border)
-        .child(div().font_semibold().child("History"))
-        .child(div().flex_1())
-        .when(this.commits.length >= HISTORY, (e) => e.child(div().text_size(11).text_color(t.dim).child(`latest ${HISTORY}`))))
-      .child(div().flex_1().min_h(0).relative()
-        .child(div().size_full().px(6).py(4).child(v_virtual_list("changes-history", history.length, 28, (i) => history[i].key, (range) => history.slice(range.start, range.end).map((row) => this.historyRow(row, active, t)))
-          .on_item_click((key, cx) => { const row = history.find(r => r.key === key); if (row) this.pickHistory(row, cx); }).size_full()))
-        .child(Scrollbar.vertical("changes-history").viewport_from_layout().absolute().inset_0())
-        .when(!this.commits.length, (e) => e.child(div().absolute().top(6).px(12).text_color(t.dim).child(this.root ? "No commits yet" : ""))));
+        .child(div().id("commit").h(32).px(14).flex().items_center().rounded(8).bg(enabled ? t.solid : t.raised).text_color(enabled ? t.solid_foreground : t.dim).text_size(12).when(enabled, (e) => e.cursor_pointer()).on_click((_e, cx) => this.commit(cx)).child(this.busy ? "Committing…" : "Commit")));
   }
 }
