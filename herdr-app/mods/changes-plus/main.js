@@ -115,7 +115,7 @@ export default class Changes extends View {
         const files = [], commits = [];
         let entries = [];
         if (!this.history) {
-          const status = await git(["status", "--porcelain=v1", "-z", "--no-renames", "--untracked-files=all"]);
+          const status = await git(["--no-optional-locks", "status", "--porcelain=v1", "-z", "--no-renames", "--untracked-files=all"]);
           if (status.code !== 0) throw new Error(status.stderr);
           const stats = {};
           const results = head.code === 0 ? [await git(["diff", "HEAD", "--numstat", "-z", "--no-renames"])] : [await git(["diff", "--cached", "--numstat", "-z", "--no-renames"]), await git(["diff", "--numstat", "-z", "--no-renames"])];
