@@ -9,10 +9,6 @@
     {
       "id": "body",
       "type": "row",
-      "divider": {
-        "width": 1,
-        "color": "border"
-      },
       "children": [
         {
           "id": "sidebar",
