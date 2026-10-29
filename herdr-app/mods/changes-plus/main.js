@@ -1,11 +1,12 @@
 // Uncommitted changes and a commit box, or with props {part: "history"} recent history; the layout
 // stacks one copy of each so their boundary can be dragged. Picking a changed file, or a file in a
 // commit, opens its diff in this tab's file-view pane.
-import { View, div } from "gpui-kit";
+import { View, div, PathBuilder } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list } from "gpui-base";
 import { spaces, panes, focused, exec, run, shared, setShared, watchFolder, theme, props } from "herdr";
 
 const VIEW = "file-view", HISTORY = 200;
+const LANE = 12, ROW = 28, MAX_LANES = 10;
 
 function location() {
   const space = spaces().find((s) => s.active), f = focused(), all = panes();
@@ -21,6 +22,52 @@ function ago(seconds) {
   const s = Date.now() / 1000 - seconds;
   for (const [unit, size] of [["y", 31536000], ["mo", 2592000], ["w", 604800], ["d", 86400], ["h", 3600], ["m", 60]]) if (s >= size) return `${Math.floor(s / size)}${unit}`;
   return "now";
+}
+
+// Gives each commit (in topological order) a lane, and records per row the lines to draw:
+// lanes passing through, lines from children above into the commit, and lines down to its
+// parents. `after` is the lanes running below the row, for rows listing the commit's files.
+function layoutGraph(commits) {
+  const lanes = [];
+  for (const c of commits) {
+    const top = lanes.flatMap((h, i) => h ? [i] : []), into = top.filter(i => lanes[i] === c.hash);
+    let col = into.length ? into[0] : lanes.indexOf(null);
+    if (col < 0) col = lanes.length;
+    for (const i of into) lanes[i] = null;
+    const down = c.parents.map((parent, k) => {
+      let lane = lanes.indexOf(parent);
+      if (lane < 0) {
+        lane = k === 0 ? col : lanes.indexOf(null);
+        if (lane < 0) lane = lanes.length;
+        lanes[lane] = parent;
+      }
+      return lane;
+    });
+    while (lanes.length && lanes[lanes.length - 1] === null) lanes.pop();
+    c.graph = { col, into, through: top.filter(i => !into.includes(i)), down, after: lanes.flatMap((h, i) => h ? [i] : []) };
+  }
+  return Math.min(MAX_LANES, Math.max(1, ...commits.map(c => Math.max(c.graph.col, ...c.graph.down, ...c.graph.through, ...c.graph.into) + 1)));
+}
+
+// One row's slice of the graph: a stroke per lane color and a dot for the commit.
+function graphCell(g, width, colors) {
+  const x = (i) => LANE / 2 + i * LANE, mid = ROW / 2, strokes = new Map();
+  const stroke = (lane, draw) => {
+    if (lane >= MAX_LANES) return;
+    const color = colors[lane % colors.length];
+    strokes.set(color, draw(strokes.get(color) ?? PathBuilder.stroke(1.5)));
+  };
+  const curve = (b, x1, y1, x2, y2) => x1 === x2 ? b.move_to(x1, y1).line_to(x2, y2) : b.move_to(x1, y1).cubic_bezier_to(x2, y2, x1, (y1 + y2) / 2, x2, (y1 + y2) / 2);
+  for (const i of g.through) stroke(i, b => b.move_to(x(i), 0).line_to(x(i), ROW));
+  if (g.node) {
+    for (const i of g.into) stroke(i, b => curve(b, x(i), 0, x(g.col), mid));
+    for (const lane of g.down) stroke(lane, b => curve(b, x(g.col), mid, x(lane), ROW));
+  }
+  const cell = div().relative().flex_none().w(width * LANE).h(ROW)
+    .children([...strokes].map(([color, b]) => globalThis.window.paint_path(b.build(), color).absolute().inset_0()));
+  if (!g.node || g.col >= MAX_LANES) return cell;
+  const dot = PathBuilder.fill().add_polygon(Array.from({ length: 16 }, (_, k) => [x(g.col) + 3.5 * Math.cos(k * Math.PI / 8), mid + 3.5 * Math.sin(k * Math.PI / 8)]), true);
+  return cell.child(globalThis.window.paint_path(dot.build(), colors[g.col % colors.length]).absolute().inset_0());
 }
 
 export default class Changes extends View {
@@ -90,16 +137,18 @@ export default class Changes extends View {
             files.push({ path, status: s, fresh, ...stat });
           }
         } else if (head.code === 0) {
-          const log = await git(["log", `--max-count=${HISTORY}`, "--no-color", "--format=%H%x1f%an%x1f%at%x1f%D%x1f%s%x1e"]);
+          const upstream = await git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]);
+          const log = await git(["log", "--topo-order", `--max-count=${HISTORY}`, "--no-color", "--format=%H%x1f%P%x1f%an%x1f%at%x1f%D%x1f%s%x1e", "HEAD", ...(upstream.code === 0 ? [upstream.stdout.trim()] : [])]);
           if (log.code !== 0) throw new Error(log.stderr);
           for (const record of log.stdout.split("\x1e")) {
-            const [hash, author, time, refs, subject] = record.trim().split("\x1f");
+            const [hash, parents, author, time, refs, subject] = record.trim().split("\x1f");
             if (!subject && !hash) continue;
-            commits.push({ hash, author, time: Number(time), subject: subject ?? "",
+            commits.push({ hash, parents: (parents ?? "").split(" ").filter(Boolean), author, time: Number(time), subject: subject ?? "",
               refs: (refs ?? "").split(", ").filter(r => r && r !== "origin/HEAD").map(r => r.replace(/^HEAD -> /, "")).slice(0, 2) });
           }
         }
         if (key() !== context) return;
+        this.lanes = layoutGraph(commits);
         this.root = root; this.on = on; this.files = files; this.commits = commits; this.limited = entries.length > 1000; this.error = null;
         if (this.expanded && !commits.some(c => c.hash === this.expanded)) { this.expanded = null; this.commitFiles = []; }
         this.watch(root, cx);
@@ -185,14 +234,16 @@ export default class Changes extends View {
   }
 
   historyRow({ c, f }, active, t) {
+    const colors = [t.accent, t.ansi2, t.ansi3, t.ansi5, t.ansi6, t.ansi1, t.ansi4];
     if (f) {
       const id = `${c.hash}:${this.root}/${f.path}`;
-      return this.fileRow(`commit-file-${id}`, f.path, f.status, 22, active === id, t, null);
+      return this.fileRow(`commit-file-${id}`, f.path, f.status, this.lanes * LANE + 8, active === id, t, null).relative()
+        .child(div().absolute().left(8).top(0).child(graphCell({ through: c.graph.after }, this.lanes, colors)));
     }
     const open = this.expanded === c.hash;
-    return h_flex().id(`commit-${c.hash}`).h(28).flex_none().px(8).gap(8).items_center().rounded(7).cursor_pointer()
+    return h_flex().id(`commit-${c.hash}`).h(ROW).flex_none().px(8).gap(8).items_center().rounded(7).cursor_pointer()
       .when(open, (e) => e.bg(t.raised)).hover((s) => s.bg(t.hover))
-      .child(div().w(14).flex_none().text_size(10).text_color(t.dim).child(open ? "▾" : "▸"))
+      .child(graphCell({ ...c.graph, node: true }, this.lanes, colors))
       .child(div().flex_1().min_w(0).truncate().child(c.subject))
       .children(c.refs.map(r => div().flex_none().max_w(90).truncate().px(5).rounded(4).border_1().border_color(t.border).text_size(10).text_color(t.accent).child(r)))
       .child(div().flex_none().text_size(11).text_color(t.dim).child(`${c.author.split(" ")[0]} · ${ago(c.time)}`));
