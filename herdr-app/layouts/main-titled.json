@@ -34,32 +34,44 @@
               "size": {
                 "weight": 1
               },
-              "min": 90
+              "min": 90,
+              "border": {
+                "width": 1,
+                "color": "border"
+              },
+              "radius": 10
             },
             {
               "id": "agents",
               "type": "block",
               "content": {
-                "mod": "agents"
+                "mod": "agents-card"
               },
               "size": {
                 "weight": 1
               },
-              "min": 90
+              "min": 90,
+              "border": {
+                "width": 1,
+                "color": "border"
+              },
+              "radius": 10
             }
+          ],
+          "gap": 8,
+          "padding": [
+            0,
+            8
           ]
         },
         {
           "id": "sidebar-footer",
           "type": "block",
           "content": {
-            "mod": "workspace-chrome",
-            "props": {
-              "footer": true
-            }
+            "mod": "sidebar-footer"
           },
           "size": {
-            "px": 69
+            "px": 40
           }
         }
       ],
