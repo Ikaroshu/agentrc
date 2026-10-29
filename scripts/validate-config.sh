@@ -65,6 +65,7 @@ required_files=(
   herdr-app/mods/status-stats/main.js
   herdr-app/mods/spaces-card/main.js
   herdr-app/mods/sidebar-brand/main.js
+  herdr-app/mods/sidebar-tabs/main.js
 )
 for path in "${required_files[@]}"; do
   require_regular_file "$path"

@@ -26,51 +26,107 @@
               "window_drag": true
             },
             {
-              "id": "sidebar-lists",
-              "type": "column",
+              "id": "sidebar-tabs",
+              "type": "block",
+              "content": {
+                "mod": "sidebar-tabs"
+              },
+              "size": {
+                "px": 36
+              }
+            },
+            {
+              "id": "sidebar-body",
+              "type": "stack",
+              "padding": 8,
+              "active": "sidebar-lists",
               "children": [
                 {
-                  "id": "spaces",
-                  "type": "block",
-                  "content": {
-                    "mod": "spaces-card"
-                  },
-                  "size": {
-                    "weight": 1
-                  },
-                  "min": 90,
-                  "border": {
-                    "width": 1,
-                    "color": "border"
-                  },
-                  "radius": 10
+                  "id": "sidebar-lists",
+                  "type": "column",
+                  "children": [
+                    {
+                      "id": "spaces",
+                      "type": "block",
+                      "content": {
+                        "mod": "spaces-card"
+                      },
+                      "size": {
+                        "weight": 1
+                      },
+                      "min": 90,
+                      "border": {
+                        "width": 1,
+                        "color": "border"
+                      },
+                      "radius": 10
+                    },
+                    {
+                      "id": "agents",
+                      "type": "block",
+                      "content": {
+                        "mod": "agents-card"
+                      },
+                      "size": {
+                        "weight": 1
+                      },
+                      "min": 90,
+                      "border": {
+                        "width": 1,
+                        "color": "border"
+                      },
+                      "radius": 10
+                    }
+                  ],
+                  "gap": 8
                 },
                 {
-                  "id": "agents",
+                  "id": "files",
                   "type": "block",
                   "content": {
-                    "mod": "agents-card"
-                  },
-                  "size": {
-                    "weight": 1
-                  },
-                  "min": 90,
-                  "border": {
-                    "width": 1,
-                    "color": "border"
-                  },
-                  "radius": 10
+                    "mod": "files-plus"
+                  }
+                },
+                {
+                  "id": "changes",
+                  "type": "column",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "id": "changes-work",
+                      "type": "block",
+                      "content": {
+                        "mod": "changes-plus"
+                      },
+                      "size": {
+                        "weight": 2
+                      },
+                      "min": 150
+                    },
+                    {
+                      "id": "changes-history",
+                      "type": "block",
+                      "content": {
+                        "mod": "changes-plus",
+                        "props": {
+                          "part": "history"
+                        }
+                      },
+                      "size": {
+                        "weight": 3
+                      },
+                      "min": 90
+                    }
+                  ]
                 }
-              ],
-              "gap": 8,
-              "padding": 8
+              ]
             }
           ],
           "size": {
             "px": 268
           },
           "min": 44,
-          "max": 480,
+          "max": 640,
           "resizable": false
         },
         {
@@ -120,64 +176,6 @@
                       "lone": true
                     }
                   }
-                },
-                {
-                  "id": "panel",
-                  "type": "column",
-                  "children": [
-                    {
-                      "id": "panel-body",
-                      "type": "stack",
-                      "children": [
-                        {
-                          "id": "files",
-                          "type": "block",
-                          "content": {
-                            "mod": "files-plus"
-                          }
-                        },
-                        {
-                          "id": "changes",
-                          "type": "column",
-                          "gap": 8,
-                          "children": [
-                            {
-                              "id": "changes-work",
-                              "type": "block",
-                              "content": {
-                                "mod": "changes-plus"
-                              },
-                              "size": {
-                                "weight": 2
-                              },
-                              "min": 150
-                            },
-                            {
-                              "id": "changes-history",
-                              "type": "block",
-                              "content": {
-                                "mod": "changes-plus",
-                                "props": {
-                                  "part": "history"
-                                }
-                              },
-                              "size": {
-                                "weight": 3
-                              },
-                              "min": 90
-                            }
-                          ]
-                        }
-                      ],
-                      "active": "files"
-                    }
-                  ],
-                  "size": {
-                    "px": 368
-                  },
-                  "min": 280,
-                  "max": 900,
-                  "hidden": true
                 }
               ],
               "padding": 8,
