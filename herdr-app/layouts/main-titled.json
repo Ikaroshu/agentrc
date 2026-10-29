@@ -71,7 +71,6 @@
           },
           "min": 44,
           "max": 480,
-          "background": "chrome",
           "resizable": false
         },
         {
