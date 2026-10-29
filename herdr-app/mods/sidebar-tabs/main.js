@@ -1,10 +1,11 @@
 // Switches the sidebar's stack between spaces and agents, files, and changes, on the window's top
-// row beside the macOS window buttons. The layout remembers the choice.
+// row, beside the macOS window buttons when they show (not in full screen). The layout
+// remembers the choice.
 import { div, svg, View } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { layout, run, theme, window } from "herdr";
 
-const STACK = "sidebar-body", ICON_TAB = 84;
+const STACK = "sidebar-body", ICON_TAB = 80;
 const TABS = [
   { id: "sidebar-lists", label: "Spaces", icon: "mods/workspace-chrome/layers.svg" },
   { id: "files", label: "Files", icon: "mods/workspace-chrome/files.svg" },
@@ -22,10 +23,11 @@ function find(node, id) {
 
 export default class SidebarTabs extends View {
   render() {
-    const t = theme(), active = find(layout(), STACK)?.active, mac = window()?.platform === "macos";
+    const t = theme(), active = find(layout(), STACK)?.active, w = window();
+    const lights = w?.platform === "macos" && !w.fullscreen;
     // Three equal tabs fill the row; icons join the labels only when each tab has room for both.
-    const icons = this.width !== undefined && (this.width - (mac ? 72 : 8) - 8 - 6) / 3 >= ICON_TAB;
-    return h_flex().id("sidebar-tabs").size_full().px(8).gap(3).items_center().when(mac, el => el.pl(72))
+    const icons = this.width !== undefined && (this.width - (lights ? 72 : 8) - 8 - 6) / 3 >= ICON_TAB;
+    return h_flex().id("sidebar-tabs").size_full().px(8).gap(3).items_center().when(lights, el => el.pl(72))
       .on_size_change((size, cx) => { if (size.width !== this.width) { this.width = size.width; cx.notify(); } })
       .children(TABS.map(tab => {
         const on = tab.id === active;
