@@ -2,7 +2,7 @@
 // folder's expanded subfolders and opens files in this tab's file-view pane.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list, VirtualListScrollHandle } from "gpui-base";
-import { spaces, panes, focused, exec, run, shared, setShared, watchFolder, theme, window } from "herdr";
+import { spaces, panes, focused, exec, run, shared, setShared, watchFolder, theme, window, nextCommand } from "herdr";
 
 const VIEW = "file-view";
 
@@ -82,6 +82,7 @@ export default class Files extends View {
     this.input.on("blur", (_e, cx) => { this.typing = false; cx.notify(); });
     this.refresh(cx);
     cx.timer.every(10000, cx => this.refresh(cx));
+    cx.spawn(async cx => { for (;;) { if (await nextCommand() === "search") this.input.focus(); cx.notify(); } });
   }
 
   remember() {
@@ -284,6 +285,8 @@ export default class Files extends View {
         .child(div().flex_1().min_w(0).truncate().text_right().text_size(12).text_color(t.dim).child(this.root?.split(/[\\/]/).pop() ?? "")))
       .child(h_flex().flex_none().px(8).pt(8).pb(2).child(h_flex().id("files-search").flex_1().h(30).px(8).gap(6).items_center().rounded(7)
         .border_1().border_color(this.typing ? t.accent : t.border).cursor_text().on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+        // The app returns focus to the terminal after a click in a side panel, so focus again once it has.
+        .on_click((_e, cx) => { this.input.focus(); cx.timer.after(50, () => this.input.focus()); })
         .child(svg("mods/workspace-chrome/search.svg").size(13).flex_none().text_color(t.dim))
         .child(Input.new(this.input).flex_1().h_full().text_size(12).text_color(t.foreground))))
       .when(Boolean(this.query.trim()), el => el.child(this.results(t)))
