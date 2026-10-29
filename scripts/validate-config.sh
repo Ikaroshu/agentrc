@@ -56,9 +56,6 @@ required_files=(
   scripts/test-merge-codex-config.py
   scripts/merge-claude-settings.py
   scripts/test-merge-claude-settings.py
-  herdr/config.toml
-  herdr/plugins.tsv
-  herdr/sidebar.json
 )
 for path in "${required_files[@]}"; do
   require_regular_file "$path"
@@ -109,9 +106,6 @@ executables=(
   scripts/test-merge-codex-config.py
   scripts/merge-claude-settings.py
   scripts/test-merge-claude-settings.py
-  herdr/install.sh
-  herdr/activate.sh
-  herdr/sync-remote.sh
 )
 for path in "${executables[@]}"; do
   require_executable "$path"
@@ -129,16 +123,10 @@ shell_scripts=(
   scripts/test-codex-install.sh
   scripts/test-claude-install.sh
   scripts/test-sync-remote.sh
-  herdr/install.sh
-  herdr/activate.sh
-  herdr/sync-remote.sh
-  herdr/automatic-rename.sh
 )
 for path in "${shell_scripts[@]}"; do
   bash -n "$ROOT_DIR/$path"
 done
-
-"$PYTHON_TOML_BIN" "$ROOT_DIR/herdr/test_setup.py"
 
 runtime_paths=(
   "$ROOT_DIR/install.sh"
