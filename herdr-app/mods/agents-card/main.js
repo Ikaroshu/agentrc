@@ -49,6 +49,13 @@ function icon(p, size, color) {
   return p.tint ? svg(p.icon).size(size).flex_none().text_color(color) : image(p.icon).w(size).h(size).flex_none();
 }
 
+// The icon on the program's tile, shaped like a space's avatar.
+function tile(p, fallback) {
+  if (!p?.icon) return null;
+  return h_flex().size(18).flex_none().rounded(5).bg(p.tile ?? fallback).items_center().justify_center()
+    .child(icon(p, 12, p.color ?? "#ffffff"));
+}
+
 export default class Agents extends View {
   init(_props, cx) {
     if (props()?.sortMenu) return;
@@ -259,7 +266,7 @@ export default class Agents extends View {
     }
 
     const row = (a, i, subs = []) => {
-      const pic = icon(a.program, 18, t.foreground);
+      const pic = tile(a.program, t.raised);
       const more = detail.get(a.address);
       // An agent on another machine (`vps/t7`) says which.
       const machine = a.address.includes("/") ? a.address.split("/")[0] : null;
