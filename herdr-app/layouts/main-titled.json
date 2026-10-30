@@ -50,22 +50,6 @@
                         "color": "border"
                       },
                       "radius": 10
-                    },
-                    {
-                      "id": "agents",
-                      "type": "block",
-                      "content": {
-                        "mod": "agents-card"
-                      },
-                      "size": {
-                        "weight": 1
-                      },
-                      "min": 90,
-                      "border": {
-                        "width": 1,
-                        "color": "border"
-                      },
-                      "radius": 10
                     }
                   ],
                   "gap": 8

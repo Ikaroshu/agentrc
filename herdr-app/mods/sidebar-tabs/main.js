@@ -1,4 +1,4 @@
-// Switches the sidebar's stack between spaces and agents, files, and changes, on the window's top
+// Switches the sidebar's stack between spaces (with their agents), files, and changes, on the window's top
 // row, beside the macOS window buttons when they show (not in full screen). The layout
 // remembers the choice.
 import { div, svg, View } from "gpui-kit";

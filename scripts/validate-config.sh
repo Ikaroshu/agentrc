@@ -61,7 +61,6 @@ required_files=(
   herdr-app/mods/files-plus/main.js
   herdr-app/mods/file-view/main.js
   herdr-app/mods/changes-plus/main.js
-  herdr-app/mods/agents-card/main.js
   herdr-app/mods/status-stats/main.js
   herdr-app/mods/spaces-card/main.js
   herdr-app/mods/sidebar-tabs/main.js
