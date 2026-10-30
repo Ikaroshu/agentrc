@@ -49,19 +49,6 @@ function icon(p, size, color) {
   return p.tint ? svg(p.icon).size(size).flex_none().text_color(color) : image(p.icon).w(size).h(size).flex_none();
 }
 
-// What a stored color name looks like on an avatar (the same in every mod
-// that draws space avatars): one strong color per hue, light and dark alike.
-const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b7cf6", ansi2: "#3fae6a", ansi1: "#d9649a" };
-
-// The icon on its space's avatar color, shaped like that avatar.
-function tile(t, a) {
-  if (!a.program?.icon) return null;
-  const color = (shared("space.colors") ?? {})[a.space] ?? "ansi6";
-  const fill = color.startsWith("#") ? color : (MARK[color] ?? t[color]);
-  return h_flex().size(18).flex_none().rounded(5).bg(fill).items_center().justify_center()
-    .child(icon(a.program, 12, "#ffffff"));
-}
-
 export default class Agents extends View {
   init(_props, cx) {
     if (props()?.sortMenu) return;
@@ -272,7 +259,7 @@ export default class Agents extends View {
     }
 
     const row = (a, i, subs = []) => {
-      const pic = tile(t, a);
+      const pic = icon(a.program, 16, t.foreground);
       const more = detail.get(a.address);
       // An agent on another machine (`vps/t7`) says which.
       const machine = a.address.includes("/") ? a.address.split("/")[0] : null;
