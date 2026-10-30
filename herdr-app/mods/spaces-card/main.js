@@ -2,8 +2,8 @@
 // Workspace spaces: stable colored avatars, worktrees under their checkout,
 // grouped by machine when more than one is known. After a space's name, the repo
 // its first terminal is in now, only where unusual: branch, ahead/behind. Click to
-// switch, right-click for its menu, drag to reorder. Under each space, indented, its
-// agents and their sub-agents in tab order; click one to focus it.
+// switch, right-click for its menu, drag to reorder; + after its name starts a new tab there.
+// Under each space, indented, its tabs and their agents' sub-agents.
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
@@ -46,7 +46,7 @@ function title(tab, l) {
   const prog = l?.program?.name;
   const live = clean(l?.title);
   const telling = live && live !== prog && !/^[~/]|^[A-Za-z]:\\/.test(live) && !live.includes("@") && live.toLowerCase() !== l?.program?.key;
-  return tab.name === prog && telling ? live : tab.name;
+  return (!tab.named || tab.name === prog) && telling ? live : tab.name;
 }
 const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
 // A sub-agent without a pane isn't in agents(): its raw word, error counting as
@@ -88,7 +88,7 @@ export default class Spaces extends View {
     this.over = null;
     this.machines = [];
     this.folded = new Set(JSON.parse(localStorage.getItem("machines.folded") ?? "[]"));
-    this.foldedAgents = new Set(); // agents whose sub-agents are hidden
+    this.foldedTabs = new Set(); // tabs whose sub-agents are hidden
     // Each agent's last state and when it changed (ms), kept across restarts.
     this.changed = JSON.parse(localStorage.getItem("agents.changed") ?? "{}");
     cx.timer.every(30000, (cx) => cx.notify());
@@ -263,11 +263,11 @@ export default class Spaces extends View {
   }
 
   // The fold chevron; folded, the count too, colored by the most urgent one.
-  fold(a, subs, t) {
+  fold(key, subs, t) {
     const top = subs.map((s) => kidStatus(s.t, this.listed)).reduce((m, s) => ((RANK[s] ?? 0) > (RANK[m] ?? 0) ? s : m), null);
-    const open = !this.foldedAgents.has(a.address);
+    const open = !this.foldedTabs.has(key);
     return div()
-      .id(`fold-${a.address}`)
+      .id(`fold-${key}`)
       .h(18)
       .px(3)
       .gap(3)
@@ -280,39 +280,39 @@ export default class Spaces extends View {
       .hover((s) => s.bg(t.hover).text_color(t.foreground))
       .on_click((_e, cx) => {
         cx.stop_propagation();
-        open ? this.foldedAgents.add(a.address) : this.foldedAgents.delete(a.address);
+        open ? this.foldedTabs.add(key) : this.foldedTabs.delete(key);
         cx.notify();
       })
       .child(svg(`mods/workspace-chrome/chevron-${open ? "down" : "right"}.svg`).size(11).flex_none())
       .when(!open, (el) => el.child(String(subs.length)));
   }
 
-  // A space's agents, their icons lined up under the space's name. A row reads as
-  // its tab when someone named it, or the agent's own title; an automatic tab
-  // number says nothing, unless two rows would otherwise read the same.
-  agentRows({ w, tree }, ctx, t) {
-    const mine = ctx.list.filter((a) => a.space === w.id);
-    const labels = new Map(mine.map((a) => {
-      const tab = (w.tabs ?? []).find((tab) => tab.id === a.tab);
-      return [a.address, tab ? title(tab, lead(tab, ctx.ps)) : a.title || a.program?.name || ""];
-    }));
+  // A space's tabs, their icons lined up under the space's name, each followed by its agents'
+  // sub-agents. A tab reads as its name when someone named it, else as its agent's own title; an
+  // automatic number says nothing, so it reads as its program unless two would then read the same.
+  tabRows({ w, tree }, ctx, t) {
+    const tabs = (w.tabs ?? []).filter((c) => !c.settled || c.active);
+    const labels = new Map(tabs.map((c) => [c.id, title(c, lead(c, ctx.ps))]));
     const numbered = [...labels.values()].filter((l) => /^\d+$/.test(l)).length;
     const indent = tree ? 52 : 33;
-    return mine.flatMap((a) => {
-      const l = labels.get(a.address);
-      const name = /^\d+$/.test(l) && numbered < 2 ? a.program?.name || l : l;
-      const subs = this.tree(ctx.all, a.address);
-      const row = this.agentRow(a, name, subs, ctx.now, indent, t);
-      return this.foldedAgents.has(a.address) ? [row] : [row, ...subs.map((s) => this.subRow(t, s, ctx.shown, indent + 6))];
+    return tabs.flatMap((c) => {
+      const l = lead(c, ctx.ps), label = labels.get(c.id);
+      const name = /^\d+$/.test(label) && numbered < 2 ? l?.program?.name || label : label;
+      const agents = ctx.list.filter((a) => a.tab === c.id);
+      const subs = agents.flatMap((a) => this.tree(ctx.all, a.address));
+      const row = this.tabRow(c, w, l, agents.find((a) => a.pane === l?.pane), name, subs, ctx.now, indent, t);
+      return this.foldedTabs.has(c.id) ? [row] : [row, ...subs.map((s) => this.subRow(t, s, ctx.shown, indent + 6))];
     });
   }
 
-  agentRow(a, name, subs, now, indent, t) {
-    const pic = icon(a.program, 16, t.foreground);
-    const when = this.changed[a.address]?.at;
-    const idle = a.status === "idle" && !a.focused;
+  // Click to show, double-click to rename, right-click for its menu; on hover, × closes it.
+  tabRow(c, w, l, agent, name, subs, now, indent, t) {
+    const on = c.active && w.active, hovered = this.hovered === c.id;
+    const pic = icon(l?.program, 16, t.muted) ?? svg("icons/shell.svg").size(16).flex_none().text_color(t.muted);
+    const when = agent && this.changed[agent.address]?.at;
+    const quiet = !on && (!c.status || c.status === "idle");
     return h_flex()
-      .id(`ag-${a.address}`)
+      .id(`tab-${c.id}`)
       .pl(indent)
       .pr(8)
       .h(28)
@@ -320,15 +320,27 @@ export default class Spaces extends View {
       .rounded(8)
       .items_center()
       .gap(9)
-      .when(a.focused, (el) => el.bg(t.raised))
+      .when(on, (el) => el.bg(t.selected))
       .cursor_pointer()
       .hover((s) => s.bg(t.hover))
-      .on_click(() => run("pane.focus", { pane: a.pane }))
-      .when(Boolean(pic), (el) => el.child(pic))
-      .child(div().flex_1().min_w(0).truncate().text_color(idle ? t.muted : t.foreground).child(name))
-      .when(subs.length > 0, (el) => el.child(this.fold(a, subs, t)))
-      .when(Boolean(when), (el) => el.child(div().flex_none().text_size(11).text_color(t.dim).child(duration(now - when))))
-      .child(this.status(t, a));
+      .on_hover((over, cx) => {
+        if (over) this.hovered = c.id;
+        else if (this.hovered === c.id) this.hovered = null;
+        cx.notify();
+      })
+      .on_mouse_down("left", (e) => { if (e.click_count === 2) run("tab.rename", { id: c.id }); })
+      .on_click(() => run("tab.select", { id: c.id }))
+      .on_mouse_down("right", () => openOverlay({ mod: "menu", kind: "popup", width: 200, props: { tab: "tab", target: { id: c.id, space: w.id } } }))
+      .child(pic)
+      .child(div().flex_1().min_w(0).truncate().text_color(quiet ? t.muted : t.foreground).child(name))
+      .when(subs.length > 0, (el) => el.child(this.fold(c.id, subs, t)))
+      .when(hovered, (el) => el.child(div().id(`tab-close-${c.id}`).flex_none().p(2).rounded(4).text_color(t.dim)
+        .hover((s) => s.bg(t.hover).text_color(t.foreground))
+        .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+        .on_click((_e, cx) => { cx.stop_propagation(); run("tab.close", { id: c.id }); })
+        .child(svg("mods/pane/close.svg").size(12))))
+      .when(!hovered && Boolean(when), (el) => el.child(div().flex_none().text_size(11).text_color(t.dim).child(duration(now - when))))
+      .when(Boolean(agent), (el) => el.child(this.status(t, { status: c.status })));
   }
 
   subRow(t, s, shown, indent) {
@@ -385,7 +397,7 @@ export default class Spaces extends View {
   grouped(t, collapsed, ctx) {
     const rows = this.ordered();
     setAgentOrder(rows.flatMap((r) => ctx.list.filter((a) => a.space === r.w.id).map((a) => a.address)));
-    const draw = (r) => (collapsed ? [this.compact(r, t)] : [this.row(r, t), ...this.agentRows(r, ctx, t)]);
+    const draw = (r) => (collapsed ? [this.compact(r, t)] : [this.row(r, t), ...this.tabRows(r, ctx, t)]);
     const remote = [...new Set([...rows.map(r => r.w.machine).filter(Boolean), ...this.machines.map(m => m.name)])].sort();
     const loading = m => {
       const layout = machines().find(k => k.name === m)?.layout;
@@ -444,8 +456,8 @@ export default class Spaces extends View {
       .when(g.behind > 0, (el) => el.child(div().flex_none().text_color(t.ansi1).child(`\u2193${g.behind}`)));
   }
 
+  // Not highlighted: the shown space's shown tab, under it, is.
   row({ w, i, g, tree }, t) {
-    const on = w.active;
     const colors = shared("space.colors") ?? {};
     const color = colors[w.id] ?? "ansi6";
     const fill = color.startsWith("#") ? color : (MARK[color] ?? t[color]);
@@ -457,8 +469,7 @@ export default class Spaces extends View {
       .flex_none()
       .justify_center()
       .rounded(8)
-      .when(on, (el) => el.bg(t.selected))
-      .when(!on, (el) => el.hover((s) => s.bg(t.hover)))
+      .hover((s) => s.bg(t.hover))
       .when(this.pressed !== null && this.over === i && this.pressed !== i, (el) => el.border_t(2).border_color(t.accent))
       .on_mouse_down("left", () => {
         this.pressed = i;
@@ -479,6 +490,11 @@ export default class Spaces extends View {
           .when(Boolean(tree), el => el.pl(22).child(svg("mods/workspace-chrome/branch.svg").size(13).text_color(t.dim)))
           .when(!tree, el => el.child(h_flex().size(16).flex_none().rounded(4.5).bg(fill).items_center().justify_center().text_size(9.5).font_bold().text_color("#ffffff").child(w.name[0]?.toUpperCase() ?? "?")))
           .child(div().flex_shrink(0).max_w(150).truncate().text_color(t.foreground).child(w.name))
+          .child(div().id(`space-tab-new-${w.id}`).flex_none().px(4).rounded(4).text_color(t.dim).tooltip("New tab")
+            .hover((s) => s.bg(t.hover).text_color(t.foreground))
+            .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+            .on_click(() => openOverlay({ mod: "new-menu-plus", kind: "popup", at: "pointer", width: 250, height: 512, props: { space: w.id } }))
+            .child("+"))
           .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1()),
       );
   }
@@ -517,10 +533,7 @@ export default class Spaces extends View {
     const ctx = { list, all: terminals(), ps: panes(), shown: focused()?.agent, now: Date.now() };
     this.track(list, ctx.now);
     return v_flex().size_full().min_h(0).bg(t.background).text_size(13)
-      .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11.5).text_color(t.dim)
-        .when(!collapsed, el => el.child("Spaces"))
-        .child(div().id("space-new").p(4).rounded(5).hover(s => s.bg(t.hover).text_color(t.foreground)).on_click(() => run("space.new")).child("+")))
-      .child(v_flex().flex_1().min_h(0).px(8).pb(14).overflow_y_scrollbar().mode("always")
+      .child(v_flex().flex_1().min_h(0).px(8).pt(6).pb(14).overflow_y_scrollbar().mode("always")
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
         .children(this.grouped(t, collapsed, ctx)));
   }

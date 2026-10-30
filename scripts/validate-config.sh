@@ -57,13 +57,13 @@ required_files=(
   scripts/merge-claude-settings.py
   scripts/test-merge-claude-settings.py
   herdr-app/layouts/main-titled.json
-  herdr-app/mods/tabs-titled/main.js
+  herdr-app/mods/top-bar/main.js
+  herdr-app/mods/sidebar-title/main.js
   herdr-app/mods/files-plus/main.js
   herdr-app/mods/file-view/main.js
-  herdr-app/mods/changes-plus/main.js
-  herdr-app/mods/status-stats/main.js
   herdr-app/mods/spaces-card/main.js
-  herdr-app/mods/sidebar-tabs/main.js
+  herdr-app/mods/new-menu-plus/main.js
+  herdr-app/mods/git-graph/main.js
 )
 for path in "${required_files[@]}"; do
   require_regular_file "$path"

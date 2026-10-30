@@ -15,92 +15,52 @@
           "type": "column",
           "children": [
             {
-              "id": "sidebar-tabs",
+              "id": "sidebar-title",
               "type": "block",
               "content": {
-                "mod": "sidebar-tabs"
+                "mod": "sidebar-title"
               },
               "size": {
-                "px": 42
+                "px": 36
               },
               "window_drag": true
             },
             {
-              "id": "sidebar-body",
-              "type": "stack",
-              "padding": 8,
-              "active": "sidebar-lists",
+              "id": "sidebar-lists",
+              "type": "column",
               "children": [
                 {
-                  "id": "sidebar-lists",
-                  "type": "column",
-                  "children": [
-                    {
-                      "id": "spaces",
-                      "type": "block",
-                      "content": {
-                        "mod": "spaces-card"
-                      },
-                      "size": {
-                        "weight": 1
-                      },
-                      "min": 90,
-                      "border": {
-                        "width": 1,
-                        "color": "border"
-                      },
-                      "radius": 10
-                    }
-                  ],
-                  "gap": 8
-                },
-                {
-                  "id": "files",
+                  "id": "spaces",
                   "type": "block",
                   "content": {
-                    "mod": "files-plus"
-                  }
-                },
-                {
-                  "id": "changes",
-                  "type": "column",
-                  "gap": 8,
-                  "children": [
-                    {
-                      "id": "changes-work",
-                      "type": "block",
-                      "content": {
-                        "mod": "changes-plus"
-                      },
-                      "size": {
-                        "weight": 2
-                      },
-                      "min": 150
-                    },
-                    {
-                      "id": "changes-history",
-                      "type": "block",
-                      "content": {
-                        "mod": "changes-plus",
-                        "props": {
-                          "part": "history"
-                        }
-                      },
-                      "size": {
-                        "weight": 3
-                      },
-                      "min": 90
-                    }
-                  ]
+                    "mod": "spaces-card"
+                  },
+                  "size": {
+                    "weight": 1
+                  },
+                  "min": 90,
+                  "border": {
+                    "width": 1,
+                    "color": "border"
+                  },
+                  "radius": 10
                 }
               ]
+            },
+            {
+              "id": "sidebar-bottom",
+              "type": "column",
+              "children": [],
+              "size": {
+                "px": 8
+              }
             }
           ],
           "size": {
-            "px": 268
+            "px": 280
           },
-          "min": 44,
-          "max": 640,
+          "min": 280,
+          "max": 480,
           "resizable": false
         },
         {
@@ -108,13 +68,13 @@
           "type": "column",
           "children": [
             {
-              "id": "tabs",
+              "id": "top-bar",
               "type": "block",
               "content": {
-                "mod": "tabs-titled"
+                "mod": "top-bar"
               },
               "size": {
-                "px": 42
+                "px": 36
               },
               "window_drag": true
             },
@@ -128,14 +88,6 @@
                   "content": {
                     "tab": "active",
                     "pane": {
-                      "header": {
-                        "content": {
-                          "mod": "pane"
-                        },
-                        "reveal": "always",
-                        "height": 30,
-                        "position": "top"
-                      },
                       "background": "background",
                       "border": {
                         "width": 1,
@@ -150,25 +102,60 @@
                       "lone": true
                     }
                   }
+                },
+                {
+                  "id": "panel",
+                  "type": "column",
+                  "size": {
+                    "px": 368
+                  },
+                  "min": 280,
+                  "max": 900,
+                  "hidden": true,
+                  "children": [
+                    {
+                      "id": "panel-body",
+                      "type": "stack",
+                      "active": "files",
+                      "children": [
+                        {
+                          "id": "files",
+                          "type": "block",
+                          "content": {
+                            "mod": "files-plus"
+                          }
+                        },
+                        {
+                          "id": "graph",
+                          "type": "block",
+                          "content": {
+                            "mod": "git-graph"
+                          }
+                        }
+                      ]
+                    }
+                  ]
                 }
               ],
-              "padding": 8,
               "gap": 8
+            },
+            {
+              "id": "work-bottom",
+              "type": "column",
+              "children": [],
+              "size": {
+                "px": 8
+              }
             }
           ],
           "resizable": false
         }
-      ]
-    },
-    {
-      "id": "status",
-      "type": "block",
-      "content": {
-        "mod": "status-stats"
-      },
-      "size": {
-        "px": 28
-      }
+      ],
+      "padding": [
+        0,
+        8
+      ],
+      "gap": 8
     }
   ],
   "background": "canvas",
@@ -179,6 +166,6 @@
   "titlebar": "none",
   "traffic_lights": [
     12,
-    16
+    10
   ]
 }

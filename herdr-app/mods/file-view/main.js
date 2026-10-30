@@ -1,4 +1,4 @@
-// Read-only tabs for the files and diffs the Files and Changes panels opened in this tab: rendered
+// Read-only tabs for the files and diffs the Files and Graph panels opened in this tab: rendered
 // Markdown, and diffs side by side or unified. Local files and uncommitted diffs reload when the
 // file changes on disk; uncommitted diffs also recheck every 10 seconds, since a commit or reset
 // changes them without touching the file.
@@ -83,13 +83,15 @@ export default class FileView extends View {
     setShared("file-view", { ...(shared("file-view") ?? {}), [props().tab]: view });
   }
 
-  close(id) {
+  close(id, cx) {
     const { files, active } = this.view(), at = files.findIndex(f => entryId(f) === id), rest = files.filter(f => entryId(f) !== id);
     if (!rest.length) {
       const all = { ...(shared("file-view") ?? {}) };
       delete all[props().tab];
       setShared("file-view", all);
-      run("pane.close", { pane: panes().find(p => p.mod === "file-view" && p.tab === props().tab)?.pane });
+      // Closed once the click is done: a pane closing itself inside its own click reports a failure.
+      const pane = panes().find(p => p.mod === "file-view" && p.tab === props().tab)?.pane;
+      cx.timer.after(0, () => run("pane.close", { pane }));
       return;
     }
     this.setView({ files: rest, active: active === id ? entryId(rest[Math.min(at, rest.length - 1)]) : active });
@@ -190,7 +192,7 @@ export default class FileView extends View {
         .when(Boolean(e.diff), el => el.child(div().text_size(11).text_color(t.ansi3).child("±")))
         .child(div().max_w(200).truncate().child(label(e, i)))
         .child(div().id(`view-close-${id}`).size(18).flex().items_center().justify_center().rounded(4).text_color(t.dim).hover(s => s.bg(t.selected))
-          .on_click((_e, cx) => { cx.stop_propagation(); this.close(id); }).child(svg("mods/pane/close.svg").size(11)));
+          .on_click((_e, cx) => { cx.stop_propagation(); this.close(id, cx); }).child(svg("mods/pane/close.svg").size(11)));
     };
     const toggle = (id, text, on, set) => div().id(id).px(8).h(22).flex().items_center().rounded(5).text_size(11.5)
       .bg(on ? t.selected : t.background).text_color(on ? t.foreground : t.muted)
