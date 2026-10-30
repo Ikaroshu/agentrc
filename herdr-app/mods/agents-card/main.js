@@ -259,7 +259,7 @@ export default class Agents extends View {
     }
 
     const row = (a, i, subs = []) => {
-      const pic = icon(a.program, 16, t.foreground);
+      const pic = icon(a.program, 18, t.foreground);
       const more = detail.get(a.address);
       // An agent on another machine (`vps/t7`) says which.
       const machine = a.address.includes("/") ? a.address.split("/")[0] : null;
