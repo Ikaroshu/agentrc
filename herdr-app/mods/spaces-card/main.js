@@ -2,7 +2,7 @@
 // Workspace spaces: stable colored avatars, worktrees under their checkout,
 // grouped by machine when more than one is known. After a space's name, the repo
 // its first terminal is in now, only where unusual: branch, ahead/behind. Click to
-// switch, right-click for its menu, drag to reorder; + after its name starts a new tab there.
+// switch, right-click for its menu, drag to reorder; + at the row's right starts a new tab there.
 // Under each space, indented, its tabs and their agents' sub-agents.
 
 import { View, div, image, svg } from "gpui-kit";
@@ -490,12 +490,12 @@ export default class Spaces extends View {
           .when(Boolean(tree), el => el.pl(22).child(svg("mods/workspace-chrome/branch.svg").size(13).text_color(t.dim)))
           .when(!tree, el => el.child(h_flex().size(16).flex_none().rounded(4.5).bg(fill).items_center().justify_center().text_size(9.5).font_bold().text_color("#ffffff").child(w.name[0]?.toUpperCase() ?? "?")))
           .child(div().flex_shrink(0).max_w(150).truncate().text_color(t.foreground).child(w.name))
+          .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1())
           .child(div().id(`space-tab-new-${w.id}`).flex_none().px(4).rounded(4).text_color(t.dim).tooltip("New tab")
             .hover((s) => s.bg(t.hover).text_color(t.foreground))
             .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
             .on_click(() => openOverlay({ mod: "new-menu-plus", kind: "popup", at: "pointer", width: 250, height: 512, props: { space: w.id } }))
-            .child("+"))
-          .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1()),
+            .child("+")),
       );
   }
 
