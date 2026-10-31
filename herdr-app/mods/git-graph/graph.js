@@ -1,8 +1,8 @@
 // The graph itself: Git Graph's table (graph, description, date, author,
 // commit) for the focused pane's repository, or `props.folder` when opened as
 // a pane. Labels take double-clicks (checkout) and right-clicks (menus).
-import { div, svg, PathBuilder } from "gpui-kit";
-import { v_flex, h_flex, Scrollbar, v_virtual_list } from "gpui-base";
+import { div, svg, PathBuilder, list as lazyList } from "gpui-kit";
+import { v_flex, h_flex, Scrollbar } from "gpui-base";
 import { spaces, panes, focused, exec, watchFolder, theme, settings, props, shared, setShared, openOverlay, run, home } from "herdr";
 import { layoutLanes } from "./lanes.js";
 import { READ, STATUS, UNCOMMITTED, LABEL, logArgs, parseLog, parseStatus, withUncommitted, labelsOf, hitLabel,
@@ -259,6 +259,12 @@ export class Graph {
   clicked(key, cx) {
     const press = this.press; this.press = null;
     if (key === "more") return this.loadMore(cx);
+    if (key === "details-close") { this.selected = null; this.details = null; cx.notify(); return; }
+    if (key.startsWith("file:")) {
+      const commit = this.commits[this.index.get(this.selected)], file = this.details?.files?.find((f) => `file:${this.selected}:${f.path}` === key);
+      if (commit && file) this.openDiff(commit, file);
+      return;
+    }
     const commit = this.commits[this.index.get(key)];
     if (!commit) return;
     if (press?.count >= 2) {
@@ -441,20 +447,24 @@ export class Graph {
   }
 
   list(t, mono) {
-    const colors = laneColors(t), width = this.graphWidth(), count = this.commits.length + (this.hasMore ? 1 : 0);
+    const colors = laneColors(t), width = this.graphWidth(), keys = this.commits.map((c) => c.hash);
+    const details = this.detailRows(t, mono);
+    if (details.size) keys.splice(this.index.get(this.selected) + 1, 0, ...details.keys());
+    if (this.hasMore) keys.push("more");
     return div().flex_1().min_h(0).relative()
       .on_mouse_down("left", (e) => { this.press = { x: (e.local_position?.x ?? 0) / this.unit(), count: e.click_count }; })
-      .child(v_virtual_list(this.listId, count, ROW, (i) => this.commits[i]?.hash ?? "more",
-        (range, cx) => {
+      .child(lazyList(this.listId, keys.length, (i) => keys[i],
+        (i, cx) => {
+          const key = keys[i];
           // Scrolling to the end loads the next page, as Git Graph does; the row also takes a click.
-          if (range.end > this.commits.length && this.hasMore && !this.loading && this.moreAsked !== this.limit) {
+          if (key === "more" && !this.loading && this.moreAsked !== this.limit) {
             this.moreAsked = this.limit;
             cx.spawn(async (cx) => this.loadMore(cx));
           }
-          return Array.from({ length: range.end - range.start }, (_x, k) => range.start + k).map((i) => i < this.commits.length
-            ? this.row(i, t, colors, mono, width)
+          return details.has(key) ? details.get(key)() : key !== "more"
+            ? this.row(this.index.get(key), t, colors, mono, width)
             : div().id("graph-more").h(ROW).flex_none().px(14).flex().items_center().text_color(t.accent).hover((s) => s.bg(t.hover))
-              .child(this.loading ? "Loading more commits…" : `Load ${PAGE} more commits`));
+              .child(this.loading ? "Loading more commits…" : `Load ${PAGE} more commits`);
         })
         // Rows of a virtual list can't hold their own handlers: the list reports the row's key.
         .on_item_click((key, cx) => this.clicked(key, cx))
@@ -463,46 +473,47 @@ export class Graph {
       .child(Scrollbar.vertical(this.listId).viewport_from_layout().absolute().inset_0());
   }
 
-  detailsPane(t, mono) {
-    const commit = this.commits[this.index.get(this.selected)], d = this.details;
-    if (!commit) return div();
-    const top = h_flex().h(32).flex_none().px(10).gap(6).items_center().border_b(1).border_color(t.border).text_size(11.5);
-    const close = div().id("graph-details-close").px(6).py(1).rounded(4).text_color(t.dim).cursor_pointer().hover((s) => s.bg(t.hover).text_color(t.foreground))
-      .on_click((_e, cx) => { this.selected = null; this.details = null; cx.notify(); }).child("×");
-    const title = commit.uncommitted ? "Uncommitted changes" : `Commit ${commit.hash.slice(0, 8)}`;
-    const body = v_flex().id("graph-details").flex_1().min_h(0).overflow_y_scrollbar().px(14).py(10).gap(4);
-    const pane = (content) => v_flex().flex_none().h(320).border_t(1).border_color(t.border)
-      .child(top.child(div().flex_1().text_color(t.muted).child(title)).child(close))
-      .child(content);
-    if (d?.error) return pane(body.child(div().text_color(t.ansi1).child(d.error)));
-    const meta = (k, v, color) => h_flex().gap(8).text_size(11.5).child(div().w(64).flex_none().text_color(t.dim).child(k)).child(div().min_w(0).truncate().text_color(color ?? t.muted).child(v));
-    // The history already has the header: it shows at once, and what git adds lands below it.
-    const head = commit.uncommitted ? body : body
-      .child(div().font_semibold().child(commit.subject))
-      .child(meta("Commit", commit.hash, t.accent).font_family(mono))
-      .child(meta("Parents", commit.parents.map((p) => p.slice(0, 8)).join(", ") || "none"))
-      .child(meta("Author", `${commit.author} <${commit.email}>`))
-      .child(meta("Date", `${stamp(commit.time)} · ${ago(commit.time)}`));
-    if (!d) return pane(head.child(div().pt(8).text_size(11.5).text_color(t.dim).child(commit.uncommitted ? "Loading…" : "Loading files…")));
-    const add = d.files.reduce((n, f) => n + f.add, 0), del = d.files.reduce((n, f) => n + f.del, 0);
+  detailRows(t, mono) {
+    const commit = this.commits[this.index.get(this.selected)], d = this.details, rows = new Map();
+    if (!commit) return rows;
+    // Build elements inside the lazy renderer; clicks route through the list's stable row keys.
+    const row = () => h_flex().w_full().h(ROW).flex_none().px(14).gap(8).items_center().bg(t.raised).overflow_hidden();
+    const text = (value, color = t.muted) => rows.set(`detail:${rows.size}`, () => div().w_full().min_h(ROW).flex_none().px(14).py(3).bg(t.raised)
+      .text_color(color).child(value));
+    const meta = (label, value, color = t.muted) => rows.set(`detail:${rows.size}`, () => row().text_size(11.5)
+      .child(div().w(64).flex_none().text_color(t.dim).child(label))
+      .child(div().min_w(0).truncate().text_color(color).when(label === "Commit", (e) => e.font_family(mono)).child(value)));
+    rows.set("details-close", () => row().border_t(1).border_color(t.border).text_size(11.5).cursor_pointer().hover((s) => s.bg(t.hover))
+      .child(div().flex_1().text_color(t.muted).child(commit.uncommitted ? "Uncommitted changes" : `Commit ${commit.hash.slice(0, 8)}`))
+      .child(div().text_color(t.dim).child("×")));
+    if (d?.error) { text(d.error, t.ansi1); return rows; }
+    if (!commit.uncommitted) {
+      text(commit.subject, t.foreground);
+      meta("Commit", commit.hash, t.accent);
+      meta("Parents", commit.parents.map((p) => p.slice(0, 8)).join(", ") || "none");
+      meta("Author", `${commit.author} <${commit.email}>`);
+      meta("Date", `${stamp(commit.time)} · ${ago(commit.time)}`);
+    }
+    if (!d) { text(commit.uncommitted ? "Loading…" : "Loading files…", t.dim); return rows; }
+    if (d.committer && d.committer !== d.author) meta("Committer", d.committer);
     const lines = commit.uncommitted ? "" : d.message.split("\n").slice(1).join("\n").trim();
-    return pane(head
-      .when(Boolean(d.committer && d.committer !== d.author), (el) => el.child(meta("Committer", d.committer)))
-      .when(Boolean(lines), (el) => el.child(v_flex().pt(6).children(lines.split("\n").map((line) => div().text_color(t.muted).child(line || " ")))))
-      .child(h_flex().pt(8).pb(2).gap(8).items_center().text_size(11.5)
-        .child(div().text_color(t.muted).child(count(d.files.length + d.more, "file")))
-        .when(add > 0 || del > 0, (e) => e.child(div().text_color(t.ansi2).child(`+${add}`)).child(div().text_color(t.ansi1).child(`−${del}`))))
-      .children(d.files.map((f, i) => {
-        const parts = f.path.split("/"), name = parts.pop();
-        const sc = f.status === "A" ? t.ansi2 : f.status === "D" || f.status === "U" ? t.ansi1 : t.blocked;
-        return h_flex().id(`gf-${i}`).h(24).flex_none().px(6).gap(8).items_center().rounded(6).cursor_pointer().hover((s) => s.bg(t.hover))
-          .on_click(() => this.openDiff(commit, f))
-          .child(div().w(12).flex_none().text_size(11).text_color(sc).child(f.status))
-          .child(h_flex().flex_1().min_w(0).child(div().text_color(t.dim).truncate().child(parts.length ? parts.join("/") + "/" : "")).child(div().min_w(0).truncate().child(name)))
-          .when(f.add > 0, (e) => e.child(div().text_size(11).text_color(t.ansi2).child(`+${f.add}`)))
-          .when(f.del > 0, (e) => e.child(div().text_size(11).text_color(t.ansi1).child(`−${f.del}`)));
-      }))
-      .when(d.more > 0, (e) => e.child(div().text_size(11).text_color(t.dim).child(`and ${d.more} more`))));
+    if (lines) for (const line of lines.split("\n")) text(line || " ");
+    const add = d.files.reduce((n, f) => n + f.add, 0), del = d.files.reduce((n, f) => n + f.del, 0);
+    rows.set("details-files", () => row().text_size(11.5)
+      .child(div().text_color(t.muted).child(count(d.files.length + d.more, "file")))
+      .when(add > 0 || del > 0, (e) => e.child(div().text_color(t.ansi2).child(`+${add}`)).child(div().text_color(t.ansi1).child(`−${del}`))));
+    for (const f of d.files) rows.set(`file:${commit.hash}:${f.path}`, () => {
+      const parts = f.path.split("/"), name = parts.pop();
+      const sc = f.status === "A" ? t.ansi2 : f.status === "D" || f.status === "U" ? t.ansi1 : t.blocked;
+      return row().cursor_pointer().hover((s) => s.bg(t.hover))
+        .child(div().w(12).flex_none().text_size(11).text_color(sc).child(f.status))
+        .child(h_flex().flex_1().min_w(0).child(div().text_color(t.dim).truncate().child(parts.length ? parts.join("/") + "/" : "")).child(div().min_w(0).truncate().child(name)))
+        .when(f.add > 0, (e) => e.child(div().text_size(11).text_color(t.ansi2).child(`+${f.add}`)))
+        .when(f.del > 0, (e) => e.child(div().text_size(11).text_color(t.ansi1).child(`−${f.del}`)));
+    });
+    if (d.more > 0) text(`and ${d.more} more`, t.dim);
+    rows.set("details-end", () => row().border_b(1).border_color(t.border));
+    return rows;
   }
 
   empty(t) {
@@ -537,8 +548,7 @@ export class Graph {
         if (wide !== this.wide || graphMax !== this.graphMax) { this.wide = wide; this.graphMax = graphMax; cx.notify(); }
       })
       .child(this.header(t))
-      .when(ready, (e) => e.child(this.toolbar(t)).child(this.columns(t, this.graphWidth())).child(this.list(t, mono))
-        .when(Boolean(this.selected), (el) => el.child(this.detailsPane(t, mono))))
+      .when(ready, (e) => e.child(this.toolbar(t)).child(this.columns(t, this.graphWidth())).child(this.list(t, mono)))
       .when(!ready, (e) => e.child(this.empty(t)));
   }
 }
