@@ -20,7 +20,7 @@ export default class PaneCorner extends View {
     const t = theme(), pane = props()?.pane, p = panes().find((x) => x.pane === pane);
     if (!p) return div();
     return h_flex().size_full().justify_end().items_start()
-      .child(h_flex().id(`corner-${pane}`).w(132).h_full().pt(3.5).pr(6).justify_end().items_start()
+      .child(h_flex().id(`corner-${pane}`).w(132).h_full().pt(3.5).pr(3.5).justify_end().items_start()
         .on_hover((hovered, cx) => { this.hovered = hovered; cx.notify(); })
         .when(this.hovered, (el) => el.child(h_flex().gap(2).p(2).rounded(7).bg(t.popover).border(1).border_color(t.border)
           .child(this.button(t, `pc-r-${pane}`, "split-right", "Split right", "pane.split", { direction: "right", pane }))
