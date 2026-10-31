@@ -4,10 +4,12 @@
 // its first terminal is in now, only where unusual: branch, ahead/behind. Click to
 // switch, right-click for its menu, drag to reorder; + at the row's right starts a new tab there.
 // Under each space, indented, its tabs and their agents' sub-agents.
+// Each space also keeps a hidden, settled placeholder tab (the space-empty mod), so closing its
+// last listed tab leaves the space open and empty instead of closing it.
 
 import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { spaces, machines, panes, agents, terminals, focused, setAgentOrder, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window } from "herdr";
+import { spaces, machines, panes, agents, terminals, focused, setAgentOrder, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, nextCommand } from "herdr";
 
 // Where a space is now: its first terminal's live folder, else where it was made.
 // `ps`: panes(), read once by the caller (each read copies every pane).
@@ -15,6 +17,10 @@ function place(s, ps) {
   const tabs = new Set((s.tabs ?? []).map((c) => c.id));
   return ps.find((p) => tabs.has(p.tab) && p.cwd)?.cwd || s.folder;
 }
+const EMPTY = "space-empty";
+const placeholders = (ps) => new Set(ps.filter((p) => p.mod === EMPTY).map((p) => p.tab));
+// New spaces ask where they live first (the space-new dialog); Cmd-N runs `spaces-card.new_space`.
+const newSpace = (machine) => openOverlay({ mod: "space-new", kind: "dialog", modal: true, width: 460, height: 230, props: machine ? { machine } : {} });
 const rowHeight = ({ tree }) => (tree ? 28 : 30);
 const where = (s, ps) => JSON.stringify([s.machine ?? null, place(s, ps)]);
 const base = (path) => path.replace(/\/+$/, "").split("/").pop();
@@ -84,6 +90,7 @@ export default class Spaces extends View {
     // worktree appears under its repo instead of jumping there.
     this.shown = new Set(spaces().map((s) => s.id));
     this.born = {};
+    this.placing = new Set(); // spaces whose placeholder tab was asked for and hasn't appeared yet
     this.pressed = null;
     this.over = null;
     this.machines = [];
@@ -97,13 +104,16 @@ export default class Spaces extends View {
     // `git status` walks the whole tree, on another machine a process there:
     // only when its answer could have changed (see `due`).
     cx.timer.every(250, (cx) => this.checkNew(cx));
+    cx.spawn(async () => { for (;;) if (await nextCommand() === "new_space") newSpace(null); });
   }
 
   checkNew(cx) {
     const now = Date.now();
     const sp = spaces();
     for (const s of sp) if (!this.shown.has(s.id)) this.born[s.id] ??= now;
-    const due = this.due(now, sp, panes());
+    const ps = panes();
+    this.keepPlaceholders(sp, ps);
+    const due = this.due(now, sp, ps);
     if (due.size) this.refreshGit(due, cx);
     if (sp.some((s) => !this.shown.has(s.id))) cx.notify();
   }
@@ -140,6 +150,26 @@ export default class Spaces extends View {
       }
     }
     return due;
+  }
+
+  // Making a tab shows it, so the space's shown tab and the focused one come back right after.
+  // The placeholder is settled once it's out of view, which keeps tab.next, tab.prev and
+  // tab.select by index off it.
+  keepPlaceholders(sp, ps) {
+    const held = placeholders(ps);
+    for (const s of sp) {
+      const ph = s.tabs?.find((c) => held.has(c.id));
+      if (ph) {
+        this.placing.delete(s.id);
+        if (!ph.settled && !ph.active) run("tab.settle", { id: ph.id });
+      } else if (!this.placing.has(s.id)) {
+        this.placing.add(s.id);
+        const f = focused(), shown = s.tabs?.find((c) => c.active);
+        run("tab.new", { space: s.id, mod: EMPTY, name: "empty" });
+        if (shown) run("tab.select", { id: shown.id });
+        if (f && f.tab !== shown?.id) run("tab.select", { id: f.tab });
+      }
+    }
   }
 
   // `key` and the other places in its repo (a commit there moves their ahead/behind).
@@ -291,7 +321,8 @@ export default class Spaces extends View {
   // sub-agents. A tab reads as its name when someone named it, else as its agent's own title; an
   // automatic number says nothing, so it reads as its program unless two would then read the same.
   tabRows({ w, tree }, ctx, t) {
-    const tabs = (w.tabs ?? []).filter((c) => !c.settled || c.active);
+    const hidden = placeholders(ctx.ps);
+    const tabs = (w.tabs ?? []).filter((c) => (!c.settled || c.active) && !hidden.has(c.id));
     const labels = new Map(tabs.map((c) => [c.id, title(c, lead(c, ctx.ps))]));
     const numbered = [...labels.values()].filter((l) => /^\d+$/.test(l)).length;
     const indent = tree ? 52 : 33;
@@ -423,12 +454,12 @@ export default class Spaces extends View {
         .when(!collapsed, el => el.child(div().flex_1().truncate().child(m ?? "This computer"))
           .when(!connected, el => el.child(div().flex_none().child((machine?.state ?? "asleep").replace(/_/g, " "))))
           .when(connected, el => el.child(div().id(`machine-add-${m ?? "local"}`).flex_none().px(4).rounded(4).hover(s => s.bg(t.hover).text_color(t.foreground))
-            .on_click((_e, cx) => { cx.stop_propagation(); run("space.new", m ? { machine: m } : {}); }).child("+")))
+            .on_click((_e, cx) => { cx.stop_propagation(); newSpace(m); }).child("+")))
           .child(div().size(6).rounded(3).flex_none().bg(connected ? t.ansi2 : t.dim))
           .child(svg(`mods/workspace-chrome/chevron-${folded ? "right" : "down"}.svg`).size(11).flex_none()));
       const empty = h_flex().id(`machine-new-${m ?? "local"}`).h(28).flex_none().px(8).gap(7).items_center().rounded(7)
         .text_size(12).text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.foreground))
-        .on_click(() => run("space.new", m ? { machine: m } : {}))
+        .on_click(() => newSpace(m))
         .child(svg("mods/workspace-chrome/plus.svg").size(12)).when(!collapsed, el => el.child("New space there"));
       return [head, ...(folded ? [] : mine.length ? mine.flatMap(draw) : [loading(m) ? loadingRow(m) : empty])];
     });

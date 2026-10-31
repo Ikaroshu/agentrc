@@ -84,9 +84,11 @@ export default class TopBar extends View {
   }
 
   // Space › tab (› pane, when split), then the branch and folder of the focused pane (a mod pane,
-  // such as the file viewer, has neither: its tab's first terminal's).
+  // such as the file viewer, has neither: its tab's first terminal's). A space showing its
+  // placeholder tab (space-empty, see spaces-card) has no tabs to name.
   where(space, t) {
-    const tab = space.tabs.find(c => c.active), all = panes(), f = focused();
+    const all = panes(), f = focused(), shown = space.tabs.find(c => c.active);
+    const tab = all.some(p => p.tab === shown?.id && p.mod === "space-empty") ? null : shown;
     const pane = all.find(p => p.pane === f?.pane && p.terminal) ?? all.find(p => p.tab === tab?.id && p.terminal);
     const cur = tab?.panes > 1 ? all.find(p => p.pane === f?.pane) : null;
     const paneName = cur && (((cur.program?.agent || cur.program?.shell) && cur.program.name) || cur.title || cur.program?.name);

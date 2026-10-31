@@ -2,6 +2,7 @@
   "global": {
     "cmd-shift-t": "tab.new",
     "cmd-shift-c": "top-bar.claude",
-    "cmd-shift-x": "top-bar.codex"
+    "cmd-shift-x": "top-bar.codex",
+    "cmd-n": "spaces-card.new_space"
   }
 }
