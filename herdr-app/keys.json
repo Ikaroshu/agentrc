@@ -4,5 +4,9 @@
     "cmd-shift-c": "top-bar.claude",
     "cmd-shift-x": "top-bar.codex",
     "cmd-n": "spaces-card.new_space"
+  },
+  "mod:file-view": {
+    "cmd-s": "file-view.save",
+    "alt-f": "file-view.find"
   }
 }

@@ -1,10 +1,15 @@
-// Read-only tabs for the files and diffs the Files and Graph panels opened in this tab: rendered
-// Markdown, and diffs side by side or unified. Local files and uncommitted diffs reload when the
-// file changes on disk; uncommitted diffs also recheck every 10 seconds, since a commit or reset
-// changes them without touching the file.
+// Tabs for the files and diffs the Files and Graph panels opened in this tab: editable files
+// (Markdown rendered until Source), and diffs side by side or unified. Cmd-S saves (keys.json
+// binds it to `file-view.save`); Option-F (`file-view.find`, so not typing "ƒ" here) searches the
+// shown file from the Files panel's search box, since the editor keeps Cmd-F for itself; a file changed on disk since it was opened needs a second Cmd-S to
+// overwrite, and a tab with unsaved edits asks before closing. Files too large to load whole stay
+// read-only. Local files and uncommitted diffs reload when the file changes on disk (not over
+// unsaved edits); uncommitted diffs also recheck every 10 seconds, since a commit or reset changes
+// them without touching the file. Preview/Source (Markdown) and Split/Unified (diffs)
+// show while the pointer is at the content's top right corner.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState, TextView, Scrollbar, v_virtual_list } from "gpui-base";
-import { props, shared, setShared, panes, run, exec, readTextFile, watchFolder, theme, settings } from "herdr";
+import { props, shared, setShared, panes, run, exec, readTextFile, writeTextFile, watchFolder, theme, settings, nextCommand, notify, openOverlay } from "herdr";
 
 const LANG = { ts: "js", tsx: "js", mts: "js", cts: "js", jsx: "js", mjs: "js", toml: "yaml", jsonc: "json", svelte: "html", vue: "html" };
 const MARKDOWN = new Set(["md", "markdown", "mdx"]);
@@ -72,6 +77,52 @@ export default class FileView extends View {
   init(_props, cx) {
     this.docs = new Map(); this.watching = new Set();
     cx.timer.every(10000, cx => { for (const doc of this.docs.values()) if (doc.entry.diff && working(doc.entry)) this.load(doc, cx); });
+    // Every viewer gets the command; only the focused one acts.
+    cx.spawn(async cx => {
+      for (;;) {
+        const command = await nextCommand();
+        if (!panes().find(p => p.mod === "file-view" && p.tab === props().tab)?.focused && command !== "discard") continue;
+        if (command === "save") this.save(this.docs.get(this.view().active), cx);
+        else if (command === "find") this.find();
+        else if (command === "discard" && this.closing) { this.close(this.closing, cx, true); this.closing = null; }
+        cx.notify();
+      }
+    });
+  }
+
+  // Shows the Files panel with its search scoped to the shown file.
+  find() {
+    const entry = this.docs.get(this.view().active)?.entry;
+    if (!entry || entry.diff) return;
+    setShared("files.scope", { file: entry.file, on: entry.on ?? null });
+    run("layout.select", { stack: "panel-body", child: "files" });
+    run("layout.show", { id: "panel" });
+    run("files-plus.find_in_file");
+  }
+
+  // Writes the edits unless the file changed on disk since it was read: then the first save warns
+  // and the next one overwrites. Another machine's file goes through `hc file write` from a temporary
+  // copy here, since writeTextFile writes only on this computer.
+  save(doc, cx) {
+    if (!doc?.dirty) return;
+    const { file, on } = doc.entry, text = doc.code.value();
+    cx.spawn(async cx => {
+      const disk = await readTextFile(file, { on });
+      if (disk !== doc.saved && !doc.force) {
+        doc.force = true;
+        notify({ title: `${nameOf(file)} changed on disk`, body: "Save again to overwrite it with your version.", level: "warning" });
+        return;
+      }
+      if (!on) await writeTextFile(file, text, disk);
+      else {
+        const copy = `/tmp/herdr-file-view-${Date.now()}`;
+        await writeTextFile(copy, text, null);
+        const r = await exec("sh", ["-c", 'hc file write --on "$1" "$2" < "$3"; s=$?; rm -f "$3"; exit $s', "save", on, file, copy]);
+        if (r.code !== 0) { notify({ title: `Couldn't save ${nameOf(file)}`, body: r.stderr.trim(), level: "error" }); return; }
+      }
+      doc.saved = text; doc.dirty = false; doc.force = false;
+      cx.notify();
+    });
   }
 
   view() {
@@ -83,7 +134,14 @@ export default class FileView extends View {
     setShared("file-view", { ...(shared("file-view") ?? {}), [props().tab]: view });
   }
 
-  close(id, cx) {
+  close(id, cx, discard = false) {
+    if (this.docs.get(id)?.dirty && !discard) {
+      this.closing = id;
+      openOverlay({ mod: "confirm", kind: "dialog", width: 420, height: 180, props: {
+        title: `Discard changes to ${nameOf(this.docs.get(id).entry.file)}?`, detail: "Your unsaved edits will be lost.",
+        command: { name: "file-view.discard" } } });
+      return;
+    }
     const { files, active } = this.view(), at = files.findIndex(f => entryId(f) === id), rest = files.filter(f => entryId(f) !== id);
     if (!rest.length) {
       const all = { ...(shared("file-view") ?? {}) };
@@ -107,7 +165,8 @@ export default class FileView extends View {
           return;
         }
         const text = await readTextFile(doc.entry.file, { on: doc.entry.on });
-        if (this.docs.get(doc.id) !== doc) return;
+        // Not over unsaved edits, and not when nothing changed (after a save): refilling moves the cursor.
+        if (this.docs.get(doc.id) !== doc || doc.dirty || (doc.code && text === doc.saved)) return;
         doc.error = text === null ? "This file is no longer available" : text.includes("\0") ? "Binary file · no text preview" : null;
         if (!doc.error) this.fill(doc, text);
         doc.loaded = true;
@@ -117,12 +176,21 @@ export default class FileView extends View {
   }
 
   fill(doc, text) {
-    doc.text = text.length > 400000 ? text.slice(0, 400000) + "\n… (file truncated)" : text;
-    if (doc.code) { doc.code.set_value(doc.text); return; }
+    const truncated = text.length > 400000;
+    doc.text = truncated ? text.slice(0, 400000) + "\n… (file truncated)" : text;
+    doc.saved = text;
+    if (doc.code && truncated === doc.truncated) { doc.code.set_value(doc.text); return; }
+    doc.code?.release();
+    doc.truncated = truncated;
     const t = theme(), ext = extOf(doc.entry.file);
-    doc.code = EditorState.new({ language: LANG[ext] ?? ext, readonly: true, value: doc.text,
+    doc.code = EditorState.new({ language: LANG[ext] ?? ext, readonly: truncated, value: doc.text,
       font_family: settings().font_family, font_size: 12,
       syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
+    doc.code.on("change", (_e, cx) => {
+      if (doc.truncated) return;
+      doc.text = doc.code.value(); doc.dirty = doc.text !== doc.saved;
+      cx.notify();
+    });
   }
 
   // Opens docs for new entries, releases closed ones, and watches the folders of local files
@@ -133,7 +201,7 @@ export default class FileView extends View {
     for (const entry of files) {
       const id = entryId(entry);
       if (this.docs.has(id)) continue;
-      const doc = { id, entry, loaded: false, error: null, text: null, code: null, rows: null, source: false, unified: false };
+      const doc = { id, entry, loaded: false, error: null, text: null, saved: null, code: null, rows: null, source: false, unified: false, dirty: false, force: false, truncated: false };
       this.docs.set(id, doc);
       this.load(doc, cx);
     }
@@ -191,13 +259,17 @@ export default class FileView extends View {
         .on_click(() => this.setView({ files, active: id }))
         .when(Boolean(e.diff), el => el.child(div().text_size(11).text_color(t.ansi3).child("±")))
         .child(div().max_w(200).truncate().child(label(e, i)))
+        .when(Boolean(this.docs.get(id)?.dirty), el => el.child(div().text_size(10).text_color(t.accent).child("●")))
         .child(div().id(`view-close-${id}`).size(18).flex().items_center().justify_center().rounded(4).text_color(t.dim).hover(s => s.bg(t.selected))
           .on_click((_e, cx) => { cx.stop_propagation(); this.close(id, cx); }).child(svg("mods/pane/close.svg").size(11)));
     };
     const toggle = (id, text, on, set) => div().id(id).px(8).h(22).flex().items_center().rounded(5).text_size(11.5)
-      .bg(on ? t.selected : t.background).text_color(on ? t.foreground : t.muted)
+      .bg(on ? t.selected : t.popover).text_color(on ? t.foreground : t.muted)
       .hover(s => s.bg(t.hover)).on_click((_e, cx) => { set(); cx.notify(); }).child(text);
-    const where = !entry ? "" : entry.diff ? `${entry.diff.path} · ${entry.diff.commit ? `commit ${entry.diff.commit.slice(0, 7)}` : "uncommitted, against HEAD"}` : folderOf(entry.file);
+    const modes = !doc?.loaded || doc.error ? null
+      : markdown ? [toggle("view-preview", "Preview", !doc.source, () => { doc.source = false; }), toggle("view-source", "Source", doc.source, () => { doc.source = true; })]
+      : entry.diff ? [toggle("view-split", "Split", !doc.unified, () => { doc.unified = false; }), toggle("view-unified", "Unified", doc.unified, () => { doc.unified = true; })]
+      : null;
     const body = !doc ? div().p(12).text_color(t.dim).child("Open a file from the Files or Changes panel")
       : doc.error ? div().p(12).text_color(t.dim).child(doc.error)
       : !doc.loaded ? div().p(12).text_color(t.dim).child("Loading…")
@@ -207,12 +279,10 @@ export default class FileView extends View {
     return v_flex().id("file-view").size_full().min_h(0).bg(t.background).text_color(t.foreground).text_size(13)
       .child(h_flex().id("view-tabs").h(34).flex_none().px(6).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)
         .overflow_x_scrollbar().children(files.map(tab)))
-      .when(Boolean(doc), el => el.child(h_flex().h(28).flex_none().px(12).gap(4).items_center().border_b(1).border_color(t.border)
-        .child(div().flex_1().min_w(0).truncate().text_size(11.5).text_color(t.dim).child(where))
-        .when(markdown, el => el.child(toggle("view-preview", "Preview", !doc.source, () => { doc.source = false; }))
-          .child(toggle("view-source", "Source", doc.source, () => { doc.source = true; })))
-        .when(Boolean(entry?.diff), el => el.child(toggle("view-split", "Split", !doc.unified, () => { doc.unified = false; }))
-          .child(toggle("view-unified", "Unified", doc.unified, () => { doc.unified = true; })))))
-      .child(body);
+      .child(v_flex().flex_1().min_h(0).relative()
+        .child(body)
+        .when(Boolean(modes), el => el.child(h_flex().id("view-corner").absolute().top_0().right_0().w(200).h(56).pt(8).pr(18).justify_end().items_start()
+          .on_hover((over, cx) => { this.cornered = over; cx.notify(); })
+          .when(Boolean(this.cornered), el => el.child(h_flex().gap(2).p(2).rounded(7).bg(t.popover).border(1).border_color(t.border).children(modes))))));
   }
 }
