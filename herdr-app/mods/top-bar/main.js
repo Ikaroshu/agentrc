@@ -1,7 +1,7 @@
 // The window's top row beside the sidebar: where you are (space › tab, then the pane when the tab
-// is split, branch, folder), the focused pane's split, zoom and close buttons (panes have no
-// header), and the side panel's buttons. Tabs live in the sidebar, under their space. Keys bound
-// to `top-bar.<program>` (keys.json) start that agent in a new tab, as the + menu does.
+// is split, branch, folder) and the side panel's buttons, which start at the panel's left edge
+// while it shows. Tabs live in the sidebar, under their space. Keys bound to `top-bar.<program>` (keys.json) start that agent in a new tab, as the +
+// menu does.
 import { View, div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, panes, focused, knownAgents, nextCommand, run, theme, window, layout, shared, home } from "herdr";
@@ -126,21 +126,14 @@ export default class TopBar extends View {
           else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
         }).child(svg(icon).size(14)).child(label);
     };
-    const cur = panes().find(p => p.pane === focused()?.pane);
-    const paneButton = (id, icon, tip, command, args) => div().id(id).p(3).flex_none().rounded(5).text_color(t.dim).tooltip(tip)
-      .hover(s => s.bg(t.hover).text_color(t.foreground)).on_mouse_down("left", stop).on_click(() => run(command, args))
-      .child(svg(`mods/pane/${icon}.svg`).size(14));
-    return h_flex().size_full().min_w(0).px(2).gap(12).items_center()
+    // The panel's width as the layout draws it: a saved drag width is held to its min and max.
+    const open = panel && !panel.hidden;
+    const width = open ? Math.min(panel.max ?? Infinity, Math.max(panel.min ?? 0, panel.size?.px ?? 0)) : 0;
+    return h_flex().size_full().min_w(0).pl(2).pr(open ? 0 : 2).gap(12).items_center()
       .child(space ? this.where(space, t) : div().flex_1())
-      .child(h_flex().flex_none().gap(3).items_center()
-        .when(Boolean(cur), el => el
-          .child(paneButton("pane-split-right", "split-right", "Split right", "pane.split", { direction: "right", pane: cur.pane }))
-          .child(paneButton("pane-split-down", "split-down", "Split down", "pane.split", { direction: "down", pane: cur.pane }))
-          .child(paneButton("pane-zoom", cur.zoomed ? "unzoom" : "zoom", cur.zoomed ? "Unzoom" : "Zoom", "pane.zoom", { pane: cur.pane }))
-          .child(paneButton("pane-close", "close", "Close pane", "pane.close", { pane: cur.pane }))
-          .child(div().w(1).h(16).mx(6).flex_none().bg(t.border)))
+      .child(h_flex().flex_none().gap(3).items_center().when(open, el => el.w(width).pl(2))
         .children(PANELS.map(panelButton))
-        .when(window()?.buttons, el => el.child(button("minimize", "−", () => run("window.minimize")))
+        .when(window()?.buttons, el => el.child(div().flex_1()).child(button("minimize", "−", () => run("window.minimize")))
           .child(button("maximize", "□", () => run("window.maximize")))
           .child(button("close-window", svg("mods/pane/close.svg").size(13), () => run("window.close")))));
   }

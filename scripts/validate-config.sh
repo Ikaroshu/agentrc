@@ -59,6 +59,7 @@ required_files=(
   herdr-app/layouts/main-titled.json
   herdr-app/mods/top-bar/main.js
   herdr-app/mods/sidebar-title/main.js
+  herdr-app/mods/pane-corner/main.js
   herdr-app/mods/files-plus/main.js
   herdr-app/mods/file-view/main.js
   herdr-app/mods/spaces-card/main.js

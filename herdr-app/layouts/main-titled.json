@@ -99,7 +99,15 @@
                       },
                       "radius": 10,
                       "gap": 8,
-                      "lone": true
+                      "lone": true,
+                      "header": {
+                        "content": {
+                          "mod": "pane-corner"
+                        },
+                        "reveal": "hover",
+                        "height": 40,
+                        "position": "top"
+                      }
                     }
                   }
                 },
