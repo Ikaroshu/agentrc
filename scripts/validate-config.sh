@@ -181,7 +181,6 @@ if config["model"] != "gpt-6-astra" or config["model_reasoning_effort"] != "high
 
 recursive_skills = {
     "implement",
-    "handoff",
     "adversarial-doc-review",
     "code-review",
     "claude-doc-review",
@@ -225,7 +224,7 @@ for filename, (expected_name, blocks_recursion, expected_model, expected_effort)
         or len(selectors) != len(recursive_skills)
     ):
         raise SystemExit(
-            f"{filename}: expected exactly the six disabled recursive workflow skills"
+            f"{filename}: expected exactly the five disabled recursive workflow skills"
         )
 PY
 
