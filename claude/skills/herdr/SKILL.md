@@ -69,10 +69,12 @@ Once work is accepted, `hc kill` then `hc rm` only terminals you started.
 
 ## Change what the user sees
 
-New spaces and tabs are shown immediately: create them only when asked, and give each an explicit, useful name. `herdr-app do <command>` prints the created IDs or `{"error": ...}` with exit 1; confirm the result with `herdr-app ls`.
+New spaces and tabs take the window's focus: create them only when asked, and give each an explicit, useful name. `herdr-app do <command>` prints the created IDs or `{"error": ...}` with exit 1; confirm the result with `herdr-app ls`. Unless the user asks to switch to the new space or tab, record the focused pane right before creating it and refocus that pane afterward, so the user stays where they were working:
 
 ```bash
+pane=$(herdr-app status | python3 -c 'import json, sys; print(json.load(sys.stdin)["focused_pane"])')
 herdr-app do tab.new --space "$space_id" --name "fix login" --folder "$PWD" --argv '["claude"]' --task "$task"
+herdr-app do pane.focus --pane "$pane"
 herdr-app do pane.split --direction right --pane "$pane_id" --argv '["claude"]'
 herdr-app do agent.focus --terminal "$target"
 ```
