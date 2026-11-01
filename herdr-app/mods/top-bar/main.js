@@ -10,6 +10,7 @@ import { spaces, panes, focused, knownAgents, nextCommand, run, theme, window, l
 const PANELS = [
   { id: "files", label: "Files", icon: "mods/files/file.svg" },
   { id: "graph", label: "Graph", icon: "mods/git-graph/icons/graph.svg" },
+  { id: "issues", label: "Issues", icon: "mods/issues/circle-dot.svg" },
 ];
 
 // What a stored color name looks like on an avatar (the same in every mod

@@ -139,6 +139,13 @@
                           "content": {
                             "mod": "git-graph"
                           }
+                        },
+                        {
+                          "id": "issues",
+                          "type": "block",
+                          "content": {
+                            "mod": "issues"
+                          }
                         }
                       ]
                     }

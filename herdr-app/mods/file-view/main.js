@@ -7,9 +7,10 @@
 // read-only. Local files and uncommitted diffs reload when the file changes on disk (not over
 // unsaved edits); uncommitted diffs also recheck every 10 seconds, since a commit or reset changes
 // them without touching the file. Preview/Source (Markdown) shows while the pointer is at the
-// content's top right corner.
+// content's top right corner. Issues the Issues panel opened show their body and comments, and
+// take a comment, Close or Reopen (closing or reopening posts the box's text as a comment too).
 import { View, div, svg } from "gpui-kit";
-import { v_flex, h_flex, Editor, EditorState, TextView, Scrollbar, v_virtual_list } from "gpui-base";
+import { v_flex, h_flex, Editor, EditorState, TextView, Scrollbar, v_virtual_list, TextareaState, Textarea } from "gpui-base";
 import { props, shared, setShared, panes, run, exec, readTextFile, writeTextFile, watchFolder, theme, settings, nextCommand, notify, openOverlay } from "herdr";
 
 const LANG = { ts: "js", tsx: "js", mts: "js", cts: "js", jsx: "js", mjs: "js", toml: "yaml", jsonc: "json", svelte: "html", vue: "html" };
@@ -19,7 +20,10 @@ const folderOf = (file) => file.slice(0, file.lastIndexOf("/"));
 const nameOf = (file) => file.slice(file.lastIndexOf("/") + 1);
 const extOf = (file) => nameOf(file).includes(".") ? nameOf(file).split(".").pop().toLowerCase() : "txt";
 const entryId = (e) => e.diff ? `${e.diff.commit ?? "working"}:${e.file}` : e.file;
-const working = (e) => !e.diff || e.diff.commit === null;
+const working = (e) => !e.issue && (!e.diff || e.diff.commit === null);
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const day = (iso) => { const d = new Date(iso); return `${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; };
+const ISSUE_FIELDS = "number,title,state,stateReason,author,createdAt,body,comments,url";
 
 // The diff's lines from its first hunk, or a message when there is no text diff.
 async function diffLines({ file, on, diff: { root, path, commit } }) {
@@ -80,7 +84,7 @@ export default class FileView extends View {
   // Shows the Files panel with its search scoped to the shown file.
   find() {
     const entry = this.docs.get(this.view().active)?.entry;
-    if (!entry || entry.diff) return;
+    if (!entry || entry.diff || entry.issue) return;
     setShared("files.scope", { file: entry.file, on: entry.on ?? null });
     run("layout.select", { stack: "panel-body", child: "files" });
     run("layout.show", { id: "panel" });
@@ -145,6 +149,16 @@ export default class FileView extends View {
   load(doc, cx) {
     cx.spawn(async cx => {
       try {
+        if (doc.entry.issue) {
+          const { repo, number } = doc.entry.issue;
+          const r = await exec("gh", ["issue", "view", String(number), "-R", repo, "--json", ISSUE_FIELDS], { on: doc.entry.on });
+          if (this.docs.get(doc.id) !== doc) return;
+          doc.error = r.code === 0 ? null : r.stderr.trim() || `gh exited with ${r.code}`;
+          if (r.code === 0) doc.issue = JSON.parse(r.stdout);
+          if (!doc.box) { doc.box = TextareaState.new({ placeholder: "Leave a comment" }); doc.box.set_auto_grow(3, 12); }
+          doc.loaded = true;
+          return;
+        }
         if (doc.entry.diff) {
           const { lines, message } = await diffLines(doc.entry);
           if (this.docs.get(doc.id) !== doc) return;
@@ -184,7 +198,7 @@ export default class FileView extends View {
   // whose content can change.
   sync(files, cx) {
     const open = new Set(files.map(entryId));
-    for (const [id, doc] of this.docs) if (!open.has(id)) { doc.code?.release(); this.docs.delete(id); }
+    for (const [id, doc] of this.docs) if (!open.has(id)) { doc.code?.release(); doc.box?.release(); this.docs.delete(id); }
     for (const entry of files) {
       const id = entryId(entry);
       if (this.docs.has(id)) continue;
@@ -222,20 +236,66 @@ export default class FileView extends View {
       .child(Scrollbar.vertical(list).viewport_from_layout().absolute().inset_0());
   }
 
+  // Comments on, closes or reopens the shown issue, then reloads it and tells the Issues panel.
+  act(doc, kind, cx) {
+    const { repo, number } = doc.entry.issue, text = doc.box.value().trim();
+    if (kind === "comment" && !text) return;
+    const args = kind === "comment" ? ["comment", String(number), "-R", repo, "--body", text]
+      : [kind, String(number), "-R", repo, ...(text ? ["--comment", text] : [])];
+    doc.busy = true;
+    cx.spawn(async cx => {
+      const r = await exec("gh", ["issue", ...args], { on: doc.entry.on });
+      doc.busy = false;
+      if (r.code !== 0) notify({ title: `Couldn't ${kind} #${number}`, body: r.stderr.trim(), level: "error" });
+      else { doc.box.set_value(""); setShared("issues.changed", { repo, at: Date.now() }); this.load(doc, cx); }
+      cx.notify();
+    });
+  }
+
+  issueBody(doc, t) {
+    const issue = doc.issue, open = issue.state === "OPEN";
+    const button = (id, label, primary, action) => div().id(id).h(28).px(12).flex().flex_none().items_center().rounded(7).text_size(12.5).cursor_pointer()
+      .when(primary, e => e.bg(t.accent).text_color(t.background)).when(!primary, e => e.border_1().border_color(t.border).hover(s => s.bg(t.hover)))
+      .on_click((_e, cx) => action(cx)).child(label);
+    const post = (key, login, at, text) => v_flex().flex_none().rounded(8).border_1().border_color(t.border).overflow_hidden()
+      .child(h_flex().h(32).px(12).gap(6).items_center().bg(t.raised).border_b(1).border_color(t.border).text_size(12)
+        .child(div().font_semibold().child(login ?? "ghost")).child(div().text_color(t.dim).child(day(at))))
+      .child(div().px(14).py(10).child(text.trim() ? TextView.markdown(`${doc.id}-${key}`, text).selectable(true) : div().text_color(t.dim).child("No description provided.")));
+    const comments = issue.comments.length;
+    return v_flex().id(`issue-${doc.id}`).flex_1().min_h(0).overflow_y_scrollbar().px(20).py(16).gap(12)
+      .child(div().flex_none().text_size(20).font_semibold().child(issue.title))
+      .child(h_flex().flex_none().gap(8).items_center().text_size(12.5)
+        .child(div().h(24).px(10).flex().items_center().rounded(12).font_semibold().bg(open ? t.ansi2 : t.ansi5).text_color(t.background)
+          .child(open ? "Open" : issue.stateReason === "NOT_PLANNED" ? "Closed as not planned" : "Closed"))
+        .child(div().flex_1().min_w(0).truncate().text_color(t.dim)
+          .child(`#${issue.number} · ${issue.author?.login ?? "ghost"} opened ${day(issue.createdAt)} · ${comments} comment${comments === 1 ? "" : "s"}`))
+        .child(button("issue-github", "Open on GitHub", false, cx => cx.open_url(issue.url))))
+      .child(post("body", issue.author?.login, issue.createdAt, issue.body))
+      .children(issue.comments.map((c, n) => post(`comment-${n}`, c.author?.login, c.createdAt, c.body)))
+      .child(v_flex().flex_none().gap(8).pt(4)
+        .child(Textarea.new(doc.box).text_size(13))
+        .child(h_flex().gap(8).justify_end()
+          .when(Boolean(doc.busy), e => e.child(div().text_color(t.dim).child("Saving…")))
+          .when(!doc.busy, e => e
+            .child(button("issue-state", open ? "Close issue" : "Reopen issue", false, cx => this.act(doc, open ? "close" : "reopen", cx)))
+            .child(button("issue-comment", "Comment", true, cx => this.act(doc, "comment", cx))))));
+  }
+
   render(cx) {
     const { files, active } = this.view();
     this.sync(files, cx);
     const t = theme(), doc = this.docs.get(active), entry = doc?.entry;
-    const markdown = entry && !entry.diff && MARKDOWN.has(extOf(entry.file));
-    const names = files.map(e => nameOf(e.file) + (e.diff ? ` · ${e.diff.commit ? e.diff.commit.slice(0, 7) : "changes"}` : ""));
+    const markdown = entry && !entry.diff && !entry.issue && MARKDOWN.has(extOf(entry.file));
+    const names = files.map(e => e.issue ? `#${e.issue.number} ${e.issue.title}` : nameOf(e.file) + (e.diff ? ` · ${e.diff.commit ? e.diff.commit.slice(0, 7) : "changes"}` : ""));
     // Two open tabs with the same name show their parent folder too.
-    const label = (e, i) => names.indexOf(names[i]) !== names.lastIndexOf(names[i]) ? `${nameOf(folderOf(e.file))}/${names[i]}` : names[i];
+    const label = (e, i) => !e.issue && names.indexOf(names[i]) !== names.lastIndexOf(names[i]) ? `${nameOf(folderOf(e.file))}/${names[i]}` : names[i];
     const tab = (e, i) => {
       const id = entryId(e), on = id === active;
       return h_flex().id(`view-${id}`).h(26).pl(10).pr(4).gap(6).flex_none().items_center().rounded(6).text_size(12.5)
         .bg(on ? t.raised : t.chrome).text_color(on ? t.foreground : t.muted).hover(s => s.bg(t.hover))
         .on_click(() => this.setView({ files, active: id }))
         .when(Boolean(e.diff), el => el.child(div().text_size(11).text_color(t.ansi3).child("±")))
+        .when(Boolean(e.issue), el => el.child(svg("mods/issues/circle-dot.svg").size(11).flex_none().text_color(t.ansi2)))
         .child(div().max_w(200).truncate().child(label(e, i)))
         .when(Boolean(this.docs.get(id)?.dirty), el => el.child(div().text_size(10).text_color(t.accent).child("●")))
         .child(div().id(`view-close-${id}`).size(18).flex().items_center().justify_center().rounded(4).text_color(t.dim).hover(s => s.bg(t.selected))
@@ -247,9 +307,10 @@ export default class FileView extends View {
     const modes = markdown && doc.loaded && !doc.error
       ? [toggle("view-preview", "Preview", !doc.source, () => { doc.source = false; }), toggle("view-source", "Source", doc.source, () => { doc.source = true; })]
       : null;
-    const body = !doc ? div().p(12).text_color(t.dim).child("Open a file from the Files or Changes panel")
+    const body = !doc ? div().p(12).text_color(t.dim).child("Open a file, diff or issue from the Files, Graph or Issues panel")
       : doc.error ? div().p(12).text_color(t.dim).child(doc.error)
       : !doc.loaded ? div().p(12).text_color(t.dim).child("Loading…")
+      : entry.issue ? this.issueBody(doc, t)
       : entry.diff ? this.diffBody(doc, t)
       : markdown && !doc.source ? div().flex_1().min_h(0).px(20).py(12).child(TextView.markdown(`md-${doc.id}`, doc.text).size_full().scrollable(true).selectable(true))
       : Editor.new(doc.code).flex_1().min_h(0);
