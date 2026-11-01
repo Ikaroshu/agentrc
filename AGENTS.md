@@ -16,7 +16,7 @@ This repository contains portable Codex and Claude Code configuration, not an ap
 - `claude/agents/*.md` — native subagents installed into `~/.claude/agents/`; `Explore.md` and `general-purpose.md` replace the Claude Code built-ins of those names to set their model and effort.
 - `claude/skills/` — skills installed into `~/.claude/skills/`.
 - `claude/install.sh`, `claude/sync-remote.sh` — Claude Code install and remote sync.
-- `herdr-app/` — Herdr app mods, layout, and key bindings for this Mac only; `herdr-app/install.sh` copies the mods and layout into `~/.config/herdr-app/` and merges `herdr-app/keys.json` into its `keys.json`. Remote machines run only herdr-core, so never sync these.
+- `herdr-app/` — Herdr app mods, layout, key bindings, and settings for this Mac only; `herdr-app/install.sh`, run with the app open, copies the mods and layout into `~/.config/herdr-app/`, merges `herdr-app/keys.json` and `herdr-app/settings.json` into its `keys.json` and `settings.json`, switches to the `main-titled` layout when another shows, and installs the Symbols Nerd Font cask with Homebrew if missing. Remote machines run only herdr-core, so never sync these.
 - `scripts/` — validation and config-merge helpers.
 - `archive/` — inert documentation snapshots only. Follow their read-only inspection instructions; never extract, execute, source, install, sync, or copy them into active configuration.
 
