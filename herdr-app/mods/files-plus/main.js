@@ -12,6 +12,26 @@ const VIEW = "file-view";
 const parentOf = (path) => path.slice(0, Math.max(0, path.lastIndexOf("/")));
 const nameOf = (path) => path.slice(path.lastIndexOf("/") + 1);
 
+// A file's type icon, a glyph of Symbols Nerd Font (installed on this Mac): by its exact name, else
+// by its extension, else a text page.
+const ICON_FONT = "Symbols Nerd Font";
+const BY_NAME = { Dockerfile: 0xe650, Makefile: 0xe673, LICENSE: 0xe60a, ".gitignore": 0xe65d };
+const BY_EXT = Object.fromEntries([
+  [0xe60c, "js mjs cjs"], [0xe625, "jsx tsx"], [0xe628, "ts mts cts"], [0xe60b, "json jsonc"], [0xe606, "py pyi"],
+  [0xe627, "go"], [0xe649, "c h"], [0xe646, "cpp cc hpp"], [0xe66d, "java"], [0xe699, "swift"], [0xe634, "kt kts"],
+  [0xe60e, "html htm"], [0xe6a0, "vue"], [0xe697, "svelte"], [0xe6b3, "astro"], [0xe68b, "rs"], [0xe605, "rb"],
+  [0xe614, "css"], [0xe603, "scss sass"], [0xe60d, "png jpg jpeg gif webp ico"], [0xe698, "svg"],
+  [0xf48a, "md mdx markdown"], [0xe691, "sh bash zsh fish"], [0xe6b2, "toml"], [0xe6a8, "yaml yml"],
+  [0xe615, "ini conf cfg env"], [0xe672, "lock"], [0xe619, "xml plist"], [0xe67d, "pdf"],
+  [0xe6aa, "zip gz tgz tar"], [0xe620, "lua"], [0xe608, "php"], [0xe64a, "csv tsv"],
+].flatMap(([glyph, exts]) => exts.split(" ").map(ext => [ext, glyph])));
+const TEXT_GLYPH = 0xe64e;
+function fileIcon(name, t) {
+  const dot = name.lastIndexOf("."), ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
+  return div().w(14).flex_none().flex().justify_center().font_family(ICON_FONT).text_size(13).text_color(t.muted)
+    .child(String.fromCodePoint(BY_NAME[name] ?? BY_EXT[ext] ?? TEXT_GLYPH));
+}
+
 // File operations' shell scripts, run on the tree's machine with the paths as arguments.
 // Paste ($1 into folder $2, by cp or mv as $3) takes the first free name of "a.txt", "a copy.txt",
 // "a copy 2.txt", ...
@@ -426,7 +446,7 @@ export default class Files extends View {
           .child(this.snippet(row.text, t));
         const slash = row.path.lastIndexOf("/");
         return base
-          .child(svg("mods/files-plus/file.svg").size(14).flex_none().text_color(t.muted))
+          .child(fileIcon(nameOf(row.path), t))
           .child(div().flex_none().max_w(200).truncate().child(row.path.slice(slash + 1)))
           .child(div().flex_1().min_w(0).truncate().text_size(11.5).text_color(t.dim).child(slash < 0 ? "" : row.path.slice(0, slash)));
       })).track_scroll(this.scroll).on_item_click((key, cx) => this.pick(key.slice(0, key.lastIndexOf(":")), cx)).size_full()))
@@ -439,7 +459,7 @@ export default class Files extends View {
     const edit = this.edit;
     if (edit && edit.kind !== "rename" && edit.folder === prefix) out.push(h_flex().h(28).flex_none().pl(8 + depth * 18).pr(8).gap(7).items_center().rounded(7).bg(t.hover)
       .child(div().w(12).flex_none())
-      .child(svg(`mods/files-plus/${edit.kind === "folder" ? "folder" : "file"}.svg`).size(14).flex_none().text_color(t.muted))
+      .child(edit.kind === "folder" ? svg("mods/files-plus/folder.svg").size(14).flex_none().text_color(t.muted) : fileIcon("", t))
       .child(this.nameField(t)));
     for (const entry of this.entries.get(prefix) ?? []) {
       if (out.length >= TOTAL) break;
@@ -450,7 +470,7 @@ export default class Files extends View {
         .on_click((_e, cx) => entry.dir ? this.toggle(path, cx) : this.open(path))
         .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); this.menu({ path, dir: entry.dir }); })
         .child(entry.dir ? svg(`mods/files-plus/chevron-${open ? "down" : "right"}.svg`).size(12).flex_none().text_color(t.dim) : div().w(12).flex_none())
-        .child(svg(`mods/files-plus/${entry.dir ? "folder" : "file"}.svg`).size(14).flex_none().text_color(t.muted))
+        .child(entry.dir ? svg("mods/files-plus/folder.svg").size(14).flex_none().text_color(t.muted) : fileIcon(entry.name, t))
         .child(renaming ? this.nameField(t) : div().flex_1().min_w(0).truncate().child(entry.name))
         .when(Boolean(mark), el => el.child(div().text_size(11).text_color(mark === "A" ? t.ansi2 : mark === "D" || mark === "U" ? t.ansi1 : t.blocked).child(mark))));
       if (entry.dir && open) this.rows(path, depth + 1, out, t, viewing);
