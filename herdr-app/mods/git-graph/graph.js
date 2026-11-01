@@ -1,6 +1,8 @@
 // The graph itself: Git Graph's table (graph, description, date, author,
 // commit) for the focused pane's repository, or `props.folder` when opened as
-// a pane. Labels take double-clicks (checkout) and right-clicks (menus).
+// a pane. A commit's branch and tag labels get their own row under it, so a
+// narrow panel crops neither them nor the description. Labels take
+// double-clicks (checkout) and right-clicks (menus).
 import { div, svg, PathBuilder, list as lazyList } from "gpui-kit";
 import { v_flex, h_flex, Scrollbar } from "gpui-base";
 import { spaces, panes, focused, exec, watchFolder, theme, settings, props, shared, setShared, openOverlay, run, home } from "herdr";
@@ -19,12 +21,18 @@ function location(folder) {
   return { cwd: pane?.cwd || f?.cwd || space?.folder, on };
 }
 
-const PAGE = 300, ROW = 24, LANE = 12, PAD = 6, DATE = 62, AUTHOR = 120, HASH = 66;
+const PAGE = 300, ROW = 24, LANE = 12, PAD = 6, DATE = 62, DATE_MIN = 28, AUTHOR = 120, HASH = 66;
 // The tab's file viewer (agentrc's file-view mod), where a clicked file's diff opens.
 const VIEW = "file-view";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const pad2 = (n) => String(n).padStart(2, "0");
 const laneColors = (t) => [t.ansi4, t.ansi2, t.ansi5, t.ansi3, t.ansi6, t.ansi1, t.ansi12, t.ansi10, t.ansi13, t.ansi11, t.ansi14, t.ansi9];
+const laneX = (lane) => PAD + lane * LANE + LANE / 2;
+const dateText = (commit) => (commit.uncommitted ? "*" : ago(commit.time));
+// No text measuring here: a generous width per character of the 12.5 px UI font.
+const dateWidth = (commit) => dateText(commit).length * 7.5 + 4;
+// The lines running past a commit's label row: every line leaving the commit's row at its bottom.
+const through = (row) => row.segments.filter((s) => s[3] === 1).map(([, , to, , color, dashed]) => [to, 0, to, 1, color, dashed]);
 const isRefChange = (p) => /\/(HEAD|packed-refs)$|\/refs\//.test(p);
 const inGitDir = (p) => p.includes("/.git/") || p.endsWith("/.git");
 
@@ -190,8 +198,9 @@ export class Graph {
   build() {
     const commits = withUncommitted(this.base, this.files.length, this.head);
     const { rows, width } = layoutLanes(commits);
+    for (const row of rows) row.need = Math.max(row.lane, ...row.segments.flatMap((s) => [s[0], s[2]])) + 1;
     this.commits = commits; this.rows = rows; this.lanes = width;
-    this.labels = new Map(commits.map((c) => [c.hash, labelsOf(c, this.remotes)]));
+    this.relabel();
     this.index = new Map(commits.map((c, i) => [c.hash, i]));
     this.ctx = { root: this.root, on: this.on, current: this.current, head: this.head, branches: this.branches, remotes: this.remoteNames };
     this.state = commits.length ? "ready" : "empty"; this.error = null;
@@ -246,11 +255,39 @@ export class Graph {
     cx.notify();
   }
 
-  graphWidth() { return Math.min(PAD * 2 + this.lanes * LANE, this.graphMax); }
-  // Where the description column ends: labels past it are clipped, so not clickable.
-  labelLimit() {
-    if (!this.width) return Infinity;
-    return this.width - 2 - 10 - DATE - LABEL.GAP - (this.wide ? AUTHOR + HASH + LABEL.GAP * 2 : 0);
+  graphWidth() { return this.graphW ?? Math.min(PAD * 2 + this.lanes * LANE, this.graphMax); }
+  dateWidth() { return this.dateW ?? DATE; }
+
+  // The list draws only the rows on screen, so the graph and date columns take the width those
+  // rows need and the description gets the rest. A row needing more widens them at once; a later
+  // render (each scroll asks for one) narrows them to what was drawn since the last.
+  sizeColumns() {
+    const drawn = this.drawn;
+    this.drawn = { lanes: 0, date: 0 }; this.widening = false;
+    if (!drawn?.lanes) return;
+    const graph = Math.min(PAD * 2 + drawn.lanes * LANE, this.graphMax ?? Infinity);
+    this.dateW = Math.max(DATE_MIN, drawn.date);
+    if (graph !== this.graphW) { this.graphW = graph; this.relabel(); }
+  }
+
+  saw(i, cx) {
+    const drawn = this.drawn;
+    drawn.lanes = Math.max(drawn.lanes, this.rows[i].need);
+    drawn.date = Math.max(drawn.date, dateWidth(this.commits[i]));
+    if (this.widening) return;
+    // Drawing a row is part of rendering, which may not notify: a task it starts does.
+    if (Math.min(PAD * 2 + drawn.lanes * LANE, this.graphMax ?? Infinity) > this.graphWidth() || drawn.date > this.dateWidth()) {
+      this.widening = true;
+      cx.spawn(async (cx) => cx.notify());
+    }
+  }
+
+  // Where a label row ends: labels past it are clipped, so not clickable.
+  labelLimit() { return this.width ? this.width - 2 - 10 : Infinity; }
+  labelRoom() { return this.labelLimit() - this.graphWidth() - LABEL.GAP; }
+  relabel() {
+    this.room = this.labelRoom();
+    this.labels = new Map(this.commits.map((c) => [c.hash, labelsOf(c, this.remotes, this.room)]));
   }
   // Pointer positions come in window units; layout sizes are these units times the zoom.
   unit() { return this.scale ?? settings().zoom ?? 1; }
@@ -265,10 +302,10 @@ export class Graph {
       if (commit && file) this.openDiff(commit, file);
       return;
     }
-    const commit = this.commits[this.index.get(key)];
+    const refs = key.startsWith("refs:"), hash = refs ? key.slice(5) : key, commit = this.commits[this.index.get(hash)];
     if (!commit) return;
     if (press?.count >= 2) {
-      const hit = hitLabel(this.labels.get(key), press.x, this.graphWidth(), this.labelLimit());
+      const hit = refs && hitLabel(this.labels.get(hash), press.x, this.graphWidth(), this.labelLimit());
       if (hit) this.checkout(hit.part, cx);
       return;
     }
@@ -286,11 +323,11 @@ export class Graph {
   }
 
   contextMenu(key, e, cx) {
-    const commit = this.commits[this.index.get(key)];
+    const refs = key.startsWith("refs:"), hash = refs ? key.slice(5) : key, commit = this.commits[this.index.get(hash)];
     if (!commit || !this.ctx) return;
     if (e.bounds?.height) this.scale = e.bounds.height / ROW;
     const x = (e.local_position?.x ?? 0) / this.unit();
-    const hit = commit.uncommitted ? null : hitLabel(this.labels.get(key), x, this.graphWidth(), this.labelLimit());
+    const hit = refs ? hitLabel(this.labels.get(hash), x, this.graphWidth(), this.labelLimit()) : null;
     const target = commit.uncommitted ? { kind: "uncommitted", commit: brief(commit) }
       : hit && hit.part.kind !== "head" ? { kind: hit.part.kind, name: hit.part.name, commit: brief(commit) }
       : { kind: "commit", commit: brief(commit) };
@@ -352,10 +389,10 @@ export class Graph {
 
   // ---- drawing
 
-  graphCell(row, commit, colors, t, width) {
-    const x = (lane) => PAD + lane * LANE + LANE / 2, y = (v) => v * ROW, paths = new Map();
+  graphCell(segments, colors, t, width, dot) {
+    const x = laneX, y = (v) => v * ROW, paths = new Map();
     // One stroked path per color: a row is a handful of paints, however many lanes cross it.
-    for (const [a, ya, b, yb, c, dashed] of row.segments) {
+    for (const [a, ya, b, yb, c, dashed] of segments) {
       const color = dashed ? t.dim : colors[c % colors.length], key = `${color}${dashed ? "-" : ""}`;
       let p = paths.get(key)?.p ?? (dashed ? PathBuilder.stroke(1.5).dash_array([3, 3]) : PathBuilder.stroke(1.5));
       p = p.move_to(x(a), y(ya));
@@ -363,12 +400,9 @@ export class Graph {
       else { const mid = (y(ya) + y(yb)) / 2; p = p.cubic_bezier_to(x(b), y(yb), x(a), mid, x(b), mid); }
       paths.set(key, { p, color });
     }
-    const color = commit.uncommitted ? t.dim : colors[row.lane % colors.length];
-    const dot = div().absolute().left(x(row.lane) - 4).top(ROW / 2 - 4).size(8).rounded(4);
     return div().relative().flex_none().w(width).h(ROW).overflow_hidden()
       .children([...paths.values()].map(({ p, color }) => window.paint_path(p.build(), color).absolute().top(0).left(0).size_full()))
-      // HEAD is a ring, as in Git Graph; uncommitted changes a gray one.
-      .child(commit.head || commit.uncommitted ? dot.bg(t.background).border(2).border_color(color) : dot.bg(color));
+      .when(Boolean(dot), (e) => e.child(dot));
   }
 
   label(label, color, t, mono) {
@@ -390,17 +424,28 @@ export class Graph {
     const commit = this.commits[i], row = this.rows[i], color = colors[row.lane % colors.length];
     // Merge commits are muted, as Git Graph does by default.
     const fg = commit.uncommitted ? t.muted : commit.parents.length > 1 ? t.dim : t.foreground;
-    return h_flex().id(`c-${commit.hash}`).w_full().h(ROW).flex_none().pr(10).gap(LABEL.GAP).items_center().overflow_hidden()
-      .when(commit.head, (e) => e.bg(color + "14")).when(this.selected === commit.hash, (e) => e.bg(t.selected)).hover((s) => s.bg(t.hover))
-      .child(this.graphCell(row, commit, colors, t, width))
-      // Labels and description clip together, so many labels never push the fixed columns out.
-      .child(h_flex().flex_1().min_w(0).h_full().gap(LABEL.GAP).items_center().overflow_hidden()
-        .children(this.labels.get(commit.hash).map((l) => this.label(l, color, t, mono)))
-        .child(div().flex_1().min_w(0).truncate().text_color(fg).when(commit.head, (e) => e.font_semibold()).child(commit.subject)))
-      .child(div().w(DATE).flex_none().text_right().truncate().text_color(t.dim).child(commit.uncommitted ? "*" : ago(commit.time)))
+    const ring = commit.uncommitted ? t.dim : color, dot = div().absolute().left(laneX(row.lane) - 4).top(ROW / 2 - 4).size(8).rounded(4);
+    return this.rowBox(`c-${commit.hash}`, commit, color, t)
+      // HEAD is a ring, as in Git Graph; uncommitted changes a gray one.
+      .child(this.graphCell(row.segments, colors, t, width, commit.head || commit.uncommitted ? dot.bg(t.background).border(2).border_color(ring) : dot.bg(ring)))
+      .child(div().flex_1().min_w(0).truncate().text_color(fg).when(commit.head, (e) => e.font_semibold()).child(commit.subject))
+      .child(div().w(this.dateWidth()).flex_none().text_right().truncate().text_color(t.dim).child(dateText(commit)))
       .when(this.wide, (e) => e
         .child(div().w(AUTHOR).flex_none().truncate().text_color(t.muted).child(commit.uncommitted ? "*" : commit.author))
         .child(div().w(HASH).flex_none().font_family(mono).text_size(11).text_color(t.dim).child(commit.uncommitted ? "*" : commit.hash.slice(0, 8))));
+  }
+
+  // A commit's branch and tag labels, on the row under it.
+  labelRow(i, t, colors, mono, width) {
+    const commit = this.commits[i], row = this.rows[i], color = colors[row.lane % colors.length];
+    return this.rowBox(`r-${commit.hash}`, commit, color, t)
+      .child(this.graphCell(through(row), colors, t, width))
+      .children(this.labels.get(commit.hash).map((l) => this.label(l, color, t, mono)));
+  }
+
+  rowBox(id, commit, color, t) {
+    return h_flex().id(id).w_full().h(ROW).flex_none().pr(10).gap(LABEL.GAP).items_center().overflow_hidden()
+      .when(commit.head, (e) => e.bg(color + "14")).when(this.selected === commit.hash, (e) => e.bg(t.selected)).hover((s) => s.bg(t.hover));
   }
 
   iconButton(id, glyph, tip, active, action, t) {
@@ -441,17 +486,21 @@ export class Graph {
   columns(t, width) {
     const head = (text, w) => div().when(w !== undefined, (e) => e.w(w).flex_none()).truncate().child(text);
     return h_flex().h(24).flex_none().pr(10).gap(LABEL.GAP).items_center().border_b(1).border_color(t.border).text_size(11).text_color(t.dim)
-      .child(head("Graph", width).pl(PAD)).child(div().flex_1().min_w(0).child("Description"))
-      .child(head("Date", DATE).text_right())
+      .child(head(width >= 44 ? "Graph" : "", width).pl(PAD)).child(div().flex_1().min_w(0).child("Description"))
+      .child(head("Date", this.dateWidth()).text_right())
       .when(this.wide, (e) => e.child(head("Author", AUTHOR)).child(head("Commit", HASH)));
   }
 
   list(t, mono) {
-    const colors = laneColors(t), width = this.graphWidth(), keys = this.commits.map((c) => c.hash);
-    const details = this.detailRows(t, mono);
-    if (details.size) keys.splice(this.index.get(this.selected) + 1, 0, ...details.keys());
+    const colors = laneColors(t), width = this.graphWidth(), details = this.detailRows(t, mono), keys = [];
+    for (const { hash } of this.commits) {
+      keys.push(hash);
+      if (this.labels.get(hash).length) keys.push(`refs:${hash}`);
+      if (hash === this.selected) keys.push(...details.keys());
+    }
     if (this.hasMore) keys.push("more");
     return div().flex_1().min_h(0).relative()
+      .on_scroll_wheel((_e, cx) => cx.notify())
       .on_mouse_down("left", (e) => { this.press = { x: (e.local_position?.x ?? 0) / this.unit(), count: e.click_count }; })
       .child(lazyList(this.listId, keys.length, (i) => keys[i],
         (i, cx) => {
@@ -461,8 +510,11 @@ export class Graph {
             this.moreAsked = this.limit;
             cx.spawn(async (cx) => this.loadMore(cx));
           }
-          return details.has(key) ? details.get(key)() : key !== "more"
-            ? this.row(this.index.get(key), t, colors, mono, width)
+          if (details.has(key)) return details.get(key)();
+          const refs = key.startsWith("refs:"), at = this.index.get(refs ? key.slice(5) : key);
+          if (at !== undefined) this.saw(at, cx);
+          return refs ? this.labelRow(at, t, colors, mono, width)
+            : key !== "more" ? this.row(at, t, colors, mono, width)
             : div().id("graph-more").h(ROW).flex_none().px(14).flex().items_center().text_color(t.accent).hover((s) => s.bg(t.hover))
               .child(this.loading ? "Loading more commits…" : `Load ${PAGE} more commits`);
         })
@@ -535,6 +587,7 @@ export class Graph {
     const changed = shared("git-graph.changed");
     if (changed !== this.seenChange) { this.seenChange = changed; if (this.root) this.refresh(cx); }
     const t = theme(), mono = settings().font_family ?? "JetBrains Mono", ready = this.state === "ready";
+    if (ready) this.sizeColumns();
     return v_flex().id("git-graph").size_full().min_h(0).rounded(10).overflow_hidden().bg(t.background).border_1().border_color(t.border)
       .text_color(t.foreground).text_size(12.5).track_focus(this.handle)
       .on_key_down((e, cx) => {
@@ -546,6 +599,7 @@ export class Graph {
         const width = size.width / this.unit(), wide = width >= 600, graphMax = Math.max(60, Math.round(width * 0.4));
         this.width = width;
         if (wide !== this.wide || graphMax !== this.graphMax) { this.wide = wide; this.graphMax = graphMax; cx.notify(); }
+        if (this.labelRoom() !== this.room) { this.relabel(); cx.notify(); }
       })
       .child(this.header(t))
       .when(ready, (e) => e.child(this.toolbar(t)).child(this.columns(t, this.graphWidth())).child(this.list(t, mono)))

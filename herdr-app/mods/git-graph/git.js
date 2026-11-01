@@ -55,11 +55,12 @@ export function withUncommitted(commits, changes, head) {
 // Labels are drawn at these exact widths (monospace text, fixed padding and
 // icon), so a press can be matched to the label under it: a virtual list's
 // rows can't hold their own handlers.
-export const LABEL = { CHAR: 6.6, PAD: 5, ICON: 13, GAP: 6, MAX: 22, FONT: 11 };
+export const LABEL = { CHAR: 6.6, PAD: 5, ICON: 13, GAP: 6, MAX: 60, FONT: 11 };
 const fit = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 const partWidth = (part) => Math.ceil(LABEL.PAD * 2 + (part.icon ? LABEL.ICON : 0) + part.text.length * LABEL.CHAR) + 1;
 
-export function labelsOf(commit, remotesShown = true) {
+// A label wider than `room` (its row's free width) shortens its first name to fit.
+export function labelsOf(commit, remotesShown, room) {
   const labels = [], remotes = remotesShown ? commit.refs.filter((r) => r.kind === "remote") : [], paired = new Set();
   for (const ref of commit.refs) {
     if (ref.kind === "detached") labels.push({ kind: "head", head: true, parts: [{ kind: "head", name: "HEAD", text: "HEAD" }] });
@@ -78,9 +79,16 @@ export function labelsOf(commit, remotesShown = true) {
   for (const ref of commit.refs) if (ref.kind === "tag") labels.push({ kind: "tag", parts: [{ kind: "tag", name: ref.name, text: fit(ref.name, LABEL.MAX), icon: true }] });
   // What's checked out comes first.
   labels.sort((a, b) => Number(Boolean(b.head)) - Number(Boolean(a.head)));
+  const measure = (label) => { label.width = label.parts.reduce((n, p) => n + p.width, 2); }; // + a 1 px border each side
   for (const label of labels) {
     for (const part of label.parts) part.width = partWidth(part);
-    label.width = label.parts.reduce((n, p) => n + p.width, 2); // + a 1 px border each side
+    measure(label);
+    const over = label.width - room, first = label.parts[0];
+    if (over > 0) {
+      first.text = fit(first.name, Math.max(4, first.text.length - Math.ceil(over / LABEL.CHAR)));
+      first.width = partWidth(first);
+      measure(label);
+    }
   }
   return labels;
 }
