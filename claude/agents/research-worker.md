@@ -13,4 +13,6 @@ Preserve reproducible code, exact commands, raw or machine-readable results, and
 
 Use helpers when they materially improve the experiment, give them disjoint ownership, and integrate their evidence yourself. When spawning a subagent, pass `model: "sonnet"` (or `"haiku"`), choose a type whose effort is at most high, and never fork, since a fork inherits your model. Use the experiment infrastructure authorized by the brief; request authorization before expanding into paid, destructive, or unrelated external operations.
 
+Stop every background process you start, such as log followers, watchers, or servers, before returning.
+
 Return a concise report with the conclusion, evidence, limitations, useful next tests, exact commands, blockers, and artifact paths.
