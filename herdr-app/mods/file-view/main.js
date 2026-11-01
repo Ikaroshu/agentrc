@@ -1,12 +1,13 @@
 // Tabs for the files and diffs the Files and Graph panels opened in this tab: editable files
-// (Markdown rendered until Source), and diffs side by side or unified. Cmd-S saves (keys.json
+// (Markdown rendered until Source), and diffs stacked (removed lines above added ones), scrolling
+// sideways for long lines. Cmd-S saves (keys.json
 // binds it to `file-view.save`); Option-F (`file-view.find`, so not typing "ƒ" here) searches the
 // shown file from the Files panel's search box, since the editor keeps Cmd-F for itself; a file changed on disk since it was opened needs a second Cmd-S to
 // overwrite, and a tab with unsaved edits asks before closing. Files too large to load whole stay
 // read-only. Local files and uncommitted diffs reload when the file changes on disk (not over
 // unsaved edits); uncommitted diffs also recheck every 10 seconds, since a commit or reset changes
-// them without touching the file. Preview/Source (Markdown) and Split/Unified (diffs)
-// show while the pointer is at the content's top right corner.
+// them without touching the file. Preview/Source (Markdown) shows while the pointer is at the
+// content's top right corner.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState, TextView, Scrollbar, v_virtual_list } from "gpui-base";
 import { props, shared, setShared, panes, run, exec, readTextFile, writeTextFile, watchFolder, theme, settings, nextCommand, notify, openOverlay } from "herdr";
@@ -42,35 +43,21 @@ async function diffLines({ file, on, diff: { root, path, commit } }) {
   return { lines: all.slice(first) };
 }
 
-// Numbers each line and pairs each run of removals with the additions after it, so a split
-// row shows the old line beside the new one.
+// Numbers each line (a removed line by its old number) and sizes the rows to the longest line.
 function diffRows(lines) {
-  const unified = [], split = [];
-  let old = 0, next = 0, minus = [], plus = [];
-  const flush = () => {
-    for (let i = 0; i < Math.max(minus.length, plus.length); i++) split.push({ left: minus[i] ?? null, right: plus[i] ?? null });
-    minus = []; plus = [];
-  };
+  const rows = [];
+  let old = 0, next = 0;
   for (const raw of lines.slice(0, DIFF_LINES)) {
     const line = raw.length > 4000 ? raw.slice(0, 4000) + "… (line truncated)" : raw;
     const match = /^@@ -(\d+)(?:,\d+)? \+(\d+)/.exec(line);
-    if (match) {
-      flush(); old = +match[1]; next = +match[2];
-      unified.push({ hunk: line }); split.push({ hunk: line });
-      continue;
-    }
+    if (match) { old = +match[1]; next = +match[2]; rows.push({ hunk: line }); continue; }
     const kind = line[0], text = line.slice(1) || " ";
-    if (kind === "-") { const cell = { kind, number: old++, text }; minus.push(cell); unified.push(cell); }
-    else if (kind === "+") { const cell = { kind, number: next++, text }; plus.push(cell); unified.push(cell); }
-    else if (kind === " ") {
-      flush();
-      split.push({ left: { kind, number: old++, text }, right: { kind, number: next, text } });
-      unified.push({ kind, number: next++, text });
-    }
+    if (kind === "-") rows.push({ kind, number: old++, text });
+    else if (kind === "+") rows.push({ kind, number: next++, text });
+    else if (kind === " ") { old++; rows.push({ kind, number: next++, text }); }
   }
-  flush();
-  if (lines.length > DIFF_LINES) { unified.push({ hunk: `… diff truncated at ${DIFF_LINES} lines` }); split.push({ hunk: `… diff truncated at ${DIFF_LINES} lines` }); }
-  return { unified, split, width: Math.max(300, ...unified.map(row => (row.text ?? row.hunk).length * 7 + 60)) };
+  if (lines.length > DIFF_LINES) rows.push({ hunk: `… diff truncated at ${DIFF_LINES} lines` });
+  return { rows, width: Math.max(300, ...rows.map(row => (row.text ?? row.hunk).length * 7 + 60)) };
 }
 
 export default class FileView extends View {
@@ -201,7 +188,7 @@ export default class FileView extends View {
     for (const entry of files) {
       const id = entryId(entry);
       if (this.docs.has(id)) continue;
-      const doc = { id, entry, loaded: false, error: null, text: null, saved: null, code: null, rows: null, source: false, unified: false, dirty: false, force: false, truncated: false };
+      const doc = { id, entry, loaded: false, error: null, text: null, saved: null, code: null, rows: null, source: false, dirty: false, force: false, truncated: false };
       this.docs.set(id, doc);
       this.load(doc, cx);
     }
@@ -219,16 +206,7 @@ export default class FileView extends View {
     }
   }
 
-  splitRow(row, t) {
-    if (row.hunk !== undefined) return div().w_full().h(20).px(12).flex_none().truncate().bg(t.raised).text_color(t.dim).child(row.hunk);
-    const side = (cell) => h_flex().flex_1().min_w(0).h_full().gap(8)
-      .when(!cell, e => e.bg(t.surface)).when(cell?.kind === "-", e => e.bg(t.ansi1 + "18")).when(cell?.kind === "+", e => e.bg(t.ansi2 + "18"))
-      .child(div().w(36).flex_none().text_right().text_color(t.dim).child(cell ? String(cell.number) : ""))
-      .child(div().flex_1().min_w(0).truncate().child(cell?.text ?? ""));
-    return h_flex().w_full().h(20).flex_none().child(side(row.left)).child(div().w(1).h_full().flex_none().bg(t.border)).child(side(row.right));
-  }
-
-  unifiedRow(row, t) {
+  diffRow(row, t) {
     if (row.hunk !== undefined) return div().w_full().px(12).h(20).flex_none().truncate().bg(t.raised).text_color(t.dim).child(row.hunk);
     return h_flex().w_full().h(20).flex_none().gap(10).when(row.kind === "+", (e) => e.bg(t.ansi2 + "18")).when(row.kind === "-", (e) => e.bg(t.ansi1 + "18"))
       .child(div().w(36).flex_none().text_right().text_color(t.dim).child(String(row.number)))
@@ -236,11 +214,11 @@ export default class FileView extends View {
   }
 
   diffBody(doc, t) {
-    const list = `diff-${doc.id}`, rows = doc.unified ? doc.rows.unified : doc.rows.split;
+    const list = `diff-${doc.id}`, { rows, width } = doc.rows;
     const items = v_virtual_list(list, rows.length, 20, (i) => String(i),
-      (range) => rows.slice(range.start, range.end).map((row) => doc.unified ? this.unifiedRow(row, t) : this.splitRow(row, t))).size_full();
+      (range) => rows.slice(range.start, range.end).map((row) => this.diffRow(row, t))).size_full();
     return div().flex_1().min_h(0).relative().font_family(settings().font_family ?? "JetBrains Mono").text_size(11)
-      .child(doc.unified ? div().id(`${list}-x`).size_full().overflow_x_scrollbar().child(div().w_full().min_w(doc.rows.width).h_full().child(items)) : items)
+      .child(div().id(`${list}-x`).size_full().overflow_x_scrollbar().child(div().w_full().min_w(width).h_full().child(items)))
       .child(Scrollbar.vertical(list).viewport_from_layout().absolute().inset_0());
   }
 
@@ -266,9 +244,8 @@ export default class FileView extends View {
     const toggle = (id, text, on, set) => div().id(id).px(8).h(22).flex().items_center().rounded(5).text_size(11.5)
       .bg(on ? t.selected : t.popover).text_color(on ? t.foreground : t.muted)
       .hover(s => s.bg(t.hover)).on_click((_e, cx) => { set(); cx.notify(); }).child(text);
-    const modes = !doc?.loaded || doc.error ? null
-      : markdown ? [toggle("view-preview", "Preview", !doc.source, () => { doc.source = false; }), toggle("view-source", "Source", doc.source, () => { doc.source = true; })]
-      : entry.diff ? [toggle("view-split", "Split", !doc.unified, () => { doc.unified = false; }), toggle("view-unified", "Unified", doc.unified, () => { doc.unified = true; })]
+    const modes = markdown && doc.loaded && !doc.error
+      ? [toggle("view-preview", "Preview", !doc.source, () => { doc.source = false; }), toggle("view-source", "Source", doc.source, () => { doc.source = true; })]
       : null;
     const body = !doc ? div().p(12).text_color(t.dim).child("Open a file from the Files or Changes panel")
       : doc.error ? div().p(12).text_color(t.dim).child(doc.error)
