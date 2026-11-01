@@ -7,7 +7,7 @@ import { div, svg, PathBuilder, list as lazyList } from "gpui-kit";
 import { v_flex, h_flex, Scrollbar } from "gpui-base";
 import { spaces, panes, focused, exec, watchFolder, theme, settings, props, shared, setShared, openOverlay, run, home } from "herdr";
 import { layoutLanes } from "./lanes.js";
-import { READ, STATUS, UNCOMMITTED, LABEL, logArgs, parseLog, parseStatus, withUncommitted, labelsOf, hitLabel,
+import { READ, STATUS, LABEL, logArgs, parseLog, parseStatus, parseWorktrees, withUncommitted, labelsOf, hitLabel,
   menuFor, menuHeight, fileArgs, joinFiles } from "./git.js";
 import { perform, openDialog } from "./act.js";
 import { icon } from "./menu.js";
@@ -54,7 +54,6 @@ function stamp(seconds) {
 const tilde = (path, on) => (!on && path?.startsWith(home()) ? "~" + path.slice(home().length) : path);
 const brief = (c) => ({ hash: c.hash, subject: c.subject, parents: c.parents });
 const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-const sameFiles = (a, b) => a.length === b.length && a.every((f, i) => f.path === b[i].path && f.status === b[i].status);
 const scopeOf = ({ all, remotes }) => `${all} ${remotes}`;
 // Folders kept as they were last read, and commits' details (a commit never changes).
 const SEEN = 24, DETAILS = 200;
@@ -63,20 +62,30 @@ const keep = (map, key, value, max) => { map.delete(key); map.set(key, value); i
 // What belongs to one folder: a new folder starts from this, and leaving one keeps it.
 const folderState = () => ({
   state: "loading", root: null, on: null, cwd: null, error: null,
-  base: [], commits: [], rows: [], lanes: 1, labels: new Map(), index: new Map(), hasMore: false, limit: PAGE, files: [], ctx: null,
-  head: null, current: null, branches: [], remoteNames: [], signature: null, scope: null, moreAsked: null,
+  base: [], commits: [], rows: [], lanes: 1, labels: new Map(), index: new Map(), hasMore: false, limit: PAGE, worktrees: [], ctx: null,
+  head: null, current: null, branches: [], remoteNames: [], scope: null, moreAsked: null,
   selected: null, details: null, diff: null,
 });
+
+async function readWorktrees(cwd, on) {
+  const listed = await exec("git", [...READ, "worktree", "list", "--porcelain", "-z"], { cwd, on });
+  if (listed.code !== 0) throw new Error(listed.stderr.trim());
+  return Promise.all(parseWorktrees(listed.stdout).map(async (worktree) => {
+    const status = await exec("git", [...READ, ...STATUS], { cwd: worktree.root, on });
+    if (status.code !== 0) throw new Error(status.stderr.trim());
+    return { ...worktree, files: parseStatus(status.stdout) };
+  }));
+}
 
 // Everything the table shows for a folder, in one round of git calls: each
 // answers from any subfolder, and status names paths from the repository root.
 async function readFolder(cwd, on, { all, remotes, limit }) {
   const git = (args) => exec("git", [...READ, ...args], { cwd, on });
-  const [top, log, head, current, branches, remoteNames, status] = await Promise.all([
+  const [top, log, head, current, branches, remoteNames] = await Promise.all([
     // One commit past the page says whether there are more, as Git Graph asks.
     exec("git", ["rev-parse", "--show-toplevel"], { cwd, on }), git(logArgs({ all, remotes, limit: limit + 1 })),
     git(["rev-parse", "--verify", "-q", "HEAD"]), git(["symbolic-ref", "-q", "--short", "HEAD"]),
-    git(["for-each-ref", "--format=%(refname)", "refs/heads"]), git(["remote"]), git(STATUS)]);
+    git(["for-each-ref", "--format=%(refname)", "refs/heads"]), git(["remote"])]);
   if (top.code !== 0) return { state: "norepo", cwd, on };
   // A log that fails without a HEAD is a repository with no commits yet.
   if (log.code !== 0 && head.code === 0) throw new Error(log.stderr.trim());
@@ -86,8 +95,7 @@ async function readFolder(cwd, on, { all, remotes, limit }) {
     head: head.code === 0 ? head.stdout.trim() : null, current: current.code === 0 ? current.stdout.trim() : null,
     branches: branches.stdout.split("\n").filter(Boolean).map((r) => r.replace(/^refs\/heads\//, "")),
     remoteNames: remoteNames.stdout.split("\n").filter(Boolean),
-    files: status.code === 0 ? parseStatus(status.stdout) : [],
-    signature: [log.stdout, head.stdout, current.stdout, branches.stdout, remoteNames.stdout].join("\0"), scope: scopeOf({ all, remotes }),
+    worktrees: await readWorktrees(cwd, on), scope: scopeOf({ all, remotes }),
   };
 }
 
@@ -170,20 +178,16 @@ export class Graph {
           const read = await readFolder(cwd, on, { all, remotes, limit });
           if (stale()) return;
           if (read.state === "norepo") { this.reset(); Object.assign(this, read); return; }
-          if (!on) this.watch(read.root, context, cx);
-          // A second look that finds nothing new leaves the table as it is.
-          const shown = this.state === "ready" || this.state === "empty";
-          if (shown && read.signature === this.signature && read.scope === this.scope && sameFiles(read.files, this.files)) return;
           Object.assign(this, read);
         } else {
-          const status = await exec("git", [...READ, ...STATUS], { cwd: this.root, on: this.on });
+          const worktrees = await readWorktrees(this.root, this.on);
           if (stale()) return;
-          const files = status.code === 0 ? parseStatus(status.stdout) : [];
-          if (sameFiles(files, this.files)) return;
-          this.files = files;
+          this.worktrees = worktrees;
         }
+        if (!on) this.watch(context, cx);
         this.build();
-        if (this.selected === UNCOMMITTED && this.details) this.loadDetails(this.commits[0], cx);
+        const selected = this.commits[this.index.get(this.selected)];
+        if (selected?.uncommitted) this.loadDetails(selected, cx);
       } catch (e) {
         if (!stale()) { this.state = "error"; this.error = String(e?.message ?? e); }
       } finally {
@@ -196,7 +200,7 @@ export class Graph {
   }
 
   build() {
-    const commits = withUncommitted(this.base, this.files.length, this.head);
+    const commits = withUncommitted(this.base, this.worktrees.filter((w) => this.all || w.root === this.root));
     const { rows, width } = layoutLanes(commits);
     for (const row of rows) row.need = Math.max(row.lane, ...row.segments.flatMap((s) => [s[0], s[2]])) + 1;
     this.commits = commits; this.rows = rows; this.lanes = width;
@@ -208,22 +212,24 @@ export class Graph {
   }
 
   // Ref moves reload the history; other edits only the uncommitted row, at most every 1.5 s.
-  watch(root, context, cx) {
-    if (this.watching === root) return;
-    this.watching = root;
-    const token = this.watchToken;
+  watch(context, cx) {
+    const root = this.root, roots = this.worktrees.map((w) => w.root), watching = JSON.stringify(roots);
+    if (this.watching === watching) return;
+    this.watching = watching;
+    const token = ++this.watchToken;
     const loop = (dir, gitDir) => cx.spawn(async (cx) => {
       try {
         while (token === this.watchToken) {
           // Windows reports backslashes; the ref checks read slashes.
           const paths = (await watchFolder(dir)).map((p) => p.replace(/\\/g, "/"));
           if (token !== this.watchToken) return;
-          if (paths.some((p) => (gitDir || inGitDir(p)) && isRefChange(p))) this.refresh(cx, true);
+          if (paths.some((p) => (gitDir || inGitDir(p)) && (isRefChange(p) || p.includes("/worktrees/")))) this.refresh(cx, true);
+          else if (paths.some((p) => p.endsWith("/index"))) this.statusSoon(cx);
           else if (paths.some((p) => !gitDir && !inGitDir(p))) this.statusSoon(cx);
         }
       } catch { if (token === this.watchToken) this.watching = null; }
     });
-    loop(root, false);
+    for (const dir of roots) loop(dir, false);
     // A linked worktree keeps its refs in the main checkout's .git.
     cx.spawn(async (cx) => {
       const common = (await exec("git", [...READ, "rev-parse", "--git-common-dir"], { cwd: root })).stdout.trim();
@@ -331,8 +337,9 @@ export class Graph {
     const target = commit.uncommitted ? { kind: "uncommitted", commit: brief(commit) }
       : hit && hit.part.kind !== "head" ? { kind: hit.part.kind, name: hit.part.name, commit: brief(commit) }
       : { kind: "commit", commit: brief(commit) };
-    const items = menuFor(target, this.ctx);
-    openOverlay({ mod: "git-graph", kind: "popup", at: "pointer", width: 268, height: menuHeight(items), props: { role: "menu", target, ctx: this.ctx } });
+    const ctx = commit.worktree ? { ...this.ctx, ...commit.worktree } : this.ctx;
+    const items = menuFor(target, ctx);
+    openOverlay({ mod: "git-graph", kind: "popup", at: "pointer", width: 268, height: menuHeight(items), props: { role: "menu", target, ctx } });
   }
 
   pick(commit, cx) {
@@ -344,15 +351,16 @@ export class Graph {
   }
 
   loadDetails(commit, cx) {
-    const hash = commit.hash, git = (args) => exec("git", [...READ, ...args], { cwd: this.root, on: this.on });
+    const hash = commit.hash, git = (args) => exec("git", [...READ, ...args], { cwd: commit.worktree?.root ?? this.root, on: this.on });
     const key = `${this.on}\0${this.root}\0${hash}`, known = !commit.uncommitted && this.commitDetails.get(key);
     if (known) { this.details = known; return; }
     cx.spawn(async (cx) => {
       try {
         let details;
         if (commit.uncommitted) {
-          const numstat = this.head ? await git(["diff", "--no-renames", "--no-ext-diff", "--numstat", "HEAD"]) : { stdout: "" };
-          const stats = joinFiles(this.files.map((f) => `${f.status}\t${f.path}`).join("\n"), numstat.stdout);
+          const numstat = commit.worktree.head ? await git(["diff", "--no-renames", "--no-ext-diff", "--numstat", "HEAD"]) : { code: 0, stdout: "" };
+          if (numstat.code !== 0) throw new Error(numstat.stderr.trim());
+          const stats = joinFiles(commit.worktree.files.map((f) => `${f.status}\t${f.path}`).join("\n"), numstat.stdout);
           details = { files: stats.slice(0, 500), more: Math.max(0, stats.length - 500) };
         } else {
           const args = fileArgs(commit);
@@ -376,7 +384,8 @@ export class Graph {
     if (!tab || !this.root) return;
     const all = panes(), live = new Set(spaces().flatMap(s => s.tabs.map(t => t.id)));
     const views = Object.fromEntries(Object.entries(shared(VIEW) ?? {}).filter(([id]) => live.has(id)));
-    const entry = { file: `${this.root}/${file.path}`, on: this.on, diff: { root: this.root, path: file.path, commit: commit.uncommitted ? null : commit.hash } };
+    const root = commit.worktree?.root ?? this.root;
+    const entry = { file: `${root}/${file.path}`, on: this.on, diff: { root, path: file.path, commit: commit.uncommitted ? null : commit.hash } };
     const id = `${entry.diff.commit ?? "working"}:${entry.file}`, files = views[tab]?.files ?? [];
     const same = (o) => o.diff && `${o.diff.commit ?? "working"}:${o.file}` === id;
     views[tab] = { files: files.some(same) ? files : [...files, entry], active: id };
@@ -412,7 +421,7 @@ export class Graph {
       .when(current, (e) => e.bg(color)).when(label.kind === "head", (e) => e.bg(t.accent))
       .children(label.parts.map((part, i) => {
         const fg = current || part.kind === "head" ? t.background : part.kind === "tag" ? t.ansi3 : i > 0 ? t.muted : t.foreground;
-        const glyph = part.kind === "branch" ? (part.head ? "check" : "branch") : part.kind === "tag" ? "tag" : "cloud";
+        const glyph = part.kind === "worktree" ? "folder" : part.kind === "branch" ? (part.head ? "check" : "branch") : part.kind === "tag" ? "tag" : "cloud";
         return h_flex().w(part.width).h_full().flex_none().px(LABEL.PAD).gap(3).items_center().overflow_hidden()
           .when(i > 0, (e) => e.border_l(1).border_color(edge).bg(current ? t.background + "33" : edge + "1f"))
           .when(Boolean(part.icon), (e) => e.child(svg(icon(glyph)).size(10).flex_none().text_color(fg)))
@@ -539,6 +548,7 @@ export class Graph {
       .child(div().flex_1().text_color(t.muted).child(commit.uncommitted ? "Uncommitted changes" : `Commit ${commit.hash.slice(0, 8)}`))
       .child(div().text_color(t.dim).child("×")));
     if (d?.error) { text(d.error, t.ansi1); return rows; }
+    if (commit.worktree) text(tilde(commit.worktree.root, this.on));
     if (!commit.uncommitted) {
       text(commit.subject, t.foreground);
       meta("Commit", commit.hash, t.accent);

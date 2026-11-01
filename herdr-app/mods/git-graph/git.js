@@ -6,7 +6,6 @@
 // cookie), so the folder watch never wakes for the panel's own reads.
 export const READ = ["--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "diff.autoRefreshIndex=false"];
 export const STATUS = ["status", "--porcelain=v1", "-z", "--no-renames", "--untracked-files=all"];
-export const UNCOMMITTED = "*";
 const FORMAT = "%x1e%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%D%x1f%s";
 
 export function logArgs({ all, remotes, limit }) {
@@ -45,11 +44,26 @@ export function parseStatus(text) {
   });
 }
 
-// The working tree's changes as the newest row, drawn dashed to HEAD.
-export function withUncommitted(commits, changes, head) {
-  if (!changes) return commits;
-  return [{ hash: UNCOMMITTED, parents: head ? [head] : [], uncommitted: true, dashed: true, refs: [], head: false,
-    subject: `Uncommitted changes (${changes})`, author: "", email: "", time: null }, ...commits];
+export function parseWorktrees(text) {
+  return text.split("\0\0").filter(Boolean).map((record) => {
+    const fields = new Map(record.split("\0").map((line) => {
+      const at = line.indexOf(" ");
+      return at < 0 ? [line, true] : [line.slice(0, at), line.slice(at + 1)];
+    }));
+    return { root: fields.get("worktree"), head: /^0+$/.test(fields.get("HEAD")) ? null : fields.get("HEAD"),
+      current: fields.get("branch")?.replace(/^refs\/heads\//, "") ?? null,
+      bare: fields.has("bare"), prunable: fields.has("prunable") };
+  }).filter((w) => !w.bare && !w.prunable);
+}
+
+// Each working tree gets its own row and a dashed edge to its own HEAD.
+export function withUncommitted(commits, worktrees) {
+  return [...worktrees.filter((w) => w.files.length).map((worktree) => ({
+    hash: `*:${worktree.root}`, parents: worktree.head ? [worktree.head] : [], worktree,
+    uncommitted: true, dashed: true, refs: [], head: false,
+    subject: `Uncommitted changes (${worktree.files.length})`,
+    author: "", email: "", time: null,
+  })), ...commits];
 }
 
 // Labels are drawn at these exact widths (monospace text, fixed padding and
@@ -62,6 +76,10 @@ const partWidth = (part) => Math.ceil(LABEL.PAD * 2 + (part.icon ? LABEL.ICON : 
 // A label wider than `room` (its row's free width) shortens its first name to fit.
 export function labelsOf(commit, remotesShown, room) {
   const labels = [], remotes = remotesShown ? commit.refs.filter((r) => r.kind === "remote") : [], paired = new Set();
+  if (commit.worktree) {
+    const name = commit.worktree.current ?? commit.worktree.root.split(/[\\/]/).pop();
+    labels.push({ kind: "worktree", parts: [{ kind: "worktree", name, text: fit(name, LABEL.MAX), icon: true }] });
+  }
   for (const ref of commit.refs) {
     if (ref.kind === "detached") labels.push({ kind: "head", head: true, parts: [{ kind: "head", name: "HEAD", text: "HEAD" }] });
     if (ref.kind !== "branch") continue;
