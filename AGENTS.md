@@ -5,7 +5,7 @@ This repository contains portable Codex and Claude Code configuration, not an ap
 ## Layout
 
 - `AGENTS.md` — repository-maintenance instructions.
-- `codex/AGENTS.md` — canonical cross-project instructions installed for Codex, which handles standalone simple tasks and implements or reviews specs handed off by Claude.
+- `codex/AGENTS.md` — canonical cross-project instructions installed for Codex, which works directly with the user and implements or reviews specs handed off by Claude.
 - `codex/config.toml` — portable baseline merged into machine-local config.
 - `codex/agents/*.toml` — native roles copied as regular files to `~/.codex/agents/`.
 - `codex/skills/` — skills installed into `~/.agents/skills/`.
