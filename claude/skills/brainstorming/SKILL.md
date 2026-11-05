@@ -25,4 +25,4 @@ Present the contract proportionately and get explicit approval, resolving contra
 
 Save the approved contract to `<project-root>/.plans/specs/<YYYYMMDD>_<short_title>.md` from main and do not commit it. Organize it around **Design**, **Outcome**, and **Verification**, with only the context needed to understand them. Describe what must be true without prescribing implementation phases, task choreography, commit boundaries, or code structure that the design does not require. Codex has not seen this conversation: include the investigation evidence, file paths, and constraints it needs to implement without guessing intent.
 
-Ask the user to approve the written spec, then proceed to the `codex` skill. Codex checks the spec against the repository before editing and reports material gaps.
+Ask the user to approve the written spec as a decision request in the `codex` skill's layout, then proceed to the `codex` skill. Codex checks the spec against the repository before editing and reports material gaps.

@@ -43,9 +43,9 @@ When the implementer reports a clean candidate with passing verification, start 
 hc run --bg --name "codex-<name>-review" --cwd "$worktree" codex --no-daemon "$review_brief"
 ```
 
-The reviewer brief contains the sender, spec path, review base, candidate commit, the implementer's verification evidence, and these instructions:
+The reviewer brief contains the sender, spec path, review base, candidate commit, and these instructions. Leave out the implementer's report and reasoning, so the reviewer judges the code rather than the implementer's account of it.
 
-- Review `git diff --find-renames <base>...<candidate>` against the spec, read-only. Run focused checks or reproductions when useful; do not edit files or start agents.
+- Review `git diff --find-renames <base>...<candidate>` against the spec, read-only. Rerun the spec's verification, and run focused checks or reproductions when useful; do not edit files or start agents.
 - Report only defects the change introduces: correctness or interface regressions, security or data-loss risks, unsafe partial failure, important missing verification, and over- or under-engineering that materially affects maintenance. Assume callers follow documented contracts. Skip style preferences and unrelated behavior; do not manufacture findings.
 - Give each finding a severity, file and line, evidence, impact, and the smallest fix. Report with sections `Findings`, `Test gaps`, and `Residual risk` (write "None." when empty) through the same route as the implementer.
 
@@ -53,4 +53,14 @@ Claude may read the diff to explain it to the user. Send findings to the impleme
 
 ## Finish
 
-When a review pass is clear, summarize the change, verification, and residual risk, and ask the user for merge approval. A later change or failed check invalidates that approval. After the merge, `hc kill` and `hc rm` both Codex sessions.
+When a review pass is clear, ask the user for merge approval as a decision request. A later change or failed check invalidates that approval. After the merge, `hc kill` and `hc rm` both Codex sessions.
+
+## Decision requests
+
+Use this layout for every decision this workflow takes to the user, including spec approval, design blockers, and merge approval, and end the turn after it:
+
+```text
+**Found** — the change, verification, and residual risk, or the blocker and its evidence, in a few lines.
+**Recommend** — one next action and why; the main alternative, if any.
+**Need from you** — one question answerable in a word or two, e.g. "Merge codex-login? merge / fix first".
+```

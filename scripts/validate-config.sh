@@ -184,7 +184,6 @@ if config["model"] != "gpt-6-astra" or config["model_reasoning_effort"] != "high
 role_specs = {
     "research_worker.toml": ("research_worker", "gpt-6-astra", "high"),
     "explorer.toml": ("explorer", "gpt-6.1-sol", "high"),
-    "worker.toml": ("worker", "gpt-6.1-sol", "xhigh"),
 }
 role_files = {path.name for path in (root / "codex/agents").glob("*.toml")}
 if role_files != set(role_specs):
@@ -228,7 +227,6 @@ agent_specs = {
     "research-worker.md": ("high", None),
     "Explore.md": ("low", "Agent, Edit, Write, NotebookEdit"),
     "general-purpose.md": ("medium", "Agent"),
-    "worker.md": ("medium", "Agent"),
 }
 agent_files = {path.name for path in (root / "claude/agents").glob("*.md")}
 if agent_files != set(agent_specs):
