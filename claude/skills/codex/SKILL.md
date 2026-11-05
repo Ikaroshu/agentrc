@@ -60,7 +60,7 @@ When a review pass is clear, ask the user for merge approval as a decision reque
 Use this layout for every decision this workflow takes to the user, including spec approval, design blockers, and merge approval, and end the turn after it:
 
 ```text
-**Found** — the change, verification, and residual risk, or the blocker and its evidence, in a few lines.
+**Found** — the change, verification, and residual risk, or the blocker and its evidence.
 **Recommend** — one next action and why; the main alternative, if any.
-**Need from you** — one question answerable in a word or two, e.g. "Merge codex-login? merge / fix first".
+**Need from you** — what the user needs to decide, phrased as the decision requires; open questions, several questions, and tradeoffs are fine.
 ```
