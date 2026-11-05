@@ -7,7 +7,7 @@
 // path, rename, and delete (this computer's Trash; elsewhere, after asking). Names are typed in place.
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input, Scrollbar, v_virtual_list, VirtualListScrollHandle } from "gpui-base";
-import { spaces, panes, focused, exec, run, shared, setShared, watchFolder, theme, window, nextCommand, openOverlay, notify } from "herdr";
+import { spaces, panes, focused, exec, run, shared, setShared, watchFolder, theme, window, nextCommand, openOverlay, notify, appHome } from "herdr";
 
 const VIEW = "file-view";
 const parentOf = (path) => path.slice(0, Math.max(0, path.lastIndexOf("/")));
@@ -133,11 +133,8 @@ export default class Files extends View {
     this.input = InputState.new({ placeholder: "Search files" });
     this.input.on("change", (_e, cx) => this.search(this.input.value(), cx));
     this.input.on("submit", (_e, cx) => this.pick(this.found[this.at]?.path, cx));
-    this.input.on("focus", (_e, cx) => { this.typing = true; cx.notify(); });
+    this.input.on("focus", (_e, cx) => { this.typing = true; this.bindUnscope(cx); cx.notify(); });
     this.input.on("blur", (_e, cx) => { this.typing = false; cx.notify(); });
-    // The box handles Backspace itself, ahead of on_key_down. While it's empty and scoped to a file,
-    // its wrapper's FilesUnscope context lets this binding, added later, take Backspace instead.
-    cx.bind_keys([{ keystroke: "backspace", action: "files_unscope", context: "FilesUnscope > Input" }]);
     this.refresh(cx);
     cx.timer.every(10000, cx => this.refresh(cx));
     cx.spawn(async cx => {
@@ -336,6 +333,18 @@ export default class Files extends View {
   nameField(t) {
     return div().id("files-edit").flex_1().min_w(0).on_mouse_down("left", (_e, cx) => cx.stop_propagation()).on_click((_e, cx) => cx.stop_propagation())
       .child(Input.new(this.edit.input).h(22).px(4).rounded(4).border_1().border_color(t.accent).bg(t.background).text_size(13).text_color(t.foreground));
+  }
+
+  // The box handles Backspace itself, ahead of on_key_down. While it's empty and scoped to a file, its
+  // wrapper's FilesUnscope context lets this binding, added later, take Backspace instead. Herdr drops
+  // such bindings whenever it reloads keys.json, so the box's focus adds it again after each change.
+  bindUnscope(cx) {
+    cx.spawn(async cx => {
+      const changed = (await exec("stat", ["-f", "%Fm", `${appHome()}/keys.json`])).stdout;
+      if (changed === this.keysChanged) return;
+      this.keysChanged = changed;
+      cx.bind_keys([{ keystroke: "backspace", action: "files_unscope", context: "FilesUnscope > Input" }]);
+    });
   }
 
   // The file list reloads each time a search starts, so it reflects files created since.

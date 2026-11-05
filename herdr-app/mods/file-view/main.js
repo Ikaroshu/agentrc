@@ -10,7 +10,7 @@
 // take a comment, Close or Reopen (closing or reopening posts the box's text as a comment too).
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState, TextView, Scrollbar, v_virtual_list, TextareaState, Textarea } from "gpui-base";
-import { props, shared, setShared, panes, run, exec, readTextFile, writeTextFile, watchFolder, theme, settings, nextCommand, notify, openOverlay } from "herdr";
+import { props, shared, setShared, panes, run, exec, readTextFile, writeTextFile, watchFolder, theme, settings, nextCommand, notify, openOverlay, appHome } from "herdr";
 
 const LANG = { ts: "js", tsx: "js", mts: "js", cts: "js", jsx: "js", mjs: "js", toml: "yaml", jsonc: "json", svelte: "html", vue: "html" };
 const MARKDOWN = new Set(["md", "markdown", "mdx"]);
@@ -66,9 +66,6 @@ function diffRows(lines) {
 export default class FileView extends View {
   init(_props, cx) {
     this.docs = new Map(); this.watching = new Set();
-    // The editor binds Cmd-F to its own search, ahead of keys.json; a binding in its own context,
-    // added later, wins over it there (elsewhere in the viewer keys.json's `file-view.find` runs).
-    cx.bind_keys([{ keystroke: "cmd-f", action: "file_view_find", context: "FileView > Input" }]);
     cx.timer.every(10000, cx => { for (const doc of this.docs.values()) if (doc.entry.diff && working(doc.entry)) this.load(doc, cx); });
     // Every viewer gets the command; only the focused one acts.
     cx.spawn(async cx => {
@@ -80,6 +77,18 @@ export default class FileView extends View {
         else if (command === "discard" && this.closing) { this.close(this.closing, cx, true); this.closing = null; }
         cx.notify();
       }
+    });
+  }
+
+  // The editor binds Cmd-F to its own search, ahead of keys.json; a binding in its own context, added
+  // later, wins over it there (elsewhere in the viewer keys.json's `file-view.find` runs). Herdr drops
+  // such bindings whenever it reloads keys.json, so the editor's focus adds it again after each change.
+  bindFind(cx) {
+    cx.spawn(async cx => {
+      const changed = (await exec("stat", ["-f", "%Fm", `${appHome()}/keys.json`])).stdout;
+      if (changed === this.keysChanged) return;
+      this.keysChanged = changed;
+      cx.bind_keys([{ keystroke: "cmd-f", action: "file_view_find", context: "FileView > Input" }]);
     });
   }
 
@@ -189,6 +198,7 @@ export default class FileView extends View {
     doc.code = EditorState.new({ language: LANG[ext] ?? ext, readonly: truncated, value: doc.text,
       font_family: settings().font_family, font_size: 12,
       syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
+    doc.code.on("focus", (_e, cx) => this.bindFind(cx));
     doc.code.on("change", (_e, cx) => {
       if (doc.truncated) return;
       doc.text = doc.code.value(); doc.dirty = doc.text !== doc.saved;
