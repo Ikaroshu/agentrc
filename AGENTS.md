@@ -5,18 +5,9 @@ This repository contains portable Codex and Claude Code configuration, not an ap
 ## Layout
 
 - `AGENTS.md` — repository-maintenance instructions.
-- `codex/AGENTS.md` — canonical cross-project instructions installed for Codex, which works directly with the user and implements or reviews specs handed off by Claude.
-- `codex/config.toml` — portable baseline merged into machine-local config.
-- `codex/agents/*.toml` — native roles copied as regular files to `~/.codex/agents/`.
-- `codex/skills/` — skills installed into `~/.agents/skills/`.
-- `codex/install.sh`, `codex/sync-remote.sh` — Codex install and remote sync.
-- `claude/AGENTS.md` — canonical cross-project instructions installed for Claude Code as `~/.claude/CLAUDE.md` (Claude Code does not load a user-level `AGENTS.md`). Claude is the user-facing agent and hands spec-driven work to Codex through Herdr with the `codex` skill.
-- `claude/settings.json` — portable baseline merged into machine-local `~/.claude/settings.json`.
-- `claude/statusline.sh` — status line installed to `~/.claude/statusline.sh`.
-- `claude/agents/*.md` — native subagents installed into `~/.claude/agents/`; `Explore.md` and `general-purpose.md` replace the Claude Code built-ins of those names to set their model and effort.
-- `claude/skills/` — skills installed into `~/.claude/skills/`.
-- `claude/install.sh`, `claude/sync-remote.sh` — Claude Code install and remote sync.
-- `herdr-app/` — Herdr app mods, layout, key bindings, and settings for this Mac only; `herdr-app/install.sh`, run with the app open, copies the mods and layout into `~/.config/herdr-app/`, merges `herdr-app/keys.json` and `herdr-app/settings.json` into its `keys.json` and `settings.json`, and switches to the `main-titled` layout when another shows. Remote machines run only herdr-core, so never sync these.
+- `codex/` — Codex's `AGENTS.md` (cross-project instructions), `config.toml` (baseline merged into machine-local config), `agents/*.toml` (native roles copied as regular files to `~/.codex/agents/`), `skills/` (installed into `~/.agents/skills/`), `install.sh`, and `sync-remote.sh`.
+- `claude/` — Claude Code's `AGENTS.md` (installed as `~/.claude/CLAUDE.md`, because Claude Code does not load a user-level `AGENTS.md`), `settings.json` (baseline merged into `~/.claude/settings.json`), `statusline.sh`, `agents/*.md` (`Explore.md` and `general-purpose.md` replace the built-ins of those names to set their model and effort), `skills/`, `install.sh`, and `sync-remote.sh`.
+- `herdr-app/` — Herdr app mods, layout, key bindings, and settings for this Mac only; `herdr-app/install.sh`, run with the app open, copies the mods and layout into `~/.config/herdr-app/`, merges `keys.json` and `settings.json`, and switches to the `main-titled` layout when another shows. Remote machines run only herdr-core, so never sync these.
 - `scripts/` — validation and config-merge helpers.
 - `archive/` — inert documentation snapshots only. Follow their read-only inspection instructions; never extract, execute, source, install, sync, or copy them into active configuration.
 
@@ -49,8 +40,9 @@ Prefer the root entrypoints for machine setup, which install or sync both harnes
 
 ## Instruction Authoring
 
-- Keep durable cross-project preferences and stage routing in `codex/AGENTS.md`; keep stage-specific mechanics in the owning skill and role-specific obligations in the native role.
-- Write short, discriminating skill descriptions. Prefer outcomes and decision criteria to generic advice, repeated procedure, or fixed announcement scripts. Preserve real requirements and authorization boundaries.
+- A line earns its place only if a capable model would otherwise get it wrong here: personal policy, a repository requirement, or a known failure. Leave out standard tool usage and general advice, and explain why only where a rule would otherwise look arbitrary.
+- Keep durable cross-project preferences and stage routing in `AGENTS.md`; keep stage-specific mechanics in the owning skill and role-specific obligations in the native role. Keep each rule in one place. Do not restate an installed tool manual in a skill.
+- Write short, discriminating skill descriptions in the third person that say what the skill does and when to use it. Preserve real requirements and authorization boundaries.
 - Keep short skills self-contained. Use linked references for substantial conditional detail and load only the relevant reference.
 
 ## Testing
@@ -61,4 +53,4 @@ There is no app test suite. `./scripts/validate-config.sh` checks topology, perm
 
 - This repository overrides the cross-project development workflow: skip the brainstorm, worktree, Codex handoff, and merge stages and their skills unless the user asks for them. Edit directly on `main`, validate, commit, and push `main` to `origin` without separate authorization.
 - Run `./scripts/validate-config.sh` before committing. Never install or sync from a feature worktree.
-- After a merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from main without separate authorization, plus `./herdr-app/install.sh` on this Mac when `herdr-app/` changed. Edit the mods here, not in `~/.config/herdr-app/`, so installation does not overwrite live edits. Verify local and remote active files match committed sources without disturbing unrelated state. When changes affect roles, dispatch, or installation, start fresh installed-role canaries for each affected harness locally and remotely where its runtime exists. Fix canary failures forward; never leave installation pointing at a deleted worktree.
+- After a merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from main without separate authorization, plus `./herdr-app/install.sh` on this Mac when `herdr-app/` changed. Edit the mods here, not in `~/.config/herdr-app/`, so installation does not overwrite live edits. Verify local and remote active files match committed sources without disturbing unrelated state. When changes affect roles, dispatch, or installation, start fresh installed-role canaries for each affected harness locally and remotely where its runtime exists. Fix canary failures forward; never leave installation pointing at a deleted worktree. Install and sync do not remove a deleted skill, so remove its installed copies by hand on each machine.

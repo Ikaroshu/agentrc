@@ -10,7 +10,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$TEST_HOME/.claude/agents" "$TEST_HOME/.claude/skills/unrelated" "$TEST_HOME/.claude/skills/commit" "$TEST_HOME/.codex"
+mkdir -p "$TEST_HOME/.claude/agents" "$TEST_HOME/.claude/skills/unrelated" "$TEST_HOME/.claude/skills/merge" "$TEST_HOME/.codex"
 
 cat >"$TEST_HOME/.claude/settings.json" <<'EOF'
 {
@@ -22,7 +22,7 @@ cat >"$TEST_HOME/.claude/settings.json" <<'EOF'
 }
 EOF
 printf 'legacy instructions\n' >"$TEST_HOME/.claude/CLAUDE.md"
-printf 'legacy commit\n' >"$TEST_HOME/.claude/skills/commit/SKILL.md"
+printf 'legacy merge\n' >"$TEST_HOME/.claude/skills/merge/SKILL.md"
 printf 'unrelated agent\n' >"$TEST_HOME/.claude/agents/unrelated.md"
 printf 'unrelated skill\n' >"$TEST_HOME/.claude/skills/unrelated/SKILL.md"
 printf 'codex state\n' >"$TEST_HOME/.codex/config.toml"
@@ -64,7 +64,7 @@ for source in "$ROOT_DIR"/claude/skills/*/SKILL.md; do
 done
 
 if ! cmp -s "$TEST_HOME/.claude/CLAUDE.md.bak" <(printf 'legacy instructions\n') ||
-   ! cmp -s "$TEST_HOME/.claude/skills/commit.bak/SKILL.md" <(printf 'legacy commit\n'); then
+   ! cmp -s "$TEST_HOME/.claude/skills/merge.bak/SKILL.md" <(printf 'legacy merge\n'); then
   echo "Expected replaced legacy Claude files to be backed up" >&2
   exit 1
 fi

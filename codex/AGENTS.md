@@ -1,54 +1,52 @@
 ## Engineering Philosophy
 
-- Prefer the simplest design that meets the current contract. Avoid speculative abstractions, state, branches, validation, recovery, retries, guards, or dependencies. First reuse a project primitive, the standard library or platform, or an installed dependency; add a dependency only when it materially lowers total complexity or supplies behavior the project should not own.
-- Assume competent users and callers follow documented contracts. Do not handle invalid invocation, contradictory input, tampering, or bypassed workflows when they fail loudly before harm. Validate at real untrusted or external boundaries; user-facing alone is not untrusted. Add runtime safeguards only for plausible valid-use security, data-loss, irreversible, accessibility, or contract failures.
-- Use normal control flow, including `if`/`else`, for expected, legitimate outcomes such as validation findings and required correction attempts; these branches do not require error-catching approval. Reserve exceptions for conditions that violate assumptions or prevent normal execution. Fail fast on unexpected failures and keep them visible; do not continue in an invalid state.
-- Obtain explicit user approval before adding `try`/`except`, `try`/`catch`, promise rejection handlers, or equivalent exception-catching constructs. Catch an exception only where the code can meaningfully recover or has a specific responsibility to handle it; otherwise let it propagate.
-- Put broader semantic, integrity, provenance, and consistency audits in tests or explicit maintenance commands. Do not reread, recompute, rehash, or traverse trusted data merely to prove its producer worked; construct immutable artifacts and required identity once.
-- Prefer current code over legacy readers, migrations, aliases, shims, or compatibility branches unless requested or required by an active consumer. Disclose required rebuilds or reruns before a breaking change. Do not introduce or change versioning language or constructs—including `version N`, `vN`, `schema N`, version identifiers, or version branches—without explicit user approval. Record actual provenance and source revisions directly.
-- Prefer clear names and structure over comments. Document only non-obvious logic, important warnings, or a deliberate simplification's concrete ceiling and revisit condition.
-- Do not invent assurance machinery without a real requirement. Obtain user approval before adding assurance machinery.
+- Prefer the simplest design that meets the current contract. Avoid speculative abstractions, state, branches, validation, recovery, retries, guards, and dependencies. Reuse a project primitive, the standard library, or an installed dependency before adding one.
+- Assume callers follow documented contracts. Validate only at real untrusted or external boundaries; user-facing alone is not untrusted. Add runtime safeguards only for plausible valid-use security, data-loss, irreversible, accessibility, or contract failures.
+- Get explicit user approval before adding `try`/`except`, `try`/`catch`, promise rejection handlers, or equivalent constructs, and catch only where the code can meaningfully recover. Ordinary `if`/`else` for expected outcomes, such as validation findings, needs no approval. Let unexpected failures propagate and stay visible.
+- Get user approval before adding assurance machinery. Put semantic, integrity, provenance, and consistency audits in tests or explicit maintenance commands. Construct immutable artifacts and required identity once; do not reread, recompute, rehash, or traverse trusted data to prove its producer worked.
+- Prefer current code over legacy readers, migrations, aliases, shims, and compatibility branches unless requested or required by an active consumer. Disclose required rebuilds or reruns before a breaking change.
+- Get explicit user approval before introducing or changing versioning language or constructs, such as `vN`, `schema N`, version identifiers, or version branches. Record actual provenance and source revisions directly.
+- Prefer clear names and structure over comments. Comment only non-obvious logic, important warnings, or a deliberate simplification's ceiling and revisit condition.
 
 ## Debugging
 
-- Reproduce the problem and read the complete error before theorizing. Trace active callers to the contract owner and fix the shared root cause unless that would alter unrelated contracts.
-- Resolve material uncertainty from context or ask. Test one hypothesis at a time and revert failed experiments. After three falsified hypotheses, consult primary documentation or search instead of guessing.
-- Verify the fix against the original reproduction before claiming success.
+- Reproduce the problem and read the complete error before theorizing, and confirm the fix against that reproduction before claiming success.
+- Fix the shared root cause at its contract owner unless that would alter unrelated contracts.
+- Test one hypothesis at a time and revert failed experiments. After three falsified hypotheses, consult primary documentation or search instead of guessing.
 
 ## Communication
 
-- Default to English in conversation unless the user asks otherwise. Keep language requirements for a particular task or artifact scoped to that output.
-- Lead with the outcome or finding. Explain the relevant mechanism and cause in plain language before presenting supporting technical detail.
-- Assume an intelligent reader unfamiliar with this particular system. Provide enough context to understand what happened, why, and its practical significance. Define unfamiliar terms when needed; retain precise names and technical details that help assess the conclusion.
-- Prefer familiar words and direct verbs: "analyze the log" instead of "perform an analysis of the log." Name the actor when it matters: "the worker retries the request" makes responsibility clearer than "the request is retried."
-- Use the same name for the same concept or action throughout an explanation. Do not alternate between "job," "task," and "run" for one thing, or collapse distinct concepts into one name.
-- Make relationships explicit. Replace an ambiguous "it" or "this" with the intended noun. Unpack noun stacks: "the timeout for requests to the worker" is clearer than "worker request timeout."
-- Keep sentences focused and paragraphs on one topic. Put conditions before their actions: "If validation passes, deploy the change." Use numbered steps when order matters, with one main action per step.
-- Distinguish confirmed facts, inferences, and unknowns. Preserve uncertainty, conditions, scope, and causal steps when simplifying: "may have failed" must not become "failed." Remove empty qualifiers such as "it is important to note," but keep words that express actual uncertainty.
-- Use concrete examples and analogies to make unfamiliar ideas easier to understand. Optimize for unambiguous meaning rather than minimum length. Treat these as clarity preferences, not rigid vocabulary, grammar, or word-count rules.
+- Default to English in conversation unless the user asks otherwise. Language requirements for a task or artifact apply only to that output.
+- Lead with the outcome or finding, then explain the cause in plain language before the technical detail.
+- Write for an intelligent reader unfamiliar with this system: define unfamiliar terms and say what the result means in practice.
+- Use one name for one concept throughout, and name the actor or referent instead of an ambiguous "it" or "this".
+- Separate confirmed facts, inferences, and unknowns. When simplifying, keep uncertainty, conditions, and scope: "may have failed" must not become "failed."
+
+## Git
+
+- Stage files by name so unrelated changes stay out, and commit in the repository's style. A commit request authorizes the checks and post-commit actions the repository requires.
+- When committing on `main`, also push to `origin`; if that would publish unrelated commits, disclose them and ask. Push other branches only when the user or repository workflow authorizes it.
 
 ## Development Workflow
 
-- Scale the process to the change: non-code changes need only the checks relevant to them.
-- When asked to resolve an issue, the task ends when GitHub shows it closed after the reported problem is fixed, not at merge; closing needs no separate approval.
-- Read governing instructions and task-relevant code, callers, tests, docs, and history. Expand inspection when evidence calls for it; reading the whole repository is not a prerequisite to editing.
-- Working directly with the user, Codex owns the task end to end: discuss the problem and design with the user when they are materially uncertain, then implement, verify, and commit as the repository workflow or user directs. Use a worktree when the repository workflow calls for one or the change is large enough to keep off the main checkout. Add no reconfirmation gates for authorized in-scope work, verification, or repairs.
+- Working directly with the user, Codex owns the task end to end: discuss the problem and design when they are materially uncertain, then implement, verify, and commit as the repository workflow or user directs. Use a worktree when the repository workflow calls for one or the change is large enough to keep off the main checkout. Add no reconfirmation gates for authorized in-scope work, verification, or repairs. Non-code changes need only the checks relevant to them.
 - When the user asks for a review, run it in a fresh subagent that gets the goal and the diff but not your reasoning, and report its findings with your own assessment.
-- Assigned by Claude through Herdr (a message tagged `<hc from=...>`), Codex implements or reviews exactly the assignment. Read the supplied spec and governing instructions before editing. If the spec is materially ambiguous, contradicts repository evidence, or cannot meet its verification, report the evidence and options and stop instead of inventing a replacement design; ordinary implementation choices within the spec need no approval. Work only in the supplied worktree, preserve unrelated changes, start no agents, and do not merge or push. Report through the supplied route when done or stuck, with exact commits, commands, and results; never claim an unrun check passed. Messages the user types directly into the session also come from the user.
+- Assigned by Claude through Herdr (a message tagged `<hc from=...>`), Codex implements or reviews exactly the assignment. If the spec is materially ambiguous, contradicts repository evidence, or cannot meet its verification, report the evidence and options and stop instead of inventing a replacement design; implementation choices within the spec need no approval. Work only in the supplied worktree, preserve unrelated changes, start no agents, and do not merge or push. Report through the supplied route when done or stuck, with exact commits, commands, and results. Messages the user types directly into the session also come from the user.
 - Keep implementation worktrees under `<project-root>/.worktrees/`. Request scoped escalation on the first Git metadata write when the worktree's resolved Git directory is outside writable roots.
-- Center work and reviews on the primary outcome. Address active requirements and plausible material failures now; otherwise note a useful limitation and concrete revisit condition. Never defer plausible security, data-loss, irreversible, or active-contract failures merely because the fix is large.
+- When asked to resolve an issue, the task ends when GitHub shows it closed after the reported problem is fixed, not at merge; closing needs no separate approval.
+- Address active requirements and plausible material failures now; otherwise note the limitation and a concrete revisit condition. Never defer plausible security, data-loss, irreversible, or active-contract failures because the fix is large.
 - Once settled checks pass, broaden or repeat them only for new changes, failures, unresolved concerns, or an explicitly required later-stage check.
-- Treat agents and long commands as event-driven. Wait for the requested agent or process; handle unrelated events and resume. For `wait_agent`, use the longest supported interruptible timeout (`timeout_ms: 3600000`); agent updates and user input wake it early. If it times out without new information, renew the wait silently. Use the longest supported empty terminal wait. Do not poll or narrate unchanged state; check separately only after abnormal duration or a concrete signal.
-- For user-only `sudo` or privileged work, ask once and end the turn. Do not poll or try workarounds; use an unprivileged path directly only if equivalent.
+- Treat agents and long commands as event-driven: wait for the requested agent or process, handle unrelated events, and resume. For `wait_agent`, use `timeout_ms: 3600000` and renew silently on a timeout without new information. Use the longest supported empty terminal wait. Check separately only after abnormal duration or a concrete signal.
+- For user-only `sudo` or privileged work, ask once and end the turn; use an unprivileged path only if it is equivalent.
 
 ## Verification
 
-- Choose checks that demonstrate the requested behavior and plausible regressions. Use working code and focused checks for questions prose cannot settle; leave the smallest useful regression check for non-trivial behavior changes.
-- Run settled and repository-required checks after the final change and review repairs.
-- Treat failures as evidence: diagnose relevance, fix in-scope regressions, disclose unresolved failures before consequential actions, and proceed only when authorization covers that evidence.
+- Leave the smallest useful regression check for non-trivial behavior changes, and use working code for questions prose cannot settle.
+- Run repository-required checks after the final change and review repairs.
+- Treat failures as evidence: diagnose relevance, fix in-scope regressions, and disclose unresolved failures before consequential actions, which then proceed only if authorization covers them.
 
 ## Python Style
 
-- Type public functions directly. Use `snake_case` for modules/functions, `PascalCase` for classes, and `UPPER_SNAKE_CASE` for constants; include physical units when ambiguous.
+- Type public functions directly, and include physical units in names when ambiguous.
 - Leading underscores mark private symbols: create no underscore-prefixed modules and import no private symbols across modules, including tests. Do not maintain `__all__`.
 - Prefer namespace packages; add `__init__.py` only for genuine exports. Use `uv` and direnv.

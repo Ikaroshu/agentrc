@@ -1,71 +1,22 @@
 ---
 name: merge
-description: Merge or clean up a verified branch or pull request, verify its recorded candidate, and complete authorized follow-ups.
+description: Merges a verified branch or pull request into main, pushes it, runs required follow-ups, and cleans up. Use when the user approves or asks for a merge or the cleanup of a merged branch.
 ---
 
 # Merge Workflow
 
-Verify the candidate, merge locally or through a PR, verify main, run authorized follow-ups, and clean up. The implementation owner is whoever built the candidate: this agent for direct work, or the Codex implementer session for a Claude handoff.
+Merge with `git merge --no-ff` or `gh pr merge --merge`. Never rebase unless asked.
 
-## Prepare
+Merge approval also covers pushing `main` unless the user asks for a local-only merge, the checks and follow-ups the repository's Git Workflow assigns to merging, and removing the merged branch and its clean worktree. Ask before any other consequential follow-up. Delete a remote branch only when authorized.
 
-Read repository instructions, preferring `AGENTS.md` then `CLAUDE.md`, and the complete Git Workflow equivalent, including any workflow file it points to. Capture tests, pre-merge checks, merge/push rules, deployment or sync, and verification. These requirements run at their specified stage; otherwise use the defaults below.
+## Before merging
 
-Resolve the exact branch or PR and local-versus-PR mode from the request and repository. Ask only if ambiguous; do not reconfirm an authorized target. If already on main without a feature target, stop.
+Confirm that the implementation owner (whoever built the candidate: this agent, or the Codex implementer after a handoff) recorded verification after the last code change, and that any code review accepted the same commit. If that evidence is missing or names a different commit, return the candidate to its owner rather than testing it yourself; a merge-stage rerun would only duplicate accepted evidence. Run only checks the repository assigns to the merge stage.
 
-## Verify the candidate
+## When something fails
 
-Resolve clean feature `HEAD` and tree. Require the implementation owner's recorded settled verification evidence for the same commit and tree, recorded after the last code change, and, when the work went through a code review, that review's acceptance of the same commit. Accept that recorded evidence rather than rerunning its verification. If the evidence is absent or mismatched, stop and return the candidate to its owner for verification, and to review when one applies, before a new merge-approval request; do not substitute a merge-stage test run. Run only checks that repository instructions explicitly assign to the merge stage.
+Return candidate-related diagnosis and repair to the implementation owner, and never push a known regression. Disclose unrelated or pre-existing failures before deciding whether authorization covers the push. If a follow-up fails, report it rather than claiming success.
 
-Treat merge-stage check failures as evidence: return candidate-related technical diagnosis and repair to the same implementation owner, and do not merge a candidate whose settled verification, or review acceptance when one applies, is invalidated.
+Stop cleanup and report if the worktree is dirty, the branch is not fully merged, or ownership is unclear.
 
-## Merge
-
-Merge approval includes pushing the local merge to `origin/main` after required post-merge checks pass, unless the user explicitly requests a local-only merge. Never rebase unless requested; preserve history with a merge.
-
-```bash
-# Local
-git checkout main
-git pull --ff-only
-git merge --no-ff <feature-branch>
-# PR
-gh pr merge --merge
-```
-
-## Verify main
-
-Run only checks that repository instructions explicitly assign after merge; do not rerun implementation verification merely to duplicate the accepted evidence. Stop on failure, return candidate-related technical diagnosis and repair to the same implementation owner, and never push a known regression; disclose unrelated or pre-existing failures before deciding whether authorization covers the push.
-
-After the required checks pass, push the local merge as part of completing the merge:
-
-```bash
-git push origin main
-```
-
-## Follow up
-
-Run every remaining authorized Git Workflow requirement, such as deployment, sync, smoke checks, or live verification. Ask before an unauthorized consequential follow-up. Preserve and report failures without claiming success.
-
-## Clean up
-
-Cleanup is part of an authorized merge and needs no separate approval. After merge, required verification, and applicable push succeed, remove the merged branch and clean owned worktree unless retention was requested. Stop if the worktree is dirty, the branch is not fully merged, or ownership is ambiguous.
-
-Remove an owned clean worktree before deleting the branch checked out there:
-
-```bash
-git worktree list
-git worktree remove <worktree-path>
-git branch -d <feature-branch>
-```
-
-Delete the remote branch only when it exists and remote deletion is authorized, then verify its absence. After removing a worktree, remove its saved local Codex project registration; if unavailable, report the exact stale project path.
-
-## Close linked issues
-
-For work requested to resolve an issue, merge is not the end of the task: complete the remaining in-scope recovery, reruns, and verification, then close the issue without asking for separate closure approval. Resolve target issues from the conversation as well as branch, commit, and PR references; omission from commit messages does not remove the obligation. Close only when the reported problem is resolved, with concise evidence and the merge commit:
-
-```bash
-gh issue close <number> --comment "Resolved by <merge-commit-sha> on main."
-```
-
-Verify GitHub reports each target issue closed, including when PR closing keywords should close it automatically. If required follow-up is blocked, report the exact blocker and next action and leave the issue open; do not present the merged fix as task completion. Skip issue administration for background references or explicitly investigation-only work.
+After removing a worktree, remove its saved local Codex project registration; if unavailable, report the exact stale project path.
