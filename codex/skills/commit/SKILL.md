@@ -9,7 +9,7 @@ Validate, commit, complete repository-required post-commit actions, then push `m
 
 ## Prepare and verify
 
-Read repository instructions (`AGENTS.md`, or `CLAUDE.md` when applicable), including the complete Git Workflow requirements for checks, hooks, deployment, sync, and push. Run prescribed checks; otherwise choose proportionate verification and report the gap. Reuse successful checks for the unchanged candidate unless a later-stage rerun is required. Diagnose failures and fix in-scope regressions before proceeding; disclose unresolved failures and require authorization covering that evidence.
+Read repository instructions (`AGENTS.md`, or `CLAUDE.md` when applicable), including the complete Git Workflow requirements and any workflow file they point to, for checks, hooks, deployment, sync, and push. Run prescribed checks; otherwise choose proportionate verification and report the gap. Reuse successful checks for the unchanged candidate unless a later-stage rerun is required. Diagnose failures and fix in-scope regressions before proceeding; disclose unresolved failures and require authorization covering that evidence.
 
 ## Commit
 

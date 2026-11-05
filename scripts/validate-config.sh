@@ -182,7 +182,6 @@ if config["model"] != "gpt-6-astra" or config["model_reasoning_effort"] != "high
     raise SystemExit("expected Astra with high reasoning as the portable default")
 
 role_specs = {
-    "research_worker.toml": ("research_worker", "gpt-6-astra", "high"),
     "explorer.toml": ("explorer", "gpt-6.1-sol", "high"),
 }
 role_files = {path.name for path in (root / "codex/agents").glob("*.toml")}
@@ -224,7 +223,6 @@ if settings != {
     raise SystemExit("claude/settings.json must contain only the portable model, effort, disabled attribution, IDE opt-out env, gh issue permissions, and status line")
 
 agent_specs = {
-    "research-worker.md": ("high", None),
     "Explore.md": ("low", "Agent, Edit, Write, NotebookEdit"),
     "general-purpose.md": ("medium", "Agent"),
 }

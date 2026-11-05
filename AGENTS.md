@@ -42,7 +42,7 @@ Prefer the root entrypoints for machine setup, which install or sync both harnes
 ## Editing Rules
 
 - Keep cross-project behavioral instructions in `codex/AGENTS.md` and `claude/AGENTS.md`; keep repository-maintenance instructions here. Keep every section except Development Workflow identical in both files; Development Workflow differs by role (Claude coordinates, Codex executes) and harness runtime mechanics. Do not add a separate `CLAUDE.md` source.
-- Keep each harness self-contained: skills under `<harness>/skills/` and roles or subagents under `<harness>/agents/` as regular harness-owned files; add no shared or compatibility paths. Skills present in both harnesses stay equivalent except for runtime mechanics. Only Claude has the `brainstorming` and `codex` workflow skills.
+- Keep each harness self-contained: skills under `<harness>/skills/` and roles or subagents under `<harness>/agents/` as regular harness-owned files; add no shared or compatibility paths. Skills present in both harnesses stay equivalent except for runtime mechanics. Only Claude has the `brainstorming`, `codex`, and `research` workflow skills.
 - Install and sync must preserve machine-specific config and settings, project trust, notices, marketplaces, plugins, permissions, environment values, skill paths, app-managed settings, unrelated rules, skills, or subagents, and unmanaged legacy OMP state.
 - Paths inside portable config should prefer `~/` when the harness supports it. Absolute paths are acceptable only for machine-local state that the harness itself records.
 - Shell scripts use `set -euo pipefail` and remain simple enough to review without a framework.
