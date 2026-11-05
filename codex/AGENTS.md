@@ -30,19 +30,20 @@
 ## Development Workflow
 
 - Use the full development workflow only for changes involving code; otherwise, apply checks relevant to the change.
-- When asked to work on, fix, or resolve an issue, own it through verification, necessary operational follow-ups, and GitHub closure. The task is not finished at implementation or merge while the issue remains open. This request includes posting resolution evidence and closing the issue once its reported problem is resolved; do not ask for separate closure approval or make the user chase already-authorized follow-ups. Preserve explicit investigation-only scope and required approvals for consequential actions. If blocked, state the exact blocker and next action, continue independent work, and resume the remaining steps when unblocked; never close an unresolved issue just to finish.
+- When asked to resolve an issue, the task ends when GitHub shows it closed after the reported problem is fixed, not at merge; closing needs no separate approval.
 - Read governing instructions and task-relevant code, callers, tests, docs, and history. Expand inspection when evidence calls for it; reading the whole repository is not a prerequisite to editing.
-- Codex works in one of two modes. Standalone, it handles simple tasks for the user directly: edit, verify, and commit as the repository workflow or user directs. When work needs design discussion or a formal spec, say so; the user runs that work through Claude.
+- Codex works in one of two modes. Standalone, it handles simple tasks for the user directly: edit, verify, and commit as the repository workflow or user directs. When work needs design discussion or a formal spec, say so; the user runs that work through Claude. Add no reconfirmation gates for authorized in-scope work, verification, or repairs.
 - Assigned by Claude through Herdr (a message tagged `<hc from=...>`), it implements or reviews exactly the assignment. Read the supplied spec and governing instructions before editing. If the spec is materially ambiguous, contradicts repository evidence, or cannot meet its verification, report the evidence and options and stop instead of inventing a replacement design; ordinary implementation choices within the spec need no approval. Work only in the supplied worktree, preserve unrelated changes, start no agents, and do not merge or push. Report through the supplied route when done or stuck, with exact commits, commands, and results; never claim an unrun check passed. Messages the user types directly into the session also come from the user.
 - Keep implementation worktrees under `<project-root>/.worktrees/`. Request scoped escalation on the first Git metadata write when the worktree's resolved Git directory is outside writable roots.
 - Center work and reviews on the primary outcome. Address active requirements and plausible material failures now; otherwise note a useful limitation and concrete revisit condition. Never defer plausible security, data-loss, irreversible, or active-contract failures merely because the fix is large.
+- Once settled checks pass, broaden or repeat them only for new changes, failures, unresolved concerns, or an explicitly required later-stage check.
 - Treat agents and long commands as event-driven. Wait for the requested agent or process; handle unrelated events and resume. For `wait_agent`, use the longest supported interruptible timeout (`timeout_ms: 3600000`); agent updates and user input wake it early. If it times out without new information, renew the wait silently. Use the longest supported empty terminal wait. Do not poll or narrate unchanged state; check separately only after abnormal duration or a concrete signal.
 - For user-only `sudo` or privileged work, ask once and end the turn. Do not poll or try workarounds; use an unprivileged path directly only if equivalent.
 
 ## Verification
 
 - Choose checks that demonstrate the requested behavior and plausible regressions. Use working code and focused checks for questions prose cannot settle; leave the smallest useful regression check for non-trivial behavior changes.
-- Run settled and repository-required checks after the final change and review repairs. Once they pass, broaden or repeat only for new changes, failures, unresolved concerns, or an explicitly required later-stage check.
+- Run settled and repository-required checks after the final change and review repairs.
 - Treat failures as evidence: diagnose relevance, fix in-scope regressions, disclose unresolved failures before consequential actions, and proceed only when authorization covers that evidence.
 
 ## Python Style

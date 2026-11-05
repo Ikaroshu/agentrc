@@ -30,21 +30,21 @@
 ## Development Workflow
 
 - Use the full development workflow only for changes involving code; otherwise, apply checks relevant to the change.
-- When asked to work on, fix, or resolve an issue, own it through verification, necessary operational follow-ups, and GitHub closure. The task is not finished at implementation or merge while the issue remains open. This request includes posting resolution evidence and closing the issue once its reported problem is resolved; do not ask for separate closure approval or make the user chase already-authorized follow-ups. Preserve explicit investigation-only scope and required approvals for consequential actions. If blocked, state the exact blocker and next action, continue independent work, and resume the remaining steps when unblocked; never close an unresolved issue just to finish.
+- When asked to resolve an issue, the task ends when GitHub shows it closed after the reported problem is fixed, not at merge; closing needs no separate approval.
 - Read governing instructions and task-relevant code, callers, tests, docs, and history. Expand inspection when evidence calls for it; reading the whole repository is not a prerequisite to editing.
 - Claude is the user's single point of contact: it owns discussion, research, investigation, debugging, experiments, design, specs, status updates, commits, and merges. Codex implements and reviews spec-driven work through the `codex` skill.
 - Do work that is settled without a formal spec directly, including small fixes, configuration changes, and Herdr mod tweaks: edit, verify, and commit as the repository workflow or user directs. Hand work that needs a spec to Codex unless the user asks otherwise.
-- For spec-driven work, follow **brainstorm -> worktree -> codex -> merge**, using each skill for its stage. Get the user's approval of the written spec before the handoff and merge approval after a clear Codex review. Ask before optional workflows; add no reconfirmation gates for authorized in-scope work, verification, or repairs.
+- For spec-driven work, follow **brainstorm -> worktree -> codex -> merge**, using each skill for its stage. Get the user's approval of the written spec before the handoff and merge approval after a clear Codex review. Ask before optional workflows.
 - Keep specs uncommitted on `main` and implementation worktrees under `<project-root>/.worktrees/`.
 - Center specs and reviews on the primary outcome. Address active requirements and plausible material failures now; otherwise note a useful limitation and concrete revisit condition, or open a separately authorized follow-up. Never defer plausible security, data-loss, irreversible, or active-contract failures merely because the fix is large.
 - Use Claude subagents only for well-defined, separable research or searches; keep ambiguous investigation with the main conversation so the user follows the findings as they emerge.
-- Treat agents and long commands as event-driven. Wait for the requested agent or process; handle unrelated events and resume. Run long commands in the background and rely on completion notifications. Do not poll or narrate unchanged state; check separately only after abnormal duration or a concrete signal.
+- Run long commands and agents in the background and rely on their completion notifications instead of polling.
 - For user-only `sudo` or privileged work, ask once and end the turn. Do not poll or try workarounds; use an unprivileged path directly only if equivalent.
 
 ## Verification
 
 - Choose checks that demonstrate the requested behavior and plausible regressions. Use working code and focused checks for questions prose cannot settle; leave the smallest useful regression check for non-trivial behavior changes.
-- Run settled and repository-required checks after the final change and review repairs. Once they pass, broaden or repeat only for new changes, failures, unresolved concerns, or an explicitly required later-stage check.
+- Run settled and repository-required checks after the final change and review repairs.
 - Treat failures as evidence: diagnose relevance, fix in-scope regressions, disclose unresolved failures before consequential actions, and proceed only when authorization covers that evidence.
 
 ## Python Style
