@@ -1,7 +1,7 @@
-// A pane's split, zoom and close buttons, drawn over its top-right corner and shown only while the
-// pointer is in that corner. Used as the pane header with reveal "hover": the rest of the header is
-// left empty, so nothing covers the terminal elsewhere. Its top lines up with the file viewer's tabs.
-// Props from the app: { pane }.
+// A pane's split, zoom and close buttons, drawn over its bottom-right corner and shown only while the
+// pointer is in that corner, clear of the terminal find bar Herdr pins to the top right. Used as the
+// pane header at the bottom with reveal "hover": the rest of the header is left empty, so nothing
+// covers the terminal elsewhere. Props from the app: { pane }.
 import { View, div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { panes, props, run, theme } from "herdr";
@@ -19,8 +19,8 @@ export default class PaneCorner extends View {
   render() {
     const t = theme(), pane = props()?.pane, p = panes().find((x) => x.pane === pane);
     if (!p) return div();
-    return h_flex().size_full().justify_end().items_start()
-      .child(h_flex().id(`corner-${pane}`).w(132).h_full().pt(3.5).pr(3.5).justify_end().items_start()
+    return h_flex().size_full().justify_end().items_end()
+      .child(h_flex().id(`corner-${pane}`).w(132).h_full().pb(3.5).pr(3.5).justify_end().items_end()
         .on_hover((hovered, cx) => { this.hovered = hovered; cx.notify(); })
         .when(this.hovered, (el) => el.child(h_flex().gap(2).p(2).rounded(7).bg(t.popover).border(1).border_color(t.border)
           .child(this.button(t, `pc-r-${pane}`, "split-right", "Split right", "pane.split", { direction: "right", pane }))

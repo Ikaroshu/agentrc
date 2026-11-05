@@ -1,6 +1,7 @@
 // A lazy file browser for the focused pane's folder, with search by file name (fuzzy) and by
 // content (each file's first matching lines under it). The viewer's Cmd-F (file-view) scopes the
-// search to its file, listing all of its matching lines, until Esc or the scope's ×. It remembers each
+// search to its file, listing all of its matching lines, until Esc, the scope's ×, or Backspace in an
+// empty search box. It remembers each
 // folder's expanded subfolders and opens files in this tab's file-view pane. Right-click a file,
 // a folder, or the space below them for its menu (files-menu): new, cut/copy/paste, copy its
 // path, rename, and delete (this computer's Trash; elsewhere, after asking). Names are typed in place.
@@ -12,7 +13,7 @@ const VIEW = "file-view";
 const parentOf = (path) => path.slice(0, Math.max(0, path.lastIndexOf("/")));
 const nameOf = (path) => path.slice(path.lastIndexOf("/") + 1);
 
-// A file's type icon, a glyph of Symbols Nerd Font (installed on this Mac): by its exact name, else
+// A file's type icon, a glyph of Symbols Nerd Font (built into Herdr): by its exact name, else
 // by its extension, else a text page.
 const ICON_FONT = "Symbols Nerd Font";
 const BY_NAME = { Dockerfile: 0xe650, Makefile: 0xe673, LICENSE: 0xe60a, ".gitignore": 0xe65d };
@@ -134,6 +135,9 @@ export default class Files extends View {
     this.input.on("submit", (_e, cx) => this.pick(this.found[this.at]?.path, cx));
     this.input.on("focus", (_e, cx) => { this.typing = true; cx.notify(); });
     this.input.on("blur", (_e, cx) => { this.typing = false; cx.notify(); });
+    // The box handles Backspace itself, ahead of on_key_down. While it's empty and scoped to a file,
+    // its wrapper's FilesUnscope context lets this binding, added later, take Backspace instead.
+    cx.bind_keys([{ keystroke: "backspace", action: "files_unscope", context: "FilesUnscope > Input" }]);
     this.refresh(cx);
     cx.timer.every(10000, cx => this.refresh(cx));
     cx.spawn(async cx => {
@@ -495,10 +499,11 @@ export default class Files extends View {
       .child(h_flex().h(42).flex_none().px(14).gap(8).items_center().border_b(1).border_color(t.border)
         .child(div().font_semibold().child("Files"))
         .child(div().flex_1().min_w(0).truncate().text_right().text_size(12).text_color(t.dim).child(this.root?.split(/[\\/]/).pop() ?? "")))
-      .child(h_flex().flex_none().px(8).pt(8).pb(2).child(h_flex().id("files-search").flex_1().h(30).px(8).gap(6).items_center().rounded(7)
+      .child(h_flex().flex_none().px(8).pt(8).pb(2).child(h_flex().id("files-search").when(Boolean(this.scope) && !this.input.value(), el => el.key_context("FilesUnscope"))
+        .on_action("files_unscope", (_e, cx) => { this.scope = null; this.search("", cx); })
+        .flex_1().h(30).px(8).gap(6).items_center().rounded(7)
         .border_1().border_color(this.typing ? t.accent : t.border).cursor_text().on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-        // The app returns focus to the terminal after a click in a side panel, so focus again once it has.
-        .on_click((_e, cx) => { this.input.focus(); cx.timer.after(50, () => this.input.focus()); })
+        .on_click(() => this.input.focus())
         .child(svg("mods/workspace-chrome/search.svg").size(13).flex_none().text_color(t.dim))
         .when(Boolean(this.scope), el => el.child(h_flex().id("files-scope").flex_none().max_w(140).h(20).pl(6).pr(2).gap(2).items_center().rounded(5)
           .bg(t.selected).text_size(11).text_color(t.muted)

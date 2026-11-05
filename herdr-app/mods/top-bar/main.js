@@ -1,10 +1,9 @@
 // The window's top row beside the sidebar: where you are (space › tab, then the pane when the tab
 // is split, branch, folder) and the side panel's buttons, which start at the panel's left edge
-// while it shows. Tabs live in the sidebar, under their space. Keys bound to `top-bar.<program>` (keys.json) start that agent in a new tab, as the +
-// menu does.
+// while it shows. Tabs live in the sidebar, under their space.
 import { View, div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, panes, focused, knownAgents, nextCommand, run, theme, window, layout, shared, home } from "herdr";
+import { spaces, panes, focused, run, theme, window, layout, shared, home } from "herdr";
 
 // The side panel's views, each with a button here.
 const PANELS = [
@@ -44,16 +43,8 @@ function title(tab, l) {
 }
 
 export default class TopBar extends View {
-  init(_props, cx) {
+  init() {
     this.panels = JSON.parse(localStorage.getItem("panels") ?? "{}");
-    cx.spawn(async () => {
-      for (;;) {
-        const key = await nextCommand();
-        const space = spaces().find(s => s.active);
-        const agent = (await knownAgents({ on: space?.machine })).find(a => a.key === key);
-        run("tab.new", { name: agent.name, space: space?.id, argv: agent.run });
-      }
-    });
   }
 
   // The side panel is remembered per space: switching shows that space's choice

@@ -106,7 +106,7 @@
                         },
                         "reveal": "hover",
                         "height": 40,
-                        "position": "top"
+                        "position": "bottom"
                       }
                     }
                   }

@@ -2,7 +2,11 @@
 // for the space it was opened for (props.space, from a space's + in the sidebar) or the shown one.
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { theme, spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys } from "herdr";
+import { theme, spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys, shared, setShared } from "herdr";
+
+// The last agents each machine reported (shared with the shipped new-menu), shown at once while
+// knownAgents() checks again.
+const KNOWN = "new-menu.agents";
 
 function shortcut(name) {
   const k = keys().find(b => b.section === "global" && b.action === name);
@@ -32,11 +36,15 @@ function folderFor(space) {
 
 export default class NewMenu extends View {
   init(_props, cx) {
-    this.agents = [];
+    const machine = target()?.machine, where = machine ?? "";
+    this.agents = shared(KNOWN)?.[where] ?? [];
     this.handle = cx.focus_handle();
     this.handle.focus();
     cx.spawn(async cx => {
-      try { this.agents = (await knownAgents({ on: target()?.machine })).filter(a => a.key !== "opencode"); }
+      try {
+        this.agents = await knownAgents({ on: machine });
+        setShared(KNOWN, { ...shared(KNOWN), [where]: this.agents });
+      }
       catch { this.failed = true; }
       cx.notify();
     });
@@ -51,7 +59,7 @@ export default class NewMenu extends View {
   render() {
     const t = theme();
     const space = target(), folder = space && folderFor(space);
-    const choices = this.agents.filter(a => a.installed);
+    const choices = this.agents.filter(a => a.installed && a.key !== "opencode");
     return v_flex().min_h(0).w_full().h(Math.min(491, 167 + Math.max(1, choices.length) * 31)).bg(t.popover).p(5).text_size(12.8)
       .id("new-menu").track_focus(this.handle)
       .child(this.row("terminal", svg("icons/shell.svg").size(14), "Terminal", () => run("tab.new", { space: space?.id, folder }), shortcut("tab.new")))

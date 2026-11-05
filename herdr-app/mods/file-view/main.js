@@ -1,9 +1,8 @@
 // Tabs for the files and diffs the Files and Graph panels opened in this tab: editable files
 // (Markdown rendered until Source), and diffs stacked (removed lines above added ones), scrolling
-// sideways for long lines. Cmd-S saves (keys.json
-// binds it to `file-view.save`); Option-F (`file-view.find`, so not typing "ƒ" here) searches the
-// shown file from the Files panel's search box, since the editor keeps Cmd-F for itself; a file changed on disk since it was opened needs a second Cmd-S to
-// overwrite, and a tab with unsaved edits asks before closing. Files too large to load whole stay
+// sideways for long lines. Cmd-S saves (keys.json binds it to `file-view.save`); Cmd-F searches the
+// shown file from the Files panel's search box; a file changed on disk since it was opened needs a
+// second Cmd-S to overwrite, and a tab with unsaved edits asks before closing. Files too large to load whole stay
 // read-only. Local files and uncommitted diffs reload when the file changes on disk (not over
 // unsaved edits); uncommitted diffs also recheck every 10 seconds, since a commit or reset changes
 // them without touching the file. Preview/Source (Markdown) shows while the pointer is at the
@@ -67,6 +66,9 @@ function diffRows(lines) {
 export default class FileView extends View {
   init(_props, cx) {
     this.docs = new Map(); this.watching = new Set();
+    // The editor binds Cmd-F to its own search, ahead of keys.json; a binding in its own context,
+    // added later, wins over it there (elsewhere in the viewer keys.json's `file-view.find` runs).
+    cx.bind_keys([{ keystroke: "cmd-f", action: "file_view_find", context: "FileView > Input" }]);
     cx.timer.every(10000, cx => { for (const doc of this.docs.values()) if (doc.entry.diff && working(doc.entry)) this.load(doc, cx); });
     // Every viewer gets the command; only the focused one acts.
     cx.spawn(async cx => {
@@ -314,7 +316,7 @@ export default class FileView extends View {
       : entry.diff ? this.diffBody(doc, t)
       : markdown && !doc.source ? div().flex_1().min_h(0).px(20).py(12).child(TextView.markdown(`md-${doc.id}`, doc.text).size_full().scrollable(true).selectable(true))
       : Editor.new(doc.code).flex_1().min_h(0);
-    return v_flex().id("file-view").size_full().min_h(0).bg(t.background).text_color(t.foreground).text_size(13)
+    return v_flex().id("file-view").key_context("FileView").on_action("file_view_find", () => this.find()).size_full().min_h(0).bg(t.background).text_color(t.foreground).text_size(13)
       .child(h_flex().id("view-tabs").h(34).flex_none().px(6).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)
         .overflow_x_scrollbar().children(files.map(tab)))
       .child(v_flex().flex_1().min_h(0).relative()

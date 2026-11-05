@@ -1,12 +1,16 @@
 {
   "global": {
+    "cmd-w": "tab.close",
     "cmd-shift-t": "tab.new",
-    "cmd-shift-c": "top-bar.claude",
-    "cmd-shift-x": "top-bar.codex",
+    "cmd-shift-c": { "command": "tab.new", "args": { "argv": ["claude"] } },
+    "cmd-shift-x": { "command": "tab.new", "args": { "argv": ["codex"] } },
     "cmd-n": "spaces-card.new_space"
+  },
+  "terminal": {
+    "cmd-f": "terminal.search"
   },
   "mod:file-view": {
     "cmd-s": "file-view.save",
-    "alt-f": "file-view.find"
+    "cmd-f": "file-view.find"
   }
 }

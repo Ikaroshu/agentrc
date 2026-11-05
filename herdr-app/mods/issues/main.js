@@ -139,8 +139,7 @@ export default class Issues extends View {
       .child(v_flex().flex_none().px(8).pt(8).pb(6).gap(6).border_b(1).border_color(t.border)
         .child(h_flex().id("issues-filter").h(30).px(8).gap(6).items_center().rounded(7).border_1().border_color(this.typing ? t.accent : t.border).cursor_text()
           .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
-          // The app returns focus to the terminal after a click in a side panel, so focus again once it has.
-          .on_click((_e, cx) => { this.input.focus(); cx.timer.after(50, () => this.input.focus()); })
+          .on_click(() => this.input.focus())
           .child(svg("mods/workspace-chrome/search.svg").size(13).flex_none().text_color(t.dim))
           .child(Input.new(this.input).flex_1().h_full().text_size(12).text_color(t.foreground)))
         .child(h_flex().child(h_flex().flex_none().p(2).gap(2).rounded(8).border_1().border_color(t.border)

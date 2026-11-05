@@ -4,9 +4,8 @@ set -euo pipefail
 
 # Sets up this Mac's Herdr app from the repository, with the app running (its first launch creates
 # keys.json). Copies the managed mods and layout into the app home, merges the managed keys and
-# settings into its keys.json and settings.json, shows the managed layout, and installs the font
-# the Files panel's file icons use. The app reloads them on save; other mods, layouts, keys,
-# settings, and the app's own state are left alone.
+# settings into its keys.json and settings.json, and shows the managed layout. The app reloads them
+# on save; other mods, layouts, keys, settings, and the app's own state are left alone.
 SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_HOME="${HERDR_APP_HOME:-$HOME/.config/herdr-app}"
 LAYOUT=main-titled
@@ -35,5 +34,3 @@ PY
 if ! herdr-app status | grep -q "\"layout\": \"$LAYOUT\""; then
   herdr-app do layout.switch --name "$LAYOUT"
 fi
-
-brew list --cask font-symbols-only-nerd-font >/dev/null 2>&1 || brew install --cask font-symbols-only-nerd-font

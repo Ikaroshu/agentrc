@@ -1,6 +1,6 @@
 // The only pane of a space's hidden placeholder tab (see spaces-card), shown once the space has no
-// other tabs: buttons start a terminal, Claude or Codex in a new tab, as Cmd-T and the top bar's
-// keys do.
+// other tabs: buttons start a terminal, Claude or Codex in a new tab, as Cmd-T, Cmd-Shift-C and
+// Cmd-Shift-X do.
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, spaces, knownAgents, run } from "herdr";
@@ -17,11 +17,11 @@ export default class SpaceEmpty extends View {
     });
   }
 
-  button(t, id, icon, label, command) {
+  button(t, id, icon, label, argv) {
     return h_flex().id(`empty-${id}`).h(48).px(20).gap(10).items_center().rounded(10).cursor_pointer()
       .border(1).border_color(t.border).text_color(t.foreground)
       .hover((s) => s.bg(t.hover))
-      .on_click(() => run(command))
+      .on_click(() => run("tab.new", argv ? { argv } : {}))
       .child(icon).child(label);
   }
 
@@ -35,8 +35,8 @@ export default class SpaceEmpty extends View {
     const t = theme();
     return v_flex().size_full().bg(t.background).items_center().justify_center().text_size(15)
       .child(h_flex().gap(12)
-        .child(this.button(t, "terminal", svg("icons/shell.svg").size(20).text_color(t.foreground), "Terminal", "tab.new"))
-        .child(this.button(t, "claude", this.agentIcon(t, "claude"), "Claude", "top-bar.claude"))
-        .child(this.button(t, "codex", this.agentIcon(t, "codex"), "Codex", "top-bar.codex")));
+        .child(this.button(t, "terminal", svg("icons/shell.svg").size(20).text_color(t.foreground), "Terminal"))
+        .child(this.button(t, "claude", this.agentIcon(t, "claude"), "Claude", ["claude"]))
+        .child(this.button(t, "codex", this.agentIcon(t, "codex"), "Codex", ["codex"])));
   }
 }
