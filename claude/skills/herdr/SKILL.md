@@ -1,6 +1,6 @@
 ---
 name: herdr
-description: Control the Herdr app and herdr-core (`hc`), including spaces, tabs, panes, terminals, agents, communication between agents, other machines, and app mods. Use for Herdr operations or troubleshooting, not incidental background work or delegation.
+description: Control the Herdr app and herdr-core (`hc`), including spaces, tabs, panes, terminals, agents, communication between agents, other machines, and app mods. Use for Herdr operations, troubleshooting, and agent handoffs that a workflow skill assigns, not incidental background work.
 ---
 
 # Herdr

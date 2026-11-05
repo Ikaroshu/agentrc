@@ -1,6 +1,6 @@
 ---
 name: merge
-description: Merge or clean up a reviewed branch or pull request, verify its recorded candidate, and complete authorized follow-ups.
+description: Merge or clean up a verified branch or pull request, verify its recorded candidate, and complete authorized follow-ups.
 ---
 
 # Merge Workflow
@@ -15,9 +15,9 @@ Resolve the exact branch or PR and local-versus-PR mode from the request and rep
 
 ## Verify the candidate
 
-Resolve clean feature `HEAD` and tree. Require the implementation owner's recorded settled verification evidence for the same commit and tree, recorded after the last code change and immediately before the accepted code review. Accept that recorded evidence without inspecting the implementation diff or rerunning its verification. If the evidence is absent or mismatched, stop and return the candidate to implementation and code review before a new merge-approval request; do not substitute a post-review test run. Run only checks that repository instructions explicitly assign to the merge stage.
+Resolve clean feature `HEAD` and tree. Require the implementation owner's recorded settled verification evidence for the same commit and tree, recorded after the last code change, and, when the work went through a code review, that review's acceptance of the same commit. Accept that recorded evidence rather than rerunning its verification. If the evidence is absent or mismatched, stop and return the candidate to its owner for verification, and to review when one applies, before a new merge-approval request; do not substitute a merge-stage test run. Run only checks that repository instructions explicitly assign to the merge stage.
 
-Treat merge-stage check failures as evidence: return candidate-related technical diagnosis and repair to the same implementation owner, and do not merge a candidate whose settled verification or code-review acceptance is invalidated.
+Treat merge-stage check failures as evidence: return candidate-related technical diagnosis and repair to the same implementation owner, and do not merge a candidate whose settled verification, or review acceptance when one applies, is invalidated.
 
 ## Merge
 
