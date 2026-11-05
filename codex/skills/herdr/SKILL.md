@@ -51,7 +51,7 @@ Never sleep or poll: use `hc wait "$target"`, `hc wait --children any|all`, or `
 
 ## Start an agent or ordinary command
 
-Creating helpers must follow the task's delegation scope and repository role rules. Use native role tools when the workflow requires a native implementer or reviewer; an ordinary agent in a Herdr terminal does not inherit that role. Do not replace required native reviews with a generic prompted terminal agent.
+Creating helpers must follow the task's delegation scope and repository role rules. An agent in a Herdr terminal inherits no role: its first message must carry the whole assignment and limits.
 
 Check `hc templates` for a fitting role first. Otherwise start an interactive agent with its first task in the launch, in the intended checkout:
 

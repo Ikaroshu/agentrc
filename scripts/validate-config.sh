@@ -181,31 +181,19 @@ if set(config) != {
 if config["model"] != "gpt-6-astra" or config["model_reasoning_effort"] != "high":
     raise SystemExit("expected Astra with high reasoning as the portable default")
 
-recursive_skills = {
-    "implement",
-    "adversarial-doc-review",
-    "code-review",
-    "claude-doc-review",
-    "claude-code-review",
-}
 role_specs = {
-    "doc_reviewer.toml": ("doc_reviewer", True, "gpt-6-astra", "xhigh"),
-    "code_reviewer.toml": ("code_reviewer", True, "gpt-6-astra", "xhigh"),
-    "implementer.toml": ("implementer", True, "gpt-6.1-sol", "xhigh"),
-    "research_worker.toml": ("research_worker", False, "gpt-6-astra", "high"),
-    "explorer.toml": ("explorer", False, "gpt-6.1-sol", "high"),
-    "worker.toml": ("worker", False, "gpt-6.1-sol", "xhigh"),
+    "research_worker.toml": ("research_worker", "gpt-6-astra", "high"),
+    "explorer.toml": ("explorer", "gpt-6.1-sol", "high"),
+    "worker.toml": ("worker", "gpt-6.1-sol", "xhigh"),
 }
 role_files = {path.name for path in (root / "codex/agents").glob("*.toml")}
 if role_files != set(role_specs):
     raise SystemExit(f"unexpected active roles: {sorted(role_files)}")
 
-for filename, (expected_name, blocks_recursion, expected_model, expected_effort) in role_specs.items():
+for filename, (expected_name, expected_model, expected_effort) in role_specs.items():
     with (root / "codex/agents" / filename).open("rb") as role_file:
         role = tomllib.load(role_file)
     expected_keys = {"name", "description", "developer_instructions", "model", "model_reasoning_effort"}
-    if blocks_recursion:
-        expected_keys.add("skills")
     if set(role) != expected_keys:
         raise SystemExit(f"{filename}: unexpected top-level keys: {sorted(role)}")
     if role["name"] != expected_name:
@@ -215,39 +203,7 @@ for filename, (expected_name, blocks_recursion, expected_model, expected_effort)
     for field in ("description", "developer_instructions"):
         if not isinstance(role[field], str) or not role[field].strip():
             raise SystemExit(f"{filename}: {field} must be a non-empty string")
-    if not blocks_recursion:
-        continue
-    selectors = role["skills"].get("config", [])
-    if (
-        not isinstance(selectors, list)
-        or any(set(item) != {"name", "enabled"} for item in selectors)
-        or any(item["enabled"] is not False for item in selectors)
-        or {item["name"] for item in selectors} != recursive_skills
-        or len(selectors) != len(recursive_skills)
-    ):
-        raise SystemExit(
-            f"{filename}: expected exactly the five disabled recursive workflow skills"
-        )
 PY
-
-for skill in adversarial-doc-review code-review; do
-  skill_file="$ROOT_DIR/codex/skills/$skill/SKILL.md"
-  grep -F 'fork_turns="none"' "$skill_file" >/dev/null
-  grep -F 'model="gpt-6-astra"' "$skill_file" >/dev/null
-  grep -F 'reasoning_effort="xhigh"' "$skill_file" >/dev/null
-  if grep -F 'reasoning_effort="max"' "$skill_file" >/dev/null; then
-    echo "Unexpected reviewer max tier: $skill_file" >&2
-    exit 1
-  fi
-done
-grep -F 'agent_type="doc_reviewer"' "$ROOT_DIR/codex/skills/adversarial-doc-review/SKILL.md" >/dev/null
-grep -F 'agent_type="code_reviewer"' "$ROOT_DIR/codex/skills/code-review/SKILL.md" >/dev/null
-
-implement_skill="$ROOT_DIR/codex/skills/implement/SKILL.md"
-grep -F 'agent_type="implementer"' "$implement_skill" >/dev/null
-grep -F 'fork_turns="none"' "$implement_skill" >/dev/null
-grep -F 'model="gpt-6.1-sol"' "$implement_skill" >/dev/null
-grep -F 'reasoning_effort="xhigh"' "$implement_skill" >/dev/null
 
 "$PYTHON_YAML_BIN" - "$ROOT_DIR" <<'PY'
 from pathlib import Path
@@ -269,9 +225,6 @@ if settings != {
     raise SystemExit("claude/settings.json must contain only the portable model, effort, disabled attribution, IDE opt-out env, gh issue permissions, and status line")
 
 agent_specs = {
-    "code-reviewer.md": ("xhigh", "Agent, Skill"),
-    "doc-reviewer.md": ("xhigh", "Agent, Skill"),
-    "implementer.md": ("medium", "Skill"),
     "research-worker.md": ("high", None),
     "Explore.md": ("low", "Agent, Edit, Write, NotebookEdit"),
     "general-purpose.md": ("medium", "Agent"),
@@ -300,10 +253,7 @@ for filename, (expected_effort, expected_disallowed) in agent_specs.items():
         raise SystemExit(f"{filename}: description and instructions must be non-empty")
 PY
 
-grep -F 'subagent_type="doc-reviewer"' "$ROOT_DIR/claude/skills/adversarial-doc-review/SKILL.md" >/dev/null
-grep -F 'subagent_type="code-reviewer"' "$ROOT_DIR/claude/skills/code-review/SKILL.md" >/dev/null
-grep -F 'subagent_type="implementer"' "$ROOT_DIR/claude/skills/implement/SKILL.md" >/dev/null
-if rg -n -i 'codex|gpt-|spawn_agent|followup_task|fork_turns|\bagent_type=' "$ROOT_DIR/claude"; then
+if rg -n -i 'gpt-|spawn_agent|followup_task|fork_turns|\bagent_type=' "$ROOT_DIR/claude"; then
   echo "Active Claude sources reference Codex-only runtime constructs" >&2
   exit 1
 fi

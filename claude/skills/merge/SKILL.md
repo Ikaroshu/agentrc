@@ -5,7 +5,7 @@ description: Merge or clean up a reviewed branch or pull request, verify its rec
 
 # Merge Workflow
 
-Verify the candidate, merge locally or through a PR, verify main, run authorized follow-ups, and clean up. The implementation owner is the main agent for direct work or the implementer subagent for delegated work.
+Verify the candidate, merge locally or through a PR, verify main, run authorized follow-ups, and clean up. The implementation owner is whoever built the candidate: this agent for direct work, or the Codex implementer session for a Claude handoff.
 
 ## Prepare
 
@@ -58,7 +58,7 @@ git worktree remove <worktree-path>
 git branch -d <feature-branch>
 ```
 
-Delete the remote branch only when it exists and remote deletion is authorized, then verify its absence.
+Delete the remote branch only when it exists and remote deletion is authorized, then verify its absence. After a Codex handoff, `hc kill` and `hc rm` its implementer and reviewer sessions.
 
 ## Close linked issues
 

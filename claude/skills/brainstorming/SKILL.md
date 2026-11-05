@@ -1,11 +1,11 @@
 ---
 name: brainstorming
-description: Settle material goal or design uncertainty and write a durable implementation spec when needed. Skip requests already settled enough to implement without a spec.
+description: Settle material goal or design uncertainty and write the implementation spec that Codex builds from. Skip requests already settled enough to do without a spec.
 ---
 
 # Brainstorming
 
-Turn material uncertainty into an approved implementation contract. If the request is already settled and needs no spec, proceed to `implement`.
+Turn material uncertainty into an approved spec for the `codex` handoff. If the request is already settled and needs no spec, do it directly.
 
 Inspect relevant code, docs, history, and repository rules without editing implementation files or creating a worktree. Keep the user in consequential decisions; resolve other uncertainty from context or safe assumptions. Exclude unrelated improvements.
 
@@ -23,6 +23,6 @@ Present the contract proportionately and get explicit approval, resolving contra
 
 ## Write the spec
 
-When a durable spec is needed, save the approved contract to `<project-root>/.plans/specs/<YYYYMMDD>_<short_title>.md` from main and do not commit it. Organize it around **Design**, **Outcome**, and **Verification**, with only the context needed to understand them. Describe what must be true without prescribing implementation phases, task choreography, commit boundaries, or code structure that the design does not require.
+Save the approved contract to `<project-root>/.plans/specs/<YYYYMMDD>_<short_title>.md` from main and do not commit it. Organize it around **Design**, **Outcome**, and **Verification**, with only the context needed to understand them. Describe what must be true without prescribing implementation phases, task choreography, commit boundaries, or code structure that the design does not require. Codex has not seen this conversation: include the investigation evidence, file paths, and constraints it needs to implement without guessing intent.
 
-Invoke `adversarial-doc-review` on a written spec. After confirmed findings are resolved, ask for implementation approval. When no spec is needed, proceed to the `implement` skill after the user approves the settled contract; skipping a spec does not imply main-agent implementation.
+Ask the user to approve the written spec, then proceed to the `codex` skill. Codex checks the spec against the repository before editing and reports material gaps.

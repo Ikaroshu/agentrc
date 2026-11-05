@@ -5,7 +5,7 @@ description: Merge or clean up a reviewed branch or pull request, verify its rec
 
 # Merge Workflow
 
-Verify the candidate, merge locally or through a PR, verify main, run authorized follow-ups, and clean up. The implementation owner is the main agent for direct work or the implementer subagent for delegated work.
+Verify the candidate, merge locally or through a PR, verify main, run authorized follow-ups, and clean up. The implementation owner is whoever built the candidate: this agent for direct work, or the Codex implementer session for a Claude handoff.
 
 ## Prepare
 
