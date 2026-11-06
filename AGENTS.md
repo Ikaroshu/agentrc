@@ -33,7 +33,7 @@ Prefer the root entrypoints for machine setup, which install or sync both harnes
 ## Editing Rules
 
 - Keep cross-project behavioral instructions in `codex/AGENTS.md` and `claude/AGENTS.md`; keep repository-maintenance instructions here. Keep every section except Development Workflow identical in both files; Development Workflow differs by role (Claude coordinates, Codex executes) and harness runtime mechanics. Do not add a separate `CLAUDE.md` source.
-- Keep each harness self-contained: skills under `<harness>/skills/` and roles or subagents under `<harness>/agents/` as regular harness-owned files; add no shared or compatibility paths. Skills present in both harnesses stay equivalent except for runtime mechanics. Only Claude has the `brainstorming`, `codex`, and `research` workflow skills.
+- Keep each harness self-contained: skills under `<harness>/skills/` and roles or subagents under `<harness>/agents/` as regular harness-owned files; add no shared or compatibility paths. Skills present in both harnesses stay equivalent except for runtime mechanics. Only Claude has the `spec`, `codex`, and `research` workflow skills.
 - Install and sync must preserve machine-specific config and settings, project trust, notices, marketplaces, plugins, permissions, environment values, skill paths, app-managed settings, unrelated rules, skills, or subagents, and unmanaged legacy OMP state.
 - Paths inside portable config should prefer `~/` when the harness supports it. Absolute paths are acceptable only for machine-local state that the harness itself records.
 - Shell scripts use `set -euo pipefail` and remain simple enough to review without a framework.
@@ -51,6 +51,6 @@ There is no app test suite. `./scripts/validate-config.sh` checks topology, perm
 
 ## Git Workflow
 
-- This repository overrides the cross-project development workflow: skip the brainstorm, worktree, Codex handoff, and merge stages and their skills unless the user asks for them. Edit directly on `main`, validate, commit, and push `main` to `origin` without separate authorization.
+- This repository overrides the cross-project development workflow: skip the spec, worktree, Codex handoff, and merge stages and their skills unless the user asks for them. Edit directly on `main`, validate, commit, and push `main` to `origin` without separate authorization.
 - Run `./scripts/validate-config.sh` before committing. Never install or sync from a feature worktree.
 - After a merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from main without separate authorization, plus `./herdr-app/install.sh` on this Mac when `herdr-app/` changed. Edit the mods here, not in `~/.config/herdr-app/`, so installation does not overwrite live edits. Verify local and remote active files match committed sources without disturbing unrelated state. When changes affect roles, dispatch, or installation, start fresh installed-role canaries for each affected harness locally and remotely where its runtime exists. Fix canary failures forward; never leave installation pointing at a deleted worktree. Install and sync do not remove a deleted skill, so remove its installed copies by hand on each machine.

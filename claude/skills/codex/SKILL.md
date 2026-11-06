@@ -1,6 +1,6 @@
 ---
 name: codex
-description: Hand an approved spec to a Codex session in Herdr for implementation, then to a fresh Codex session for code review. Use for work that needs a spec; do work settled without one directly.
+description: Hand an approved spec to a Codex session in Herdr for implementation, then to a fresh Codex session for code review. Use for work that needs a spec; not for trivial work Claude does directly.
 ---
 
 # Codex Handoff
@@ -27,7 +27,7 @@ The implementer brief contains:
 - the sender (Claude at `$HC_TERMINAL_ID`), the absolute spec path, the worktree, and the review base;
 - the assignment: read the governing instructions, spec, and relevant code first; if the spec is materially ambiguous, wrong, or cannot meet its verification, report questions and stop before editing; otherwise implement, run the spec's and repository-required verification, and leave a clean committed candidate on the branch;
 - limits: work only in the worktree, start no agents, and do not merge or push;
-- the report route: `hc send <claude address> "<report>"`; for a report longer than a few lines, write `/tmp/codex-<name>-report.md` and send its path. The report gives the candidate commit, clean status, changed paths, exact verification commands and results, deviations from the spec, and remaining risks.
+- the report route: `hc send <claude address> "<report>"`, only for questions, blockers, and the final report, with no progress messages; for a report longer than a few lines, write `/tmp/codex-<name>-report.md` and send its path. The report gives the candidate commit, clean status, changed paths, exact verification commands and results, deviations from the spec, and remaining risks.
 
 End the turn after the launch. Codex reports arrive as new input tagged `<hc from="...">`; Herdr also notifies Claude if the session is blocked, errors, or exits.
 

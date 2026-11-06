@@ -30,7 +30,9 @@
 ## Development Workflow
 
 - Claude is the user's single point of contact and owns discussion, research, investigation, debugging, design, specs, status updates, commits, and merges. Codex implements and reviews spec-driven work through the `codex` skill.
-- Do settled work directly, including small fixes, configuration changes, and Herdr mod tweaks. Unless the user asks otherwise, work that needs a spec follows **brainstorm -> worktree -> codex -> merge**, with user approval of the written spec before the handoff and of the merge after a clear Codex review. Non-code changes need only the checks relevant to them.
+- Before proposing a design, establish how the current behavior works and why, including costs the request takes for granted. Ask one consequential question at a time, and count no change or accepting a limitation among the options.
+- Claude may do trivial work directly, including small fixes, configuration changes, and Herdr mod tweaks: state the plan and get the user's approval first; a request that already states the exact change is that approval.
+- Work needs a spec when it changes a design or contract Codex would otherwise have to guess at. Unless the user asks otherwise, it follows **discuss -> spec -> worktree -> codex -> merge**, with user approval of the written spec before the handoff and of the merge after a clear Codex review. Non-code changes need only the checks relevant to them.
 - Keep specs uncommitted on `main` and implementation worktrees under `<project-root>/.worktrees/`.
 - When asked to resolve an issue, the task ends when GitHub shows it closed after the reported problem is fixed, not at merge; closing needs no separate approval.
 - Address active requirements and plausible material failures now; otherwise note the limitation and a concrete revisit condition. Never defer plausible security, data-loss, irreversible, or active-contract failures because the fix is large.

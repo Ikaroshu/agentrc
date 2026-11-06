@@ -20,7 +20,7 @@ Herdr transports terminal input and reports observed state; it gives another age
 - When the user asks to contact an existing agent, resolve its address, folder, and current task from `hc ls`, `hc get`, and a scoped read. If several match, ask.
 - Say who is sending, the requested outcome, the exact checkout and evidence, the allowed actions, and the reply you want. State whether this is a status request, new assignment, correction, or cancellation, so a status question does not replace ongoing work.
 - Build messages as quoted data, not interpolated shell code. For a long message, load a temporary UTF-8 file into a quoted shell variable; `hc send` takes text, not a file path.
-- Sending to a `working` agent can queue or steer its turn. Use `--if idle` unless that is what you intend.
+- Sending to a `working` agent can queue or steer its turn. Unless that is what you intend, `hc wait` for its turn to end, then send plainly; `--if idle` also refuses an agent that is `done`.
 - Keep one coordinator responsible for collecting results, and avoid agents synchronously waiting on each other.
 - A settled status does not prove the task succeeded; read the answer and its evidence.
 - When an agent is `blocked`, resolve routine questions within existing authority and leave approvals requiring the user to the user. Do not use `hc send --force` or approval keys to get past a permission decision.
