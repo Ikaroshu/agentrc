@@ -51,6 +51,6 @@ There is no app test suite. `./scripts/validate-config.sh` checks topology, perm
 
 ## Git Workflow
 
-- This repository overrides the cross-project development workflow: skip the spec, worktree, Codex handoff, and merge stages and their skills unless the user asks for them. Edit directly on `main`, validate, commit, and push `main` to `origin` without separate authorization.
+- Assume work in this repository is trivial under the cross-project development workflow unless the user asks for a spec. Work on `main`; once the plan is approved, validate, commit, and push `main` to `origin` without separate authorization.
 - Run `./scripts/validate-config.sh` before committing. Never install or sync from a feature worktree.
 - After a merge or direct commit on `main`, run `./install.sh` and `./sync-remote.sh mini` from main without separate authorization, plus `./herdr-app/install.sh` on this Mac when `herdr-app/` changed. Edit the mods here, not in `~/.config/herdr-app/`, so installation does not overwrite live edits. Verify local and remote active files match committed sources without disturbing unrelated state. When changes affect roles, dispatch, or installation, start fresh installed-role canaries for each affected harness locally and remotely where its runtime exists. Fix canary failures forward; never leave installation pointing at a deleted worktree. Install and sync do not remove a deleted skill, so remove its installed copies by hand on each machine.
