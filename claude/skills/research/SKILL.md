@@ -137,11 +137,13 @@ judges the result against that definition and does not redo the work.
    `hc run --bg --name codex-research-<short_title> --cwd <worktree> codex --no-daemon "$brief"`,
    where the brief names the sender (Claude at `$HC_TERMINAL_ID`), the task file, and the report
    route: `hc send <claude address> "<report>"`. The message gives the answer and the paths of its
-   outputs; detail goes in files next to the task file.
+   outputs; detail goes in files next to the task file. When `$HC_TERMINAL_ID` is unset, run the
+   session headless as the `codex` skill's "Without herdr-core" section describes, with its final
+   message as the report route.
    Reuse the session for later tasks when its accumulated context helps; start a fresh one for
    unrelated work.
 3. Continue work that does not depend on the task, or end the turn. Codex reports arrive as
-   `<hc from="...">` input.
+   `<hc from="...">` input, or for a headless session when its background command exits.
 4. Before using the result, check that it meets the task's defined output. Send defects back to the
    same session.
 
@@ -183,7 +185,7 @@ user exactly what, why it is useful, and your recommendation, and keep the workt
 the user decides; closing alone does not authorize merging.
 
 Otherwise, after checking that no Codex session, job, or pending consumer needs them, stop the
-study's Codex sessions (`hc kill`, `hc rm`) and remove the worktree and its local branch. The close
+study's Herdr Codex sessions (`hc kill`, `hc rm`) and remove the worktree and its local branch. The close
 request authorizes this cleanup, including discarding experimental commits assessed as not worth
 keeping, without another confirmation; it does not authorize remote branch or cloud deletion. Keep
 the board, round notes, task files, scripts, reports, compact results, and unique or expensive

@@ -5,7 +5,7 @@ description: Controls the Herdr app and herdr-core (`hc`), including spaces, tab
 
 # Herdr
 
-herdr-core (`hc`) runs every terminal and agent and keeps them alive when the window closes. The `herdr-app` window shows them as spaces, tabs, and panes. The `herdr` command is a separate, older TUI; do not use it to control the app.
+herdr-core (`hc`) runs every terminal and agent and keeps them alive when the window closes. The `herdr-app` window shows them as spaces, tabs, and panes. The `herdr` command is a separate, older TUI; do not use it to control the app. Inside that TUI (`HERDR_ENV=1`), control its panes with `herdr` as `herdr --skill` describes; the rest of this skill covers herdr-core and the app.
 
 Before the first Herdr operation in a task, read the installed manual: `hc --skill`, plus `herdr-app --skill` when changing the screen. The manuals define syntax and behavior and win if they differ from this skill, which adds only the rules for how we use Herdr.
 

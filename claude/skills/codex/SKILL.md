@@ -7,7 +7,7 @@ description: Hand an approved spec to a Codex session in Herdr for implementatio
 
 Claude owns the user conversation, investigation, design, the spec, and the merge. One Codex session (the implementer) builds and repairs the change; a second, fresh Codex session (the reviewer) reviews it, so the review does not inherit the implementer's assumptions. Both are Herdr terminals that Claude starts as children. They appear under Claude's tab in Herdr's agent list, where the user can open and talk to them; open one in a pane only when the user asks (`herdr-app do agent.focus --terminal <address>`).
 
-Read the `herdr` skill's rules for messages, waiting, and cleanup. Always start Codex with `codex --no-daemon` and no model override; the machine config selects the model.
+Read the `herdr` skill's rules for messages, waiting, and cleanup. Always start Codex with `codex --no-daemon` and no model override; the machine config selects the model. When `$HC_TERMINAL_ID` is unset, run both sessions [without herdr-core](#without-herdr-core) instead.
 
 ## Hand off
 
@@ -54,6 +54,17 @@ Claude may read the diff to explain it to the user. Send findings to the impleme
 ## Finish
 
 When a review pass is clear, ask the user for merge approval as a decision request. A later change or failed check invalidates that approval. After the merge, `hc kill` and `hc rm` both Codex sessions.
+
+## Without herdr-core
+
+Outside herdr-core (the herdr TUI, a plain terminal, or SSH), each Codex session runs headless. Start every turn from the worktree with the Bash tool's `run_in_background`, which notifies Claude when it exits. Pass no sandbox, permission, or model flags, so the machine config's `default_permissions` and model apply:
+
+```bash
+codex exec --json -o "$report_file" "$brief" > "$events_file"
+codex exec resume --json -o "$report_file" "$session_id" "$message" > "$events_file"
+```
+
+The session id is the `thread_id` of the first `thread.started` event. Resume the same session for every later message to it: answers, findings, and the second review pass. A headless session cannot be watched or asked mid-run, so its brief's report route is its final message: it ends its turn with the report, question, or blocker, which `-o` writes to `$report_file`. Use a new report file per turn. A nonzero exit is an error; read the events file. These sessions need no kill or removal.
 
 ## Decision requests
 
