@@ -25,7 +25,7 @@ removal.
 - **User:** decides the question, what each round investigates and spends, and when the study ends.
 - **Claude:** owns the research thinking — framing claims, designing rounds, interpreting evidence,
   keeping the board — and the discussion. Claude does exploratory and judgment-heavy work itself:
-  reading data, quick probes, analysis, checking numbers.
+  reading data, quick probes, and analysis.
 - **Codex:** executes well-defined tasks that Claude specifies (see [Delegate to Codex](#delegate-to-codex)).
   Codex does not choose what the study tests or interpret its results.
 
@@ -71,14 +71,21 @@ round's plan and spend.
 - Adapt freely within the round's question and budget. Check in early, and stop, when a result
   changes the question, the plan needs spend beyond the approval, a blocker appears, or a surprise
   bears on the user's judgment, such as a data defect.
-- Before reporting a number that decides a claim, recompute or spot-check it, and confirm the code
-  computed what the claim needs, such as using only data available at decision time.
+- Once per study, in round 1, after the method code exists and before any results are read, have a
+  fresh Codex session try to break the method: data used before it was available, accounting
+  errors, wrong timing. Record what it finds and how it was fixed in `notes.md`. Later rounds reuse
+  the reviewed method without another review unless the user asks.
+- Trust a result that meets its task's defined output. Recheck a number that decides a claim only
+  when it is surprising or contradicts earlier evidence.
+- Before a one-time read of held-back data, run the read code on data already read and reproduce the
+  earlier results, then write on the board how the read will be interpreted.
 - Keep the board's status line current, including what the round is waiting on.
 
 ### Report and discuss
 
 When the round finishes, update the board — the round's result, the claims, open angles, and spend —
-and report in conversation. Size the report to what happened; it opens a discussion. Cover:
+and report in conversation. Size the report to what happened; it opens a discussion. Keep to the
+numbers the decision needs and leave detail in the round files, cited by path. Cover:
 
 - **What we did,** including deviations from the plan.
 - **Results:** the key numbers, tables or figures with their paths, and surprises.
@@ -111,10 +118,15 @@ limits, and stop at the first result outside them.
 
 ## Delegate to Codex
 
-Hand Codex a task when it is well defined: what to build or run, its inputs and outputs, and how to
-check it are known. Examples: implement a described experiment harness or feature, add a data
-loader, port a prior study's code, run a batch of evaluations and collect the results, run a sweep.
-Keep work whose next step depends on what you see: exploring data, choosing comparisons, interpreting.
+Hand Codex a task when it is well defined: what to build, run, or investigate, its inputs, and the
+result it must produce are known. Examples: implement a described experiment harness or feature,
+add a data loader, port a prior study's code, run a batch of evaluations and collect the results,
+run a sweep, investigate a suspected defect. Keep work whose next step depends on what you see:
+exploring data, choosing comparisons, interpreting.
+
+The task's defined output is what Claude judges the result by, so define it precisely. An
+investigation's output states the cause, the impact on the study, and what was not checked. Claude
+judges the result against that definition and does not redo the work.
 
 1. Write the task to `rounds/NN_<name>/tasks/<task>.md`: the goal and how it serves the round; the
    exact inputs, paths, and references; the expected outputs and where they go; the checks that show
@@ -124,13 +136,14 @@ Keep work whose next step depends on what you see: exploring data, choosing comp
 2. Start the study's Codex session following the `herdr` skill:
    `hc run --bg --name codex-research-<short_title> --cwd <worktree> codex --no-daemon "$brief"`,
    where the brief names the sender (Claude at `$HC_TERMINAL_ID`), the task file, and the report
-   route: `hc send <claude address> "<report>"`, with longer reports written next to the task file.
+   route: `hc send <claude address> "<report>"`. The message gives the answer and the paths of its
+   outputs; detail goes in files next to the task file.
    Reuse the session for later tasks when its accumulated context helps; start a fresh one for
    unrelated work.
 3. Continue work that does not depend on the task, or end the turn. Codex reports arrive as
    `<hc from="...">` input.
-4. Before using the result, read the diff of load-bearing code and check the outputs as
-   [Run a round](#run-a-round) requires. Send defects back to the same session.
+4. Before using the result, check that it meets the task's defined output. Send defects back to the
+   same session.
 
 Answer Codex questions within the approved round plan; take changes to the plan or spend to the user.
 
@@ -156,7 +169,8 @@ each level studied; the claims and their final status; how the rounds changed th
 strongest positive and negative results; uncertainty and limitations, separating robust from
 exploratory evidence; and ranked recommendations. Identify the branch, list its code changes and
 which are worth keeping and why, and state the tests or reviews run and the validation still needed
-before adoption. Add any section and finishing step the repository requires. Then close the study.
+before adoption. Add any section and finishing step the repository requires; finishing authorizes
+committing what those steps require. Then stop: close the study only on an explicit request.
 
 ## Close a study
 
