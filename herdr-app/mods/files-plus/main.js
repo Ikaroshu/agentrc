@@ -242,7 +242,7 @@ export default class Files extends View {
     const all = panes(), live = new Set(spaces().flatMap(s => s.tabs.map(t => t.id)));
     const views = Object.fromEntries(Object.entries(shared(VIEW) ?? {}).filter(([id]) => live.has(id)));
     const file = path.startsWith("/") ? path : `${this.root}/${path}`, files = views[tab]?.files ?? [];
-    views[tab] = { files: files.some(o => o.file === file) ? files : [...files, { file, on: this.scope?.on ?? this.on }], active: file };
+    views[tab] = { files: files.some(o => o.file === file && !o.diff) ? files : [...files, { file, on: this.scope?.on ?? this.on }], active: file };
     setShared(VIEW, views);
     if (!all.some(p => p.tab === tab && p.mod === VIEW)) {
       const from = all.find(p => p.pane === f.pane && p.terminal) ?? all.find(p => p.tab === tab && p.terminal);

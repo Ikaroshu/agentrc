@@ -7,7 +7,7 @@ This repository contains portable Codex and Claude Code configuration, not an ap
 - `AGENTS.md` — repository-maintenance instructions.
 - `codex/` — Codex's `AGENTS.md` (cross-project instructions), `config.toml` (baseline merged into machine-local config), `agents/*.toml` (native roles copied as regular files to `~/.codex/agents/`), `skills/` (installed into `~/.agents/skills/`), `install.sh`, and `sync-remote.sh`.
 - `claude/` — Claude Code's `AGENTS.md` (installed as `~/.claude/CLAUDE.md`, because Claude Code does not load a user-level `AGENTS.md`), `settings.json` (baseline merged into `~/.claude/settings.json`), `statusline.sh`, `agents/*.md` (`Explore.md` and `general-purpose.md` replace the built-ins of those names to set their model and effort), `skills/`, `install.sh`, and `sync-remote.sh`.
-- `herdr-app/` — Herdr app mods, layout, key bindings, and settings for this Mac only; `herdr-app/install.sh`, run with the app open, copies the mods and layout into `~/.config/herdr-app/`, merges `keys.json` and `settings.json`, and switches to the `main-titled` layout when another shows. Remote machines run only herdr-core, so never sync these.
+- `herdr-app/` — Herdr app mods, layout, theme, key bindings, and settings for this Mac only; `herdr-app/install.sh`, run with the app open, copies the mods, layout, and theme into `~/.config/herdr-app/`, merges `keys.json` and `settings.json`, and switches to the `main-titled` layout when another shows. Remote machines run only herdr-core, so never sync these.
 - `scripts/` — validation and config-merge helpers.
 - `archive/` — inert documentation snapshots only. Follow their read-only inspection instructions; never extract, execute, source, install, sync, or copy them into active configuration.
 

@@ -3,7 +3,7 @@
 // while it shows. Tabs live in the sidebar, under their space.
 import { View, div, svg } from "gpui-kit";
 import { h_flex } from "gpui-base";
-import { spaces, panes, focused, run, theme, window, layout, shared, home } from "herdr";
+import { spaces, panes, focused, run, theme, window, layout, shared, setShared, home } from "herdr";
 
 // The side panel's views, each with a button here.
 const PANELS = [
@@ -48,15 +48,26 @@ export default class TopBar extends View {
   }
 
   // The side panel is remembered per space: switching shows that space's choice
-  // (closed if it never had one), and opening or closing it records it.
-  syncPanel(space, panel, body) {
+  // (closed if it never had one), and opening or closing it records it. Arriving at a space's
+  // placeholder tab (`empty`: a click on the space, or its last tab closing) closes it instead,
+  // leaving only the placeholder's choices.
+  syncPanel(space, panel, body, shown, empty) {
     if (!space || !panel) return;
     const now = panel.hidden ? null : body?.active ?? null;
+    const arrived = shown !== this.shown;
+    this.shown = shown;
+    // A file viewer opened there goes too, unless it holds unsaved edits (file-view decides when it draws).
+    if (arrived && empty && panes().some(p => p.tab === shown && p.mod === "file-view")) setShared("file-view.leave", shown);
+    if (space.id === this.space && arrived && empty && now) {
+      this.pending = { want: null, until: Date.now() + 1000 };
+      run("layout.hide", { id: "panel" });
+      return;
+    }
     if (space.id !== this.space) {
       const first = this.space === undefined;
       this.space = space.id; this.pending = null;
       if (!(first && !(space.id in this.panels))) {
-        const stored = this.panels[space.id] ?? null, want = PANELS.some(p => p.id === stored) ? stored : null;
+        const stored = this.panels[space.id] ?? null, want = !empty && PANELS.some(p => p.id === stored) ? stored : null;
         if (want !== now) {
           this.pending = { want, until: Date.now() + 1000 };
           if (want) { run("layout.select", { stack: "panel-body", child: want }); run("layout.show", { id: "panel" }); }
@@ -109,7 +120,8 @@ export default class TopBar extends View {
     const button = (id, label, action) => div().id(id).size(26).flex_none().flex().items_center().justify_center().rounded(6).text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.foreground))
       .on_mouse_down("left", stop).on_click(action).child(label);
     const panel = find(layout(), "panel"), body = find(layout(), "panel-body");
-    this.syncPanel(space, panel, body);
+    const shown = space?.tabs.find(c => c.active)?.id, empty = panes().some(p => p.tab === shown && p.mod === "space-empty");
+    this.syncPanel(space, panel, body, shown, empty);
     const panelButton = ({ id, label, icon }) => {
       const on = panel && !panel.hidden && body?.active === id;
       return h_flex().id(`panel-${id}`).h(20).px(7).gap(5).flex_none().items_center().rounded(6)

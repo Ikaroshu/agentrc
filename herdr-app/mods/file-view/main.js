@@ -1,6 +1,6 @@
 // Tabs for the files and diffs the Files and Graph panels opened in this tab: editable files
-// (Markdown rendered until Source), and diffs stacked (removed lines above added ones), scrolling
-// sideways for long lines. Cmd-S saves (keys.json binds it to `file-view.save`); Cmd-F searches the
+// (Markdown rendered until Source), and diffs stacked (removed lines above added ones), colored by
+// the vendored Prism (prism.js) and scrolling sideways for long lines. Cmd-S saves (keys.json binds it to `file-view.save`); Cmd-F searches the
 // shown file from the Files panel's search box; a file changed on disk since it was opened needs a
 // second Cmd-S to overwrite, and a tab with unsaved edits asks before closing. Files too large to load whole stay
 // read-only. Local files and uncommitted diffs reload when the file changes on disk (not over
@@ -11,10 +11,72 @@
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex, Editor, EditorState, TextView, Scrollbar, v_virtual_list, TextareaState, Textarea } from "gpui-base";
 import { props, shared, setShared, panes, run, exec, readTextFile, writeTextFile, watchFolder, theme, settings, nextCommand, notify, openOverlay, appHome } from "herdr";
+import Prism from "./prism.js";
 
 const LANG = { ts: "js", tsx: "js", mts: "js", cts: "js", jsx: "js", mjs: "js", toml: "yaml", jsonc: "json", svelte: "html", vue: "html" };
 const MARKDOWN = new Set(["md", "markdown", "mdx"]);
 const DIFF_LINES = 10000;
+// A hunk longer than this is colored a row at a time as rows come into view: Prism in Herdr's engine
+// takes about 80ms per 1000 lines of JavaScript, too long for one frame.
+const HUNK_LINES = 1000;
+
+// One Dark's code colors, for the editor and the diffs alike. Its orange (as vivid as the
+// one-dark-vivid theme's colors) and comment gray aren't among a theme's colors.
+const ORANGE = "#dd9f64";
+const codeColors = (t) => ({ keyword: t.ansi5, function: t.ansi4, string: t.ansi2, "string.escape": t.ansi6, comment: "#7f848e", type: t.ansi3,
+  number: ORANGE, boolean: ORANGE, constant: ORANGE, variable: t.foreground, operator: t.ansi6, punctuation: t.foreground });
+// Diffs only: the editor has no slot for keys, tags and shell variables, which One Dark draws red.
+const diffColors = (t) => ({ ...codeColors(t), property: t.ansi1 });
+// Prism's grammar per extension; other files' diffs stay uncolored.
+const PRISM = { js: "javascript", mjs: "javascript", cjs: "javascript", jsx: "jsx", ts: "typescript", mts: "typescript", cts: "typescript", tsx: "tsx",
+  py: "python", sh: "bash", bash: "bash", zsh: "bash", rs: "rust", go: "go", json: "json", jsonc: "json", toml: "toml", yaml: "yaml", yml: "yaml",
+  md: "markdown", markdown: "markdown", mdx: "markdown", html: "markup", xml: "markup", svg: "markup", vue: "markup", svelte: "markup", css: "css" };
+// Prism's token names (a token's type, else one of its aliases) to the colors above.
+const TOKEN = {
+  comment: "comment", prolog: "comment", doctype: "comment", cdata: "comment",
+  keyword: "keyword", atrule: "keyword", important: "keyword", rule: "keyword",
+  string: "string", char: "string", "attr-value": "string", url: "string", inserted: "string",
+  regex: "string.escape", escape: "string.escape", entity: "string.escape",
+  function: "function", "class-name": "type", builtin: "type", namespace: "type", selector: "type",
+  number: "number", boolean: "boolean", constant: "constant", symbol: "constant", "attr-name": "constant",
+  operator: "operator", punctuation: "punctuation",
+  property: "property", key: "property", tag: "property", variable: "property", title: "property", deleted: "property",
+};
+
+// Flattens Prism's token tree into [text, key] runs, a key naming one of the colors above; a nested
+// token without a key of its own takes its parent's.
+function runs(tokens, inherited, out) {
+  for (const token of tokens) {
+    if (typeof token === "string") { out.push([token, inherited]); continue; }
+    const key = [token.type, ...[token.alias ?? []].flat()].map((name) => TOKEN[name]).find(Boolean) ?? inherited;
+    if (typeof token.content === "string") out.push([token.content, key]);
+    else runs([token.content].flat(), key, out);
+  }
+  return out;
+}
+
+// Splits lines of code, tokenized at once, into one list of [text, key] runs per line (key null:
+// the text color). Keys, not colors, so a theme change shows without tokenizing again.
+function colorLines(text, grammar) {
+  const lines = [[]];
+  for (const [chunk, key] of runs(Prism.tokenize(text, grammar), null, [])) {
+    chunk.split("\n").forEach((part, i) => { if (i) lines.push([]); if (part) lines.at(-1).push([part, key]); });
+  }
+  return lines;
+}
+
+// Spaces that end a run would be drawn into the next run's ligature (` =>`): each run's trailing
+// spaces lead the next run instead, where they keep their width. Tabs show as four spaces.
+function spaced(line) {
+  const out = [];
+  let carry = "";
+  for (const [text, key] of line) {
+    const all = carry + text.replaceAll("\t", "    "), body = all.trimEnd();
+    carry = all.slice(body.length);
+    if (body) out.push([body, key]);
+  }
+  return out;
+}
 const folderOf = (file) => file.slice(0, file.lastIndexOf("/"));
 const nameOf = (file) => file.slice(file.lastIndexOf("/") + 1);
 const extOf = (file) => nameOf(file).includes(".") ? nameOf(file).split(".").pop().toLowerCase() : "txt";
@@ -46,21 +108,39 @@ async function diffLines({ file, on, diff: { root, path, commit } }) {
   return { lines: all.slice(first) };
 }
 
-// Numbers each line (a removed line by its old number) and sizes the rows to the longest line.
+// Numbers each line (a removed line by its old number), notes each row's hunk (`at`, an index into
+// `hunks`: its rows' range) and sizes the rows to the longest line.
 function diffRows(lines) {
-  const rows = [];
+  const rows = [], hunks = [];
   let old = 0, next = 0;
   for (const raw of lines.slice(0, DIFF_LINES)) {
     const line = raw.length > 4000 ? raw.slice(0, 4000) + "… (line truncated)" : raw;
     const match = /^@@ -(\d+)(?:,\d+)? \+(\d+)/.exec(line);
-    if (match) { old = +match[1]; next = +match[2]; rows.push({ hunk: line }); continue; }
-    const kind = line[0], text = line.slice(1) || " ";
-    if (kind === "-") rows.push({ kind, number: old++, text });
-    else if (kind === "+") rows.push({ kind, number: next++, text });
-    else if (kind === " ") { old++; rows.push({ kind, number: next++, text }); }
+    if (match) { old = +match[1]; next = +match[2]; rows.push({ hunk: line }); hunks.push({ from: rows.length, to: rows.length }); continue; }
+    const kind = line[0], text = line.slice(1) || " ", at = hunks.length - 1;
+    if (kind === "-") rows.push({ kind, at, number: old++, text });
+    else if (kind === "+") rows.push({ kind, at, number: next++, text });
+    else if (kind === " ") { old++; rows.push({ kind, at, number: next++, text }); }
+    else continue;
+    hunks[at].to = rows.length;
   }
   if (lines.length > DIFF_LINES) rows.push({ hunk: `… diff truncated at ${DIFF_LINES} lines` });
-  return { rows, width: Math.max(300, ...rows.map(row => (row.text ?? row.hunk).length * 7 + 60)) };
+  return { rows, hunks, width: Math.max(300, ...rows.map(row => (row.text ?? row.hunk).length * 7 + 80)) };
+}
+
+// Colors a row's hunk the first time one of its rows is drawn. Each side is colored whole (context
+// and removed lines as the old file, context and added lines as the new), so comments and strings
+// spanning lines read right; context rows take the new side's colors.
+function paint(diff, row) {
+  if (row.runs || row.hunk !== undefined || !diff.grammar) return;
+  const { from, to } = diff.hunks[row.at];
+  if (to - from > HUNK_LINES) { row.runs = colorLines(row.text, diff.grammar)[0]; return; }
+  const part = diff.rows.slice(from, to);
+  for (const [side, other] of [["-", "+"], ["+", "-"]]) {
+    const mine = part.filter((r) => r.kind !== other);
+    const lines = colorLines(mine.map((r) => r.text).join("\n"), diff.grammar);
+    mine.forEach((r, i) => { if (r.kind === side || (side === "+" && r.kind === " ")) r.runs = lines[i]; });
+  }
 }
 
 export default class FileView extends View {
@@ -136,6 +216,18 @@ export default class FileView extends View {
     setShared("file-view", { ...(shared("file-view") ?? {}), [props().tab]: view });
   }
 
+  // Closes this viewer and forgets its files, as closing its last tab does: top-bar asks (shared
+  // `file-view.leave`: the tab) when its tab, a space's placeholder, is shown again. A viewer with
+  // unsaved edits stays.
+  leave(cx) {
+    if ([...this.docs.values()].some(d => d.dirty)) return;
+    const all = { ...(shared("file-view") ?? {}) };
+    delete all[props().tab];
+    setShared("file-view", all);
+    const pane = panes().find(p => p.mod === "file-view" && p.tab === props().tab)?.pane;
+    cx.timer.after(0, () => run("pane.close", { pane }));
+  }
+
   close(id, cx, discard = false) {
     if (this.docs.get(id)?.dirty && !discard) {
       this.closing = id;
@@ -173,7 +265,12 @@ export default class FileView extends View {
         if (doc.entry.diff) {
           const { lines, message } = await diffLines(doc.entry);
           if (this.docs.get(doc.id) !== doc) return;
-          doc.error = message ?? null; doc.rows = lines ? diffRows(lines) : null; doc.loaded = true;
+          doc.error = message ?? null; doc.loaded = true;
+          // A recheck that finds the same diff keeps its rows, colored already.
+          const text = lines?.join("\n") ?? null;
+          if (text === doc.diffText) return;
+          doc.diffText = text;
+          doc.rows = lines ? { ...diffRows(lines), grammar: Prism.languages[PRISM[extOf(doc.entry.file)]] } : null;
           return;
         }
         const text = await readTextFile(doc.entry.file, { on: doc.entry.on });
@@ -197,7 +294,7 @@ export default class FileView extends View {
     const t = theme(), ext = extOf(doc.entry.file);
     doc.code = EditorState.new({ language: LANG[ext] ?? ext, readonly: truncated, value: doc.text,
       font_family: settings().font_family, font_size: 12,
-      syntax: { keyword: t.ansi5, string: t.ansi2, comment: t.dim, function: t.ansi4, type: t.ansi3, number: t.ansi1, constant: t.ansi6 } });
+      syntax: codeColors(t) });
     doc.code.on("focus", (_e, cx) => this.bindFind(cx));
     doc.code.on("change", (_e, cx) => {
       if (doc.truncated) return;
@@ -232,17 +329,23 @@ export default class FileView extends View {
     }
   }
 
-  diffRow(row, t) {
+  // A changed line: tinted, its number on a stronger tint, then its sign.
+  diffRow(row, t, colors) {
     if (row.hunk !== undefined) return div().w_full().px(12).h(20).flex_none().truncate().bg(t.raised).text_color(t.dim).child(row.hunk);
-    return h_flex().w_full().h(20).flex_none().gap(10).when(row.kind === "+", (e) => e.bg(t.ansi2 + "18")).when(row.kind === "-", (e) => e.bg(t.ansi1 + "18"))
-      .child(div().w(36).flex_none().text_right().text_color(t.dim).child(String(row.number)))
-      .child(div().flex_1().min_w(0).truncate().child(row.text));
+    const tint = row.kind === "+" ? t.ansi2 : row.kind === "-" ? t.ansi1 : null;
+    const code = row.runs ? h_flex().children(spaced(row.runs).map(([text, key]) => div().flex_none().when(Boolean(key), (e) => e.text_color(colors[key])).child(text)))
+      : div().child(row.text);
+    return h_flex().w_full().h(20).flex_none().when(Boolean(tint), (e) => e.bg(tint + "26"))
+      .child(div().w(44).h_full().pr(8).flex_none().flex().items_center().justify_end().text_color(tint ?? t.dim).when(Boolean(tint), (e) => e.bg(tint + "33"))
+        .child(String(row.number)))
+      .child(div().w(18).flex_none().text_center().text_color(tint ?? t.dim).child(row.kind === " " ? "" : row.kind))
+      .child(div().flex_1().min_w(0).overflow_hidden().child(code));
   }
 
   diffBody(doc, t) {
-    const list = `diff-${doc.id}`, { rows, width } = doc.rows;
+    const list = `diff-${doc.id}`, { rows, width } = doc.rows, colors = diffColors(t);
     const items = v_virtual_list(list, rows.length, 20, (i) => String(i),
-      (range) => rows.slice(range.start, range.end).map((row) => this.diffRow(row, t))).size_full();
+      (range) => rows.slice(range.start, range.end).map((row) => { paint(doc.rows, row); return this.diffRow(row, t, colors); })).size_full();
     return div().flex_1().min_h(0).relative().font_family(settings().font_family ?? "JetBrains Mono").text_size(11)
       .child(div().id(`${list}-x`).size_full().overflow_x_scrollbar().child(div().w_full().min_w(width).h_full().child(items)))
       .child(Scrollbar.vertical(list).viewport_from_layout().absolute().inset_0());
@@ -294,6 +397,8 @@ export default class FileView extends View {
   }
 
   render(cx) {
+    // Asked here, not by command: a viewer in a tab shown again may only start now.
+    if (shared("file-view.leave") === props()?.tab) { setShared("file-view.leave", null); this.leave(cx); }
     const { files, active } = this.view();
     this.sync(files, cx);
     const t = theme(), doc = this.docs.get(active), entry = doc?.entry;

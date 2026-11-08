@@ -2,7 +2,7 @@
 // Workspace spaces: stable colored avatars, worktrees under their checkout,
 // grouped by machine when more than one is known. After a space's name, the repo
 // its first terminal is in now, only where unusual: branch, ahead/behind. Click to
-// switch, right-click for its menu, drag to reorder; + at the row's right starts a new tab there.
+// show its placeholder's choices, right-click for its menu, drag to reorder; + at the row's right starts a new tab there.
 // Under each space, indented, its tabs and their agents' sub-agents.
 // Each space also keeps a hidden, settled placeholder tab (the space-empty mod), so closing its
 // last listed tab leaves the space open and empty instead of closing it.
@@ -209,8 +209,9 @@ export default class Spaces extends View {
     this.checked[key] = Date.now();
     this.unsure.delete(key);
     try {
-      // No optional locks: a status that touched the index would wake the watch again.
-      const r = await exec("git", ["--no-optional-locks", "status", "--porcelain=v2", "--branch"], { cwd, on });
+      // No optional locks or fsmonitor: a status that touched the index would wake the watch again.
+      // Only the branch headers are read, so untracked files (most of the scan in a big repo) are skipped.
+      const r = await exec("git", ["--no-optional-locks", "-c", "core.fsmonitor=false", "status", "--porcelain=v2", "--branch", "--untracked-files=no"], { cwd, on });
       if (r.code !== 0) {
         // Only git's own "no" is remembered as no repo; anything else is asked again.
         if (!/not a git repository/i.test(r.stderr)) this.unsure.add(key);
@@ -510,7 +511,13 @@ export default class Spaces extends View {
         const from = this.pressed;
         this.pressed = null;
         if (from !== null && from !== i) run("space.move", { id: spaces()[from].id, index: i + 1 });
-        else run("space.select", { id: w.id });
+        else {
+          // Always its placeholder's choices, agents or not (top-bar closes the side panel there);
+          // its tabs are the rows under it.
+          const held = placeholders(panes()), ph = w.tabs?.find((c) => held.has(c.id));
+          run("space.select", { id: w.id });
+          if (ph) run("tab.select", { id: ph.id });
+        }
         cx.notify();
       })
       .on_mouse_down("right", () => this.menu(w))

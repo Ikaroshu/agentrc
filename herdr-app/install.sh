@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # Sets up this Mac's Herdr app from the repository, with the app running (its first launch creates
-# keys.json). Copies the managed mods and layout into the app home, merges the managed keys and
+# keys.json). Copies the managed mods, layout, and theme into the app home, merges the managed keys and
 # settings into its keys.json and settings.json, and shows the managed layout. The app reloads them
 # on save; other mods, layouts, keys, settings, and the app's own state are left alone.
 SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -11,7 +11,7 @@ APP_HOME="${HERDR_APP_HOME:-$HOME/.config/herdr-app}"
 LAYOUT=main-titled
 
 mkdir -p "$APP_HOME"
-cp -R "$SOURCE_DIR/mods" "$SOURCE_DIR/layouts" "$APP_HOME/"
+cp -R "$SOURCE_DIR/mods" "$SOURCE_DIR/layouts" "$SOURCE_DIR/themes" "$APP_HOME/"
 python3 - "$SOURCE_DIR" "$APP_HOME" <<'PY'
 import json
 import sys
