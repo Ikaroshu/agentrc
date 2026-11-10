@@ -13,6 +13,10 @@ If `$HC_TERMINAL_ID` is unset, you are not running in herdr-core: documentation,
 
 Never run bare `hc` (it opens an attach picker). Never stop, restart, or update the user's core or app unless asked, because that affects every terminal.
 
+## Running commands
+
+The manual's "Slow commands" advice assumes a shell that blocks; yours can run commands in the background, so run local commands there. Use `hc run` only for remote work or for a process that must outlive the command or be watched in Herdr, such as a server. `hc run` programs run outside your sandbox: when the sandbox blocks a command, request approval to run it outside the sandbox through the normal path, never through `hc run`.
+
 ## Communicating with agents
 
 Herdr transports terminal input and reports observed state; it gives another agent no shared conversation context and no permission to act outside its assignment.
