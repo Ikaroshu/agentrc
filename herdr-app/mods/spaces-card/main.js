@@ -96,8 +96,8 @@ export default class Spaces extends View {
     this.machines = [];
     this.folded = new Set(JSON.parse(localStorage.getItem("machines.folded") ?? "[]"));
     this.foldedTabs = new Set(); // tabs whose sub-agents are hidden
-    // Each agent's last state and when it changed (ms), kept across restarts.
-    this.changed = JSON.parse(localStorage.getItem("agents.changed") ?? "{}");
+    // Each agent's last state and when it changed (ms), kept across restarts; space-empty shows it too.
+    this.changed = shared("agents.changed") ?? {};
     cx.timer.every(30000, (cx) => cx.notify());
     this.refreshMachines(cx);
     cx.timer.every(15000, cx => this.refreshMachines(cx));
@@ -270,7 +270,7 @@ export default class Spaces extends View {
     // Gone and old: the list alone is empty right after a start.
     const listed = new Set(list.map((a) => a.address));
     for (const [k, c] of Object.entries(this.changed)) if (!listed.has(k) && now - c.at > 30 * 86400000) delete this.changed[k];
-    localStorage.setItem("agents.changed", JSON.stringify(this.changed));
+    setShared("agents.changed", { ...this.changed });
   }
 
   // Live sub-agents of `addr`, depth first, each with the tree lines in front of it.
@@ -511,8 +511,9 @@ export default class Spaces extends View {
       .on_mouse_up("left", (_e, cx) => {
         const from = this.pressed;
         this.pressed = null;
+        // A release with no press on a row (the + takes its press) is no click.
         if (from !== null && from !== i) run("space.move", { id: spaces()[from].id, index: i + 1 });
-        else {
+        else if (from === i) {
           // Always its placeholder's choices, agents or not (top-bar closes the side panel there);
           // its tabs are the rows under it.
           const held = placeholders(panes()), ph = w.tabs?.find((c) => held.has(c.id));
