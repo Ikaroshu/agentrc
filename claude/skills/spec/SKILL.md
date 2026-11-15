@@ -15,4 +15,4 @@ Save it to `<project-root>/.plans/specs/<YYYYMMDD>_<short_title>.md` from main, 
 
 State what must be true, not phases, task order, commit boundaries, or code structure the design does not require. Codex has not seen this conversation: include the evidence, file paths, and constraints it needs to avoid guessing intent.
 
-Check the draft against the conversation for dropped agreements, contradictions, and scope growth. Then ask for approval as a decision request in the `codex` skill's layout, naming what the spec decides that you and the user did not discuss, and any accepted limitation. On approval, proceed to the `codex` skill.
+Check the draft against the conversation for dropped agreements, contradictions, and scope growth. Then ask for approval in a decision request as the `codex` skill describes, naming what the spec decides that you and the user did not discuss, and any accepted limitation. On approval, proceed to the `codex` skill.

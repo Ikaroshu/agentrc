@@ -68,10 +68,4 @@ The session id is the `thread_id` of the first `thread.started` event. Resume th
 
 ## Decision requests
 
-Use this layout for every decision this workflow takes to the user, including spec approval, design blockers, and merge approval, and end the turn after it:
-
-```text
-**Found** — the change, verification, and residual risk, or the blocker and its evidence.
-**Recommend** — one next action and why; the main alternative, if any.
-**Need from you** — what the user needs to decide, phrased as the decision requires; open questions, several questions, and tradeoffs are fine.
-```
+For every decision this workflow takes to the user, including spec approval, design blockers, and merge approval, end the turn after asking. Open with the outcome in plain words, such as "The spec is ready for your approval," "The review came back clean," or "Codex is blocked on X," not with a label. Then give what the decision rests on: the change, its verification, and residual risk, or the blocker and its evidence. Recommend a next action only when there is a real alternative to weigh; approving what you are already asking about needs no recommendation. End with the question itself, phrased as the decision requires; several questions and tradeoffs are fine.
