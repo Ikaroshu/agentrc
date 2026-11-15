@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sync tracked Codex and Claude Code settings to a remote machine.
+# Sync tracked Codex, Claude Code, and pi settings to a remote machine.
 
 set -euo pipefail
 
@@ -8,3 +8,4 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 "$ROOT_DIR/codex/sync-remote.sh" "$REMOTE"
 "$ROOT_DIR/claude/sync-remote.sh" "$REMOTE"
+"$ROOT_DIR/pi/sync-remote.sh" "$REMOTE"

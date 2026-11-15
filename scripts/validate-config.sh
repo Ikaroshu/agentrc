@@ -52,10 +52,18 @@ required_files=(
   claude/AGENTS.md
   claude/settings.json
   claude/statusline.sh
+  pi/AGENTS.md
+  pi/settings.json
+  pi/web-search.json
+  pi/extensions/guard.ts
+  pi/extensions/footer.ts
+  pi/extensions/memory.ts
   scripts/merge-codex-config.py
   scripts/test-merge-codex-config.py
   scripts/merge-claude-settings.py
   scripts/test-merge-claude-settings.py
+  scripts/merge-pi-settings.py
+  scripts/test-merge-pi-settings.py
   herdr-app/settings.json
   herdr-app/layouts/main-titled.json
   herdr-app/mods/top-bar/main.js
@@ -94,9 +102,16 @@ for skill_dir in "$ROOT_DIR"/claude/skills/*; do
   claude_skills+=("$skill")
 done
 
-active_symlinks="$(find "$ROOT_DIR/codex" "$ROOT_DIR/claude" -type l -print)"
+pi_skills=()
+for skill_dir in "$ROOT_DIR"/pi/skills/*; do
+  skill="${skill_dir##*/}"
+  require_regular_file "pi/skills/$skill/SKILL.md"
+  pi_skills+=("$skill")
+done
+
+active_symlinks="$(find "$ROOT_DIR/codex" "$ROOT_DIR/claude" "$ROOT_DIR/pi" -type l -print)"
 if [ -n "$active_symlinks" ]; then
-  echo "Active Codex and Claude sources must be regular files:" >&2
+  echo "Active Codex, Claude, and pi sources must be regular files:" >&2
   echo "$active_symlinks" >&2
   exit 1
 fi
@@ -109,14 +124,19 @@ executables=(
   claude/install.sh
   claude/sync-remote.sh
   claude/statusline.sh
+  pi/install.sh
+  pi/sync-remote.sh
   scripts/validate-config.sh
   scripts/test-codex-install.sh
   scripts/test-claude-install.sh
+  scripts/test-pi-install.sh
   scripts/test-sync-remote.sh
   scripts/merge-codex-config.py
   scripts/test-merge-codex-config.py
   scripts/merge-claude-settings.py
   scripts/test-merge-claude-settings.py
+  scripts/merge-pi-settings.py
+  scripts/test-merge-pi-settings.py
   herdr-app/install.sh
 )
 for path in "${executables[@]}"; do
@@ -131,9 +151,12 @@ shell_scripts=(
   claude/install.sh
   claude/sync-remote.sh
   claude/statusline.sh
+  pi/install.sh
+  pi/sync-remote.sh
   scripts/validate-config.sh
   scripts/test-codex-install.sh
   scripts/test-claude-install.sh
+  scripts/test-pi-install.sh
   scripts/test-sync-remote.sh
   herdr-app/install.sh
 )
@@ -148,16 +171,20 @@ runtime_paths=(
   "$ROOT_DIR/sync-remote.sh"
   "$ROOT_DIR/codex"
   "$ROOT_DIR/claude"
+  "$ROOT_DIR/pi"
   "$ROOT_DIR/scripts/merge-codex-config.py"
   "$ROOT_DIR/scripts/test-merge-codex-config.py"
   "$ROOT_DIR/scripts/merge-claude-settings.py"
   "$ROOT_DIR/scripts/test-merge-claude-settings.py"
+  "$ROOT_DIR/scripts/merge-pi-settings.py"
+  "$ROOT_DIR/scripts/test-merge-pi-settings.py"
   "$ROOT_DIR/scripts/test-codex-install.sh"
   "$ROOT_DIR/scripts/test-claude-install.sh"
+  "$ROOT_DIR/scripts/test-pi-install.sh"
   "$ROOT_DIR/scripts/test-sync-remote.sh"
 )
 if rg -n 'archive/' "${runtime_paths[@]}"; then
-  echo "Active Codex or Claude code references the inert archive" >&2
+  echo "Active Codex, Claude, or pi code references the inert archive" >&2
   exit 1
 fi
 
@@ -222,6 +249,24 @@ if settings != {
 }:
     raise SystemExit("claude/settings.json must contain only the portable model, effort, disabled attribution, IDE opt-out env, gh issue permissions, and status line")
 
+pi_settings = json.loads((root / "pi/settings.json").read_text())
+if pi_settings != {
+    "defaultProvider": "openai",
+    "defaultModel": "gpt-6.1-terra",
+    "defaultThinkingLevel": "high",
+    "enabledModels": [
+        "anthropic/claude-sonnet-5-5",
+        "openai/gpt-6-astra",
+        "openai/gpt-6.1-sol",
+        "openai/gpt-6.1-terra",
+        "anthropic/claude-opus-5-5",
+    ],
+    "packages": ["npm:pi-web-search@1.7.0", "npm:pi-memory@0.4.2"],
+    "skills": ["!~/.agents/skills/**"],
+}:
+    raise SystemExit("pi/settings.json must contain only the portable model defaults, enabled models, pinned packages, and the Codex skill exclusion")
+json.loads((root / "pi/web-search.json").read_text())
+
 agent_specs = {
     "Explore.md": ("low", "Agent, Edit, Write, NotebookEdit"),
     "general-purpose.md": ("medium", "Agent"),
@@ -265,13 +310,19 @@ done
 for skill in "${claude_skills[@]}"; do
   "$PYTHON_YAML_BIN" "$SKILL_VALIDATOR" "$ROOT_DIR/claude/skills/$skill"
 done
+for skill in "${pi_skills[@]}"; do
+  "$PYTHON_YAML_BIN" "$SKILL_VALIDATOR" "$ROOT_DIR/pi/skills/$skill"
+done
 
 python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py" "$ROOT_DIR/scripts/test-merge-codex-config.py" \
-  "$ROOT_DIR/scripts/merge-claude-settings.py" "$ROOT_DIR/scripts/test-merge-claude-settings.py"
+  "$ROOT_DIR/scripts/merge-claude-settings.py" "$ROOT_DIR/scripts/test-merge-claude-settings.py" \
+  "$ROOT_DIR/scripts/merge-pi-settings.py" "$ROOT_DIR/scripts/test-merge-pi-settings.py"
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-claude-settings.py"
+python3 "$ROOT_DIR/scripts/test-merge-pi-settings.py"
 "$ROOT_DIR/scripts/test-codex-install.sh"
 "$ROOT_DIR/scripts/test-claude-install.sh"
+"$ROOT_DIR/scripts/test-pi-install.sh"
 "$ROOT_DIR/scripts/test-sync-remote.sh"
 
 echo "Config repository validation passed."

@@ -1,19 +1,20 @@
 # Agent Config Repository
 
-This repository contains portable Codex and Claude Code configuration, not an application or package-managed build.
+This repository contains portable Codex, Claude Code, and pi configuration, not an application or package-managed build.
 
 ## Layout
 
 - `AGENTS.md` — repository-maintenance instructions.
 - `codex/` — Codex's `AGENTS.md` (cross-project instructions), `config.toml` (baseline merged into machine-local config), `agents/*.toml` (native roles copied as regular files to `~/.codex/agents/`), `skills/` (installed into `~/.agents/skills/`), `install.sh`, and `sync-remote.sh`.
 - `claude/` — Claude Code's `AGENTS.md` (installed as `~/.claude/CLAUDE.md`, because Claude Code does not load a user-level `AGENTS.md`), `settings.json` (baseline merged into `~/.claude/settings.json`), `statusline.sh`, `agents/*.md` (`Explore.md` and `general-purpose.md` replace the built-ins of those names to set their model and effort), `skills/`, `install.sh`, and `sync-remote.sh`.
+- `pi/` — pi's `AGENTS.md`, `settings.json` (baseline merged into `~/.pi/agent/settings.json`; it pins pi packages and excludes Codex's `~/.agents/skills`, which pi would otherwise load), `extensions/*.ts`, `web-search.json`, `skills/`, `install.sh`, and `sync-remote.sh`. pi is the fallback harness for basic tasks, billed from API credits. `auth.json` (keys from Keychain) and `memory/` (pi-memory's store) are machine-local and never synced.
 - `herdr-app/` — Herdr app mods, layout, theme, key bindings, and settings for this Mac only; `herdr-app/install.sh`, run with the app open, copies the mods, layout, and theme into `~/.config/herdr-app/`, merges `keys.json` and `settings.json`, and switches to the `main-titled` layout when another shows. Remote machines run only herdr-core, so never sync these.
 - `scripts/` — validation and config-merge helpers.
 - `archive/` — inert documentation snapshots only. Follow their read-only inspection instructions; never extract, execute, source, install, sync, or copy them into active configuration.
 
 ## Common Commands
 
-Installation and sync require `python3` with the standard-library `tomllib` module (Python 3.11+). Config merging preserves machine-only values within shared tables or objects; repository settings override matching keys, except that Claude settings lists append missing repository entries to machine entries (removing a repository entry does not remove it from machines). Merged files use normalized TOML or JSON formatting and omit source comments.
+Installation and sync require `python3` with the standard-library `tomllib` module (Python 3.11+). Config merging preserves machine-only values within shared tables or objects; repository settings override matching keys, except that Claude and pi settings lists append missing repository entries to machine entries (removing a repository entry does not remove it from machines), and a pi package pin replaces the machine's entry for the same package. Merged files use normalized TOML or JSON formatting and omit source comments.
 
 Codex TUI preferences are machine-local; keep `[tui]` out of the portable baseline so deployment preserves each machine's customizations.
 
@@ -24,16 +25,18 @@ Codex TUI preferences are machine-local; keep `[tui]` out of the portable baseli
 ./codex/sync-remote.sh <ssh-host>
 ./claude/install.sh
 ./claude/sync-remote.sh <ssh-host>
+./pi/install.sh
+./pi/sync-remote.sh <ssh-host>
 ./herdr-app/install.sh
 ./scripts/validate-config.sh
 ```
 
-Prefer the root entrypoints for machine setup, which install or sync both harnesses; use the per-harness scripts directly when appropriate. Validate after every config change.
+Prefer the root entrypoints for machine setup, which install or sync all three harnesses; use the per-harness scripts directly when appropriate. Validate after every config change.
 
 ## Editing Rules
 
-- Keep cross-project behavioral instructions in `codex/AGENTS.md` and `claude/AGENTS.md`; keep repository-maintenance instructions here. Keep every section except Development Workflow identical in both files; Development Workflow differs by role (Claude coordinates, Codex executes) and harness runtime mechanics. Do not add a separate `CLAUDE.md` source.
-- Keep each harness self-contained: skills under `<harness>/skills/` and roles or subagents under `<harness>/agents/` as regular harness-owned files; add no shared or compatibility paths. Skills present in both harnesses stay equivalent except for runtime mechanics. Only Claude has the `spec`, `codex`, and `research` workflow skills.
+- Keep cross-project behavioral instructions in `codex/AGENTS.md`, `claude/AGENTS.md`, and `pi/AGENTS.md`; keep repository-maintenance instructions here. Keep every section except Development Workflow identical in all three files; Development Workflow differs by role (Claude coordinates, Codex executes, pi handles basic tasks as a fallback) and harness runtime mechanics. Do not add a separate `CLAUDE.md` source.
+- Keep each harness self-contained: skills under `<harness>/skills/` and roles or subagents under `<harness>/agents/` as regular harness-owned files; add no shared or compatibility paths. Skills present in more than one harness stay equivalent except for runtime mechanics. Only Claude has the `spec`, `codex`, and `research` workflow skills.
 - Install and sync must preserve machine-specific config and settings, project trust, notices, marketplaces, plugins, permissions, environment values, skill paths, app-managed settings, unrelated rules, skills, or subagents.
 - Paths inside portable config should prefer `~/` when the harness supports it. Absolute paths are acceptable only for machine-local state that the harness itself records.
 - Shell scripts use `set -euo pipefail` and remain simple enough to review without a framework.
@@ -47,7 +50,7 @@ Prefer the root entrypoints for machine setup, which install or sync both harnes
 
 ## Testing
 
-There is no app test suite. `./scripts/validate-config.sh` checks topology, permissions, syntax, role and subagent definitions, config merging, local installation, and remote-sync behavior for both harnesses.
+There is no app test suite. `./scripts/validate-config.sh` checks topology, permissions, syntax, role and subagent definitions, config merging, local installation, and remote-sync behavior for all three harnesses.
 
 ## Git Workflow
 

@@ -9,6 +9,8 @@ REMOTE_BASELINE="$TEST_DIR/remote-baseline.toml"
 REMOTE_EXPECTED="$TEST_DIR/remote-expected.toml"
 CLAUDE_BASELINE="$TEST_DIR/claude-baseline.json"
 CLAUDE_EXPECTED="$TEST_DIR/claude-expected.json"
+PI_BASELINE="$TEST_DIR/pi-baseline.json"
+PI_EXPECTED="$TEST_DIR/pi-expected.json"
 
 cleanup() {
   rm -rf "$TEST_DIR"
@@ -41,6 +43,16 @@ cat >"$CLAUDE_BASELINE" <<'EOF'
 EOF
 python3 "$ROOT_DIR/scripts/merge-claude-settings.py" \
   "$CLAUDE_BASELINE" "$ROOT_DIR/claude/settings.json" >"$CLAUDE_EXPECTED"
+
+cat >"$PI_BASELINE" <<'EOF'
+{
+  "defaultModel": "remote-model",
+  "lastChangelogVersion": "1.5.2",
+  "packages": ["npm:pi-memory@0.4.1", "npm:remote-only@1.0.0"]
+}
+EOF
+python3 "$ROOT_DIR/scripts/merge-pi-settings.py" \
+  "$PI_BASELINE" "$ROOT_DIR/pi/settings.json" >"$PI_EXPECTED"
 
 cat >"$BIN_DIR/ssh" <<'EOF'
 #!/usr/bin/env bash
@@ -84,6 +96,15 @@ case "$command" in
     mkdir -p "$SYNC_REMOTE_HOME/.claude"
     cat >"$SYNC_REMOTE_HOME/.claude/settings.json"
     ;;
+  'cat ~/.pi/agent/settings.json 2>/dev/null || true')
+    if [ -f "$SYNC_REMOTE_HOME/.pi/agent/settings.json" ]; then
+      cat "$SYNC_REMOTE_HOME/.pi/agent/settings.json"
+    fi
+    ;;
+  'cat > ~/.pi/agent/settings.json')
+    mkdir -p "$SYNC_REMOTE_HOME/.pi/agent"
+    cat >"$SYNC_REMOTE_HOME/.pi/agent/settings.json"
+    ;;
   *)
     echo "Unexpected remote command: $command" >&2
     exit 1
@@ -117,9 +138,11 @@ prepare_remote_home() {
   local remote_home="$1"
 
   mkdir -p "$remote_home/.codex/agents" "$remote_home/.codex/rules" \
-    "$remote_home/.agents/skills/unrelated" "$remote_home/.claude/skills/unrelated"
+    "$remote_home/.agents/skills/unrelated" "$remote_home/.claude/skills/unrelated" \
+    "$remote_home/.pi/agent/skills/unrelated" "$remote_home/.pi/agent/memory"
   cp "$REMOTE_BASELINE" "$remote_home/.codex/config.toml"
   cp "$CLAUDE_BASELINE" "$remote_home/.claude/settings.json"
+  cp "$PI_BASELINE" "$remote_home/.pi/agent/settings.json"
   printf 'legacy instructions\n' >"$remote_home/.claude/CLAUDE.md"
   printf 'unrelated role\n' >"$remote_home/.codex/agents/unrelated.toml"
   printf 'unrelated rule\n' >"$remote_home/.codex/rules/unrelated.rules"
@@ -129,6 +152,12 @@ prepare_remote_home() {
   cp "$remote_home/.codex/rules/unrelated.rules" "$remote_home/rule-before"
   cp "$remote_home/.agents/skills/unrelated/SKILL.md" "$remote_home/skill-before"
   cp "$remote_home/.claude/skills/unrelated/SKILL.md" "$remote_home/claude-skill-before"
+  printf 'unrelated pi skill\n' >"$remote_home/.pi/agent/skills/unrelated/SKILL.md"
+  printf 'remote memory\n' >"$remote_home/.pi/agent/memory/MEMORY.md"
+  printf '{"openai": {}}\n' >"$remote_home/.pi/agent/auth.json"
+  cp "$remote_home/.pi/agent/skills/unrelated/SKILL.md" "$remote_home/pi-skill-before"
+  cp "$remote_home/.pi/agent/memory/MEMORY.md" "$remote_home/pi-memory-before"
+  cp "$remote_home/.pi/agent/auth.json" "$remote_home/pi-auth-before"
 }
 
 check_regular_copy() {
@@ -181,6 +210,26 @@ check_claude_sync() {
   done
 }
 
+check_pi_sync() {
+  local name="$1"
+  local remote_home="$2"
+
+  if ! cmp -s "$PI_EXPECTED" "$remote_home/.pi/agent/settings.json"; then
+    diff -u "$PI_EXPECTED" "$remote_home/.pi/agent/settings.json" >&2
+    echo "$name sync did not preserve and merge remote pi settings" >&2
+    exit 1
+  fi
+  check_regular_copy "$name" "$ROOT_DIR/pi/AGENTS.md" "$remote_home/.pi/agent/AGENTS.md"
+  check_regular_copy "$name" "$ROOT_DIR/pi/web-search.json" "$remote_home/.pi/agent/web-search.json"
+  for source in "$ROOT_DIR"/pi/extensions/*.ts; do
+    check_regular_copy "$name" "$source" "$remote_home/.pi/agent/extensions/${source##*/}"
+  done
+  for source in "$ROOT_DIR"/pi/skills/*/SKILL.md; do
+    skill="$(basename "$(dirname "$source")")"
+    check_regular_copy "$name" "$source" "$remote_home/.pi/agent/skills/$skill/SKILL.md"
+  done
+}
+
 check_preserved() {
   local name="$1"
   local remote_home="$2"
@@ -190,7 +239,10 @@ check_preserved() {
     ".codex/agents/unrelated.toml:role-before" \
     ".codex/rules/unrelated.rules:rule-before" \
     ".agents/skills/unrelated/SKILL.md:skill-before" \
-    ".claude/skills/unrelated/SKILL.md:claude-skill-before"; do
+    ".claude/skills/unrelated/SKILL.md:claude-skill-before" \
+    ".pi/agent/skills/unrelated/SKILL.md:pi-skill-before" \
+    ".pi/agent/memory/MEMORY.md:pi-memory-before" \
+    ".pi/agent/auth.json:pi-auth-before"; do
     if ! cmp -s "$remote_home/${pair%%:*}" "$remote_home/${pair#*:}"; then
       echo "$name sync changed unrelated remote state: ${pair%%:*}" >&2
       exit 1
@@ -211,6 +263,7 @@ run_sync_test() {
     root)
       check_codex_sync "$name" "$remote_home"
       check_claude_sync "$name" "$remote_home"
+      check_pi_sync "$name" "$remote_home"
       ;;
     codex)
       check_codex_sync "$name" "$remote_home"
@@ -226,6 +279,14 @@ run_sync_test() {
         exit 1
       fi
       ;;
+    pi)
+      check_pi_sync "$name" "$remote_home"
+      if ! cmp -s "$CLAUDE_BASELINE" "$remote_home/.claude/settings.json" ||
+         ! cmp -s "$REMOTE_BASELINE" "$remote_home/.codex/config.toml"; then
+        echo "pi sync changed Codex or Claude settings" >&2
+        exit 1
+      fi
+      ;;
   esac
   check_preserved "$name" "$remote_home"
 }
@@ -233,5 +294,6 @@ run_sync_test() {
 run_sync_test root "$ROOT_DIR/sync-remote.sh"
 run_sync_test codex "$ROOT_DIR/codex/sync-remote.sh"
 run_sync_test claude "$ROOT_DIR/claude/sync-remote.sh"
+run_sync_test pi "$ROOT_DIR/pi/sync-remote.sh"
 
 echo "Remote sync test passed (active sources deployed and unrelated state preserved across repeated sync)."

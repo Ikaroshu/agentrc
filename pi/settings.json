@@ -1,0 +1,19 @@
+{
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-6.1-terra",
+  "defaultThinkingLevel": "high",
+  "enabledModels": [
+    "anthropic/claude-sonnet-5-5",
+    "openai/gpt-6-astra",
+    "openai/gpt-6.1-sol",
+    "openai/gpt-6.1-terra",
+    "anthropic/claude-opus-5-5"
+  ],
+  "packages": [
+    "npm:pi-web-search@1.7.0",
+    "npm:pi-memory@0.4.2"
+  ],
+  "skills": [
+    "!~/.agents/skills/**"
+  ]
+}
