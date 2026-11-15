@@ -114,13 +114,13 @@ const native = {
   focused: () => ({ pane: 'terminal', tab: 'tab', cwd: main }),
   shared: (key) => state.get(key), setShared: (key, value) => state.set(key, value),
   settings: () => ({}), openOverlay: (value) => { overlay = value; },
-  watchFolder: (dir) => { watched.push(dir); return new Promise(() => {}); },
+  watchFolder: (dir) => { watched.push(dir); const w = new Promise(() => {}); w.cancel = () => { w.cancelled = true; }; return w; },
 };
 const runtime = vm.runInNewContext(source.replace(/^import[\s\S]*?;\n/gm, '').replace('export class Graph', 'class Graph') + '\n({ Graph, readFolder })', native);
 const options = { all: true, remotes: true, limit: 300 };
 const read = await runtime.readFolder(main, null, options);
 const work = new runtime.Graph();
-Object.assign(work, options, { folder: main, commitDetails: new Map(), watchToken: 0, graphMax: 160 });
+Object.assign(work, options, { folder: main, commitDetails: new Map(), watchToken: 0, watches: new Set(), graphMax: 160 });
 work.reset(); Object.assign(work, read); work.build();
 assert.equal(work.worktrees.find((w) => w.root === main).files.length, 0);
 const dirty = work.commits.filter((c) => c.uncommitted);
@@ -166,5 +166,9 @@ assert.equal(work.selected, null, 'cleaning the selected worktree removes its ro
 const linked = await runtime.readFolder(feature, 'test-machine', options);
 assert.equal(linked.root, feature);
 assert.ok(calls.filter((c) => c.on === 'test-machine').some((c) => c.cwd === detached), 'remote reads retain the machine for other worktrees');
+const live = [...work.watches];
+assert.ok(live.length >= 3);
+work.reset();
+assert.ok(live.every((w) => w.cancelled) && work.watches.size === 0, 'leaving a folder releases its watches');
 rmSync(fixture, { recursive: true });
 console.log('Git graph worktrees passed: staged, unstaged, untracked, detached history, diffs, action targets, refresh, and scope.');

@@ -156,11 +156,26 @@ export default class Files extends View {
 
   watch(root, cx) {
     if (this.on || this.watched === root) return;
+    this.unwatch();
     this.watched = root;
+    let w = this.folderWatch = watchFolder(root);
     cx.spawn(async cx => {
-      try { while (this.watched === root) { await watchFolder(root); if (this.watched === root) this.refresh(cx); } }
-      catch { if (this.watched === root) this.watched = null; }
+      try {
+        for (;;) {
+          await w;
+          if (this.folderWatch !== w) return;
+          // Watching again first: a refresh that finds another folder releases this one.
+          w = this.folderWatch = watchFolder(root);
+          this.refresh(cx);
+        }
+      } catch { if (this.folderWatch === w) this.unwatch(); }
     });
+  }
+
+  // Releases the watch; its loop sees the handle change and stops.
+  unwatch() {
+    this.folderWatch?.cancel();
+    this.folderWatch = this.watched = null;
   }
 
   async loadFolder(path, context) {
@@ -177,7 +192,7 @@ export default class Files extends View {
     const { cwd, on } = location(), context = key();
     if (context !== this.context) {
       this.context = context; this.root = cwd; this.on = on; this.entries = new Map(); this.folders = new Set(this.memory[context] ?? []);
-      this.pending = new Set(); this.marks = {}; this.watched = null; this.error = null; this.limited = false;
+      this.pending = new Set(); this.marks = {}; this.unwatch(); this.error = null; this.limited = false;
       this.index = null; this.query = ""; this.found = []; this.contents = null; this.scope = null; this.input.set_value(""); this.edit = null;
     }
     if (!cwd) return;
@@ -480,6 +495,7 @@ export default class Files extends View {
       const renaming = edit?.kind === "rename" && edit.path === path;
       out.push(h_flex().id(`file-${path}`).h(28).flex_none().pl(8 + depth * 18).pr(8).gap(7).items_center().rounded(7).cursor_pointer().hover(s => s.bg(t.hover))
         .when(!entry.dir && viewing === `${this.root}/${path}`, el => el.bg(t.selected))
+        .when(!renaming, el => el.drag_paths([`${this.root}/${path}`], { on: this.on }))
         .on_click((_e, cx) => entry.dir ? this.toggle(path, cx) : this.open(path))
         .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); this.menu({ path, dir: entry.dir }); })
         .child(entry.dir ? svg(`mods/files-plus/chevron-${open ? "down" : "right"}.svg`).size(12).flex_none().text_color(t.dim) : div().w(12).flex_none())

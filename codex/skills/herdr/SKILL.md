@@ -39,13 +39,7 @@ Herdr transports terminal input and reports observed state; it gives another age
 
 ## Changing what the user sees
 
-Unless the user asks to switch to a new space or tab, record the focused pane before creating it and refocus that pane afterward, so the user stays where they were working:
-
-```bash
-pane=$(herdr-app status | python3 -c 'import json, sys; print(json.load(sys.stdin)["focused_pane"])')
-# create the space or tab
-herdr-app do pane.focus --pane "$pane"
-```
+Unless the user asks to switch to a new space or tab, create it with `--focus false`, so the user stays where they were working.
 
 `pane.split` takes no task: send it to the returned terminal after `hc wait` shows the agent ready. Closing a space, tab, or pane ends its terminals, so close only disposable ones created for this task or ones the user asked to close, after confirming their work has ended, and pass `--confirmed true` only then.
 

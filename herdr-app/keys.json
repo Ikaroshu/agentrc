@@ -4,10 +4,12 @@
     "cmd-shift-t": "tab.new",
     "cmd-shift-c": { "command": "tab.new", "args": { "argv": ["claude"] } },
     "cmd-shift-x": { "command": "tab.new", "args": { "argv": ["codex"] } },
-    "cmd-n": "spaces-card.new_space"
+    "cmd-n": "spaces-card.new_space",
+    "cmd-m": "window.minimize"
   },
   "terminal": {
-    "cmd-f": "terminal.search"
+    "cmd-f": "terminal.search",
+    "cmd-a": "terminal.select_all"
   },
   "mod:file-view": {
     "cmd-s": "file-view.save",

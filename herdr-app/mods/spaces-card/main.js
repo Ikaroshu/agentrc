@@ -85,7 +85,7 @@ export default class Spaces extends View {
     this.busy = {}; // pane -> an agent working or a program in front of its shell
     this.ready = {}; // machine -> its layout was readable at the last look
     this.at = {}; // space -> its where() at the last look
-    this.watching = new Set(); // local repos' git folders
+    this.watching = new Map(); // local repos' git folders -> their pending watch
     // Spaces made while this runs wait (at most a moment) for their git, so a
     // worktree appears under its repo instead of jumping there.
     this.shown = new Set(spaces().map((s) => s.id));
@@ -152,9 +152,8 @@ export default class Spaces extends View {
     return due;
   }
 
-  // Making a tab shows it, so the space's shown tab and the focused one come back right after.
-  // The placeholder is settled once it's out of view, which keeps tab.next, tab.prev and
-  // tab.select by index off it.
+  // The placeholder is made without taking the focus, and settled once it's out of view, which
+  // keeps tab.next, tab.prev and tab.select by index off it.
   keepPlaceholders(sp, ps) {
     const held = placeholders(ps);
     for (const s of sp) {
@@ -164,10 +163,7 @@ export default class Spaces extends View {
         if (!ph.settled && !ph.active) run("tab.settle", { id: ph.id });
       } else if (!this.placing.has(s.id)) {
         this.placing.add(s.id);
-        const f = focused(), shown = s.tabs?.find((c) => c.active);
-        run("tab.new", { space: s.id, mod: EMPTY, name: "empty" });
-        if (shown) run("tab.select", { id: shown.id });
-        if (f && f.tab !== shown?.id) run("tab.select", { id: f.tab });
+        run("tab.new", { space: s.id, mod: EMPTY, name: "empty", focus: false });
       }
     }
   }
@@ -197,7 +193,7 @@ export default class Spaces extends View {
         for (const key of keys) await this.check(key, cx);
       }
       const used = new Set(Object.values(this.git).filter(Boolean).map((g) => JSON.parse(g.repo)).filter(([on]) => !on).map(([, repo]) => repo));
-      for (const repo of this.watching) if (!used.has(repo)) this.watching.delete(repo);
+      for (const [repo, w] of this.watching) if (!used.has(repo)) { w.cancel(); this.watching.delete(repo); }
       this.refreshing = false;
       cx.notify();
     });
@@ -241,17 +237,22 @@ export default class Spaces extends View {
     }
   }
 
+  // A loop runs while its watch is the repo's current one.
   watch(repo, cx) {
     if (this.watching.has(repo)) return;
-    this.watching.add(repo);
+    let w = watchFolder(repo);
+    this.watching.set(repo, w);
     cx.spawn(async (cx) => {
       try {
-        while (this.watching.has(repo)) {
-          await watchFolder(repo);
+        for (;;) {
+          await w;
+          if (this.watching.get(repo) !== w) return;
+          w = watchFolder(repo);
+          this.watching.set(repo, w);
           const mine = JSON.stringify([null, repo]);
-          if (this.watching.has(repo)) this.refreshGit(Object.keys(this.git).filter((k) => this.git[k]?.repo === mine), cx);
+          this.refreshGit(Object.keys(this.git).filter((k) => this.git[k]?.repo === mine), cx);
         }
-      } catch { this.watching.delete(repo); }
+      } catch { if (this.watching.get(repo) === w) this.watching.delete(repo); }
     });
   }
 

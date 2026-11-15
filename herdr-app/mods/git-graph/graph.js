@@ -105,7 +105,7 @@ export class Graph {
     // A scrollbar finds its list by name: each copy (panel, pane) needs its own.
     this.listId = `graph-rows-${Math.random().toString(36).slice(2)}`;
     this.all = true; this.remotes = true; this.wide = false; this.graphMax = 160; this.scale = null;
-    this.watchToken = 0; this.seenChange = shared("git-graph.changed");
+    this.watchToken = 0; this.watches = new Set(); this.seenChange = shared("git-graph.changed");
     this.seen = new Map(); this.commitDetails = new Map();
     this.handle = cx.focus_handle();
     this.reset();
@@ -119,7 +119,14 @@ export class Graph {
 
   reset() {
     Object.assign(this, folderState());
+    this.unwatch();
+  }
+
+  // Releases the folder watches; their loops see the new token and stop.
+  unwatch() {
     this.watchToken++; this.watching = null;
+    for (const w of this.watches) w.cancel();
+    this.watches.clear();
   }
 
   // Leaving a folder keeps it as it was; coming back shows that at once, while refresh reads it again.
@@ -215,13 +222,17 @@ export class Graph {
   watch(context, cx) {
     const root = this.root, roots = this.worktrees.map((w) => w.root), watching = JSON.stringify(roots);
     if (this.watching === watching) return;
+    this.unwatch();
     this.watching = watching;
-    const token = ++this.watchToken;
+    const token = this.watchToken;
     const loop = (dir, gitDir) => cx.spawn(async (cx) => {
       try {
         while (token === this.watchToken) {
           // Windows reports backslashes; the ref checks read slashes.
-          const paths = (await watchFolder(dir)).map((p) => p.replace(/\\/g, "/"));
+          const w = watchFolder(dir);
+          this.watches.add(w);
+          const paths = (await w).map((p) => p.replace(/\\/g, "/"));
+          this.watches.delete(w);
           if (token !== this.watchToken) return;
           if (paths.some((p) => (gitDir || inGitDir(p)) && (isRefChange(p) || p.includes("/worktrees/")))) this.refresh(cx, true);
           else if (paths.some((p) => p.endsWith("/index"))) this.statusSoon(cx);
