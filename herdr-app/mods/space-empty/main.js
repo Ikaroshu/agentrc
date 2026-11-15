@@ -1,7 +1,7 @@
 // The only pane of a space's hidden placeholder tab (see spaces-card), shown when you click the space
-// or close its last tab. A header's buttons start a terminal, Claude, Codex or Pi in a new tab, as
+// or close its last tab. A row of buttons starts a terminal, Claude, Codex or Pi in a new tab, as
 // Cmd-T, Cmd-Shift-C and Cmd-Shift-X do; under it, a card per tab in the space, the ones that need
-// you first, each with the end of its screen; on hover, × closes it. With no tabs, only the buttons, centered.
+// you first, each with the end of its screen; on hover, × closes it. With no tabs, only the buttons.
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { theme, spaces, panes, agents, knownAgents, run, hc, shared, settings, home } from "herdr";
@@ -10,6 +10,7 @@ const STARTS = [["claude", "Claude"], ["codex", "Codex"], ["pi", "Pi"]];
 const EMPTY = "space-empty";
 const SNAPSHOT_LINES = 8;
 const CONTENT_MAX_W = 1080;
+const COLUMN_MAX_W = 640;
 // Screens are reread this often, only while the page shows: a hidden copy isn't rendered.
 const REFRESH_MS = 3000;
 const ORDER = { blocked: 0, working: 1, done: 2, idle: 3 };
@@ -86,21 +87,18 @@ export default class SpaceEmpty extends View {
     });
   }
 
-  startButton(t, id, pic, label, argv, small) {
-    return h_flex().id(`empty-${id}`).gap(small ? 8 : 10).items_center().justify_center().cursor_pointer().flex_none()
-      .when(small, (el) => el.w(108).h(36).rounded(8).text_size(13))
-      .when(!small, (el) => el.w(140).h(54).rounded(10))
-      .border(1).border_color(t.border).text_color(t.foreground)
+  startButton(t, id, pic, label, argv) {
+    return h_flex().id(`empty-${id}`).w(132).h(48).gap(10).rounded(10).items_center().justify_center().cursor_pointer().flex_none()
+      .text_size(14).border(1).border_color(t.border).text_color(t.foreground)
       .hover((s) => s.bg(t.hover))
       .on_click(() => run("tab.new", argv ? { argv } : {}))
       .child(pic).child(label);
   }
 
-  startButtons(t, small) {
-    const size = small ? 16 : 20;
+  startButtons(t) {
     return [
-      this.startButton(t, "terminal", svg("icons/shell.svg").size(size).text_color(t.foreground), "Terminal", null, small),
-      ...STARTS.map(([key, label]) => this.startButton(t, key, icon(this.icons[key], size, t.foreground) ?? div().size(size), label, [key], small)),
+      this.startButton(t, "terminal", svg("icons/shell.svg").size(18).text_color(t.foreground), "Terminal", null),
+      ...STARTS.map(([key, label]) => this.startButton(t, key, icon(this.icons[key], 18, t.foreground) ?? div().size(18), label, [key])),
     ];
   }
 
@@ -152,24 +150,20 @@ export default class SpaceEmpty extends View {
       const agent = l && list.find((a) => a.pane === l.pane);
       return { tab, lead: l, label: title(tab, l), agent, i };
     }).sort((a, b) => (ORDER[a.agent?.status] ?? 4) - (ORDER[b.agent?.status] ?? 4) || a.i - b.i);
-    if (!cards.length) {
-      return v_flex().size_full().bg(t.background).items_center().justify_center().text_size(15)
-        .child(h_flex().gap(12).children(this.startButtons(t, false)));
-    }
-    if (Date.now() - this.readAt >= REFRESH_MS) this.refresh(space, cards, cx);
+    if (cards.length && Date.now() - this.readAt >= REFRESH_MS) this.refresh(space, cards, cx);
     const changed = shared("agents.changed") ?? {};
     const now = Date.now();
     const rows = [];
     for (let i = 0; i < cards.length; i += 2) rows.push(cards.slice(i, i + 2));
     // Centered while it fits; auto margins, unlike justify_center, never push the top out of reach.
+    // With fewer than two cards, one narrow column, so nothing sits off to one side.
     return v_flex().id("space-empty").size_full().bg(t.background).text_size(13).overflow_y_scrollbar()
-      .child(v_flex().w_full().max_w(CONTENT_MAX_W).mx_auto().my_auto().px(24).py(22).gap(16)
-        .child(h_flex().gap(8).items_center()
-          .child(div().flex_1().min_w(0).truncate().text_size(15).font_semibold().text_color(t.foreground)
-            .child(`${cards.length} ${cards.length === 1 ? "tab" : "tabs"} running`))
-          .children(this.startButtons(t, true)))
-        .children(rows.map((row) => h_flex().gap(12)
+      .child(v_flex().w_full().max_w(cards.length > 1 ? CONTENT_MAX_W : COLUMN_MAX_W).mx_auto().my_auto().px(24).py(22).gap(12)
+        .child(h_flex().gap(12).justify_center().mb(16).children(this.startButtons(t)))
+        .when(cards.length > 0, (el) => el.child(div().text_size(12).text_color(t.dim).child(`Running here · ${cards.length}`)))
+        .when(cards.length === 1, (el) => el.child(this.card(t, cards[0], changed, now)))
+        .when(cards.length > 1, (el) => el.children(rows.map((row) => h_flex().gap(12)
           .children(row.map((c) => this.card(t, c, changed, now)))
-          .when(row.length === 1, (el) => el.child(div().flex_1())))));
+          .when(row.length === 1, (el) => el.child(div().flex_1()))))));
   }
 }
