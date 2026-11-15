@@ -12,6 +12,7 @@ export default class PaneCorner extends View {
   button(t, id, icon, tip, command, args) {
     return div().id(id).p(3).flex_none().rounded(5).text_color(t.dim).tooltip(tip)
       .hover((s) => s.bg(t.hover).text_color(t.foreground))
+      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
       .on_click((_e, cx) => { cx.stop_propagation(); run(command, args); })
       .child(svg(`mods/pane/${icon}.svg`).size(14));
   }
