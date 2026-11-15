@@ -33,6 +33,7 @@ Herdr transports terminal input and reports observed state; it gives another age
 
 - Follow the task's delegation scope and the repository's role rules. An agent in a Herdr terminal inherits no role, so its first message must carry the whole assignment and limits.
 - Use the agent kind the user requested, otherwise this harness. Do not invent model or effort overrides.
+- A session the user asks for belongs to the user, not to you: open it as its own tab with `herdr-app do tab.new --space <id> --name <name> --argv ... --task ...`. Use the space whose folder holds that project, and create the space with `space.new` if there is none. A tab opened this way has no parent and outlives your session. Start only the helpers you coordinate, such as the workflow's Codex sessions, as children with `hc run`.
 - Use a separate checkout when concurrent edits require it, and do not let two agents edit the same files without agreed ownership.
 - When the user asks to see a helper, open it in the window with `herdr-app do agent.focus`.
 
