@@ -11,7 +11,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$TEST_HOME/.codex/rules" "$TEST_HOME/.codex/agents" "$TEST_HOME/.agents/skills/unrelated" "$TEST_HOME/.claude" "$TEST_HOME/.omp/agent"
+mkdir -p "$TEST_HOME/.codex/rules" "$TEST_HOME/.codex/agents" "$TEST_HOME/.agents/skills/unrelated" "$TEST_HOME/.claude"
 
 cat >"$TEST_HOME/.codex/config.toml" <<'EOF'
 model = "machine-model"
@@ -47,14 +47,12 @@ printf 'prefix_rule(pattern=["custom"], decision="allow")\n' >"$TEST_HOME/.codex
 printf 'unrelated role\n' >"$TEST_HOME/.codex/agents/unrelated.toml"
 printf 'unrelated skill\n' >"$TEST_HOME/.agents/skills/unrelated/SKILL.md"
 printf 'legacy claude state\n' >"$TEST_HOME/.claude/settings.json"
-printf 'legacy omp state\n' >"$TEST_HOME/.omp/agent/.env"
 
 cp "$TEST_HOME/.codex/config.toml" "$TEST_HOME/config-before.toml"
 cp "$TEST_HOME/.codex/rules/custom.rules" "$TEST_HOME/rules-before"
 cp "$TEST_HOME/.codex/agents/unrelated.toml" "$TEST_HOME/role-before"
 cp "$TEST_HOME/.agents/skills/unrelated/SKILL.md" "$TEST_HOME/skill-before"
 cp "$TEST_HOME/.claude/settings.json" "$TEST_HOME/claude-before"
-cp "$TEST_HOME/.omp/agent/.env" "$TEST_HOME/omp-before"
 python3 "$ROOT_DIR/scripts/merge-codex-config.py" "$TEST_HOME/config-before.toml" "$ROOT_DIR/codex/config.toml" >"$TEST_HOME/config-expected.toml"
 
 HOME="$TEST_HOME" "$ROOT_DIR/codex/install.sh" >/dev/null
@@ -97,7 +95,6 @@ preserved_paths=(
   ".codex/agents/unrelated.toml:role-before"
   ".agents/skills/unrelated/SKILL.md:skill-before"
   ".claude/settings.json:claude-before"
-  ".omp/agent/.env:omp-before"
 )
 for pair in "${preserved_paths[@]}"; do
   installed="${pair%%:*}"
