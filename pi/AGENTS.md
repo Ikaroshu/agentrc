@@ -6,7 +6,7 @@
 - Get user approval before adding assurance machinery. Put semantic, integrity, provenance, and consistency audits in tests or explicit maintenance commands. Construct immutable artifacts and required identity once; do not reread, recompute, rehash, or traverse trusted data to prove its producer worked.
 - Prefer current code over legacy readers, migrations, aliases, shims, and compatibility branches unless requested or required by an active consumer. Disclose required rebuilds or reruns before a breaking change.
 - Get explicit user approval before introducing or changing versioning language or constructs, such as `vN`, `schema N`, version identifiers, or version branches. Record actual provenance and source revisions directly.
-- Prefer clear names and structure over comments. Comment only non-obvious logic, important warnings, or a deliberate simplification's ceiling and revisit condition.
+- Prefer clear names and structure over comments. Comment only non-obvious logic, important warnings, or a deliberate simplification's ceiling and revisit condition. Docstrings meet the same bar: at most a one-line summary for a module or class, and a function docstring only for a contract the signature and names cannot state; explain behavior and math in the project's documentation.
 
 ## Debugging
 
