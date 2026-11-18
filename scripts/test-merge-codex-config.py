@@ -95,7 +95,7 @@ nested_arrays = [[1, 2], [3]]
 inline_tables = [{ key = "value", nested = { enabled = true } }, { key = "second", nested = { enabled = false } }]
 '''
     repo_text = '''
-model = "gpt-6-astra"
+model = "gpt-6.2-astra"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 tui.status_line = ["model-with-reasoning", "current-dir"]
@@ -119,7 +119,7 @@ path = "/repo/skill/SKILL.md"
 enabled = true
 '''
     expected = tomllib.loads(machine_text)
-    expected["model"] = "gpt-6-astra"
+    expected["model"] = "gpt-6.2-astra"
     expected["model_reasoning_effort"] = "high"
     expected["personality"] = "pragmatic"
     expected["tui"]["status_line"] = ["model-with-reasoning", "current-dir"]
@@ -136,7 +136,7 @@ enabled = true
         assert run_merge(directory, merged, repo_text) == merged
         assert run_merge(directory, merged, "") == merged
         assert tomllib.loads(run_merge(directory, "", repo_text)) == tomllib.loads('''
-model = "gpt-6-astra"
+model = "gpt-6.2-astra"
 model_reasoning_effort = "high"
 personality = "pragmatic"
 tui.status_line = ["model-with-reasoning", "current-dir"]

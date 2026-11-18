@@ -205,7 +205,7 @@ if set(config) != {
 }:
     raise SystemExit("codex/config.toml must contain only portable behavior and UI settings")
 
-if config["model"] != "gpt-6-astra" or config["model_reasoning_effort"] != "high":
+if config["model"] != "gpt-6.2-astra" or config["model_reasoning_effort"] != "high":
     raise SystemExit("expected Astra with high reasoning as the portable default")
 
 role_specs = {
