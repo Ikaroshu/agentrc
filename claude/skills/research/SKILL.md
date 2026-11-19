@@ -37,9 +37,8 @@ Claude subagents are for well-defined, separable searches only, never the study'
    support or refute them (see [Claims and evidence](#claims-and-evidence)); scope, constraints, and
    non-goals; and what prior work already established. Ask about what is materially unclear; do not
    invent thresholds.
-2. Create one research branch and worktree under `<project-root>/.worktrees/`, based on
-   `origin/main` unless the user names another base, following the repository's branch and
-   worktree rules. Claude and Codex share this one worktree with disjoint file ownership;
+2. Create the branch `research/<name>` and its worktree under `<project-root>/.worktrees/`, based
+   on `origin/main` unless the user names another base, following the repository's worktree rules. Claude and Codex share this one worktree with disjoint file ownership;
    incompatible variants live side by side under different names, flags, or modules.
 3. Create the study workspace, with `board.md` from the [board template](board-template.md) and an
    empty `rounds/`.

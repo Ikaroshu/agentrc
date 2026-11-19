@@ -26,6 +26,7 @@
 
 - Stage files by name so unrelated changes stay out, and commit in the repository's style. A commit request authorizes the checks and post-commit actions the repository requires.
 - When committing on `main`, also push to `origin`; if that would publish unrelated commits, disclose them and ask. Push other branches only when the user or repository workflow authorizes it.
+- An agent working on its own prefixes its branches with its harness: `claude/<name>`, `codex/<name>`, or `pi/<name>`. Branches in the Claude-coordinated, Codex-implemented workflow have no prefix.
 
 ## Development Workflow
 
