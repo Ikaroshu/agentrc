@@ -254,6 +254,7 @@ if pi_settings != {
     "defaultProvider": "openai",
     "defaultModel": "gpt-6.1-terra",
     "defaultThinkingLevel": "high",
+    "hideThinkingBlock": True,
     "enabledModels": [
         "anthropic/claude-sonnet-5-5",
         "openai/gpt-6-astra",
@@ -264,7 +265,7 @@ if pi_settings != {
     "packages": ["npm:pi-web-search@1.7.0", "npm:pi-memory@0.4.2"],
     "skills": ["!~/.agents/skills/**"],
 }:
-    raise SystemExit("pi/settings.json must contain only the portable model defaults, enabled models, pinned packages, and the Codex skill exclusion")
+    raise SystemExit("pi/settings.json must contain only the portable model defaults, thinking display, enabled models, pinned packages, and the Codex skill exclusion")
 json.loads((root / "pi/web-search.json").read_text())
 
 agent_specs = {

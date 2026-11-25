@@ -2,6 +2,7 @@
   "defaultProvider": "openai",
   "defaultModel": "gpt-6.1-terra",
   "defaultThinkingLevel": "high",
+  "hideThinkingBlock": true,
   "enabledModels": [
     "anthropic/claude-sonnet-5-5",
     "openai/gpt-6-astra",
