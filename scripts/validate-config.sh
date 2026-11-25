@@ -56,6 +56,7 @@ required_files=(
   pi/settings.json
   pi/web-search.json
   pi/extensions/guard.ts
+  pi/extensions/guard-fastpath.ts
   pi/extensions/footer.ts
   pi/extensions/memory.ts
   scripts/merge-codex-config.py
@@ -137,6 +138,7 @@ executables=(
   scripts/test-merge-claude-settings.py
   scripts/merge-pi-settings.py
   scripts/test-merge-pi-settings.py
+  scripts/test-guard-fastpath.mjs
   herdr-app/install.sh
 )
 for path in "${executables[@]}"; do
@@ -182,6 +184,8 @@ runtime_paths=(
   "$ROOT_DIR/scripts/test-claude-install.sh"
   "$ROOT_DIR/scripts/test-pi-install.sh"
   "$ROOT_DIR/scripts/test-sync-remote.sh"
+  "$ROOT_DIR/pi/extensions/guard-fastpath.ts"
+  "$ROOT_DIR/scripts/test-guard-fastpath.mjs"
 )
 if rg -n 'archive/' "${runtime_paths[@]}"; then
   echo "Active Codex, Claude, or pi code references the inert archive" >&2
@@ -321,6 +325,11 @@ python3 -m py_compile "$ROOT_DIR/scripts/merge-codex-config.py" "$ROOT_DIR/scrip
 python3 "$ROOT_DIR/scripts/test-merge-codex-config.py"
 python3 "$ROOT_DIR/scripts/test-merge-claude-settings.py"
 python3 "$ROOT_DIR/scripts/test-merge-pi-settings.py"
+if ! command -v node >/dev/null 2>&1; then
+  echo "No node found; required for the guard fast path test." >&2
+  exit 1
+fi
+node "$ROOT_DIR/scripts/test-guard-fastpath.mjs"
 "$ROOT_DIR/scripts/test-codex-install.sh"
 "$ROOT_DIR/scripts/test-claude-install.sh"
 "$ROOT_DIR/scripts/test-pi-install.sh"
