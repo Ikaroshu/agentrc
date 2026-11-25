@@ -1,6 +1,6 @@
 // The shipped spaces mod filled with the cards' background color instead of chrome.
 // Workspace spaces: stable colored avatars, worktrees under their checkout,
-// grouped by machine when more than one is known. After a space's name, the repo
+// grouped by machine, in `hc machine ls` order, when more than one is known. After a space's name, the repo
 // its first terminal is in now, only where unusual: branch, ahead/behind. Click to
 // show its placeholder's choices, right-click for its menu, drag to reorder; + at the row's right starts a new tab there.
 // Under each space, indented, its tabs and their agents' sub-agents.
@@ -431,7 +431,7 @@ export default class Spaces extends View {
     const rows = this.ordered();
     setAgentOrder(rows.flatMap((r) => ctx.list.filter((a) => a.space === r.w.id).map((a) => a.address)));
     const draw = (r) => (collapsed ? [this.compact(r, t)] : [this.row(r, t), ...this.tabRows(r, ctx, t)]);
-    const remote = [...new Set([...rows.map(r => r.w.machine).filter(Boolean), ...this.machines.map(m => m.name)])].sort();
+    const remote = [...new Set([...this.machines.map(m => m.name), ...rows.map(r => r.w.machine).filter(Boolean).sort()])];
     const loading = m => {
       const layout = machines().find(k => k.name === m)?.layout;
       return layout === "loading" || (!layout && this.machines.some(k => k.name === m && k.state === "connected"))
