@@ -187,7 +187,7 @@ runtime_paths=(
   "$ROOT_DIR/pi/extensions/guard-fastpath.ts"
   "$ROOT_DIR/scripts/test-guard-fastpath.mjs"
 )
-if rg -n 'archive/' "${runtime_paths[@]}"; then
+if rg -n 'archive/' "${runtime_paths[@]}" | rg -v '\.plans/archive/'; then
   echo "Active Codex, Claude, or pi code references the inert archive" >&2
   exit 1
 fi

@@ -7,7 +7,7 @@ description: Writes the implementation spec Codex builds from and gets the user'
 
 Don't ask whether to write the spec. If a design question is open, ask that instead; otherwise write it, because the written spec is what the user approves.
 
-Save it to `<project-root>/.plans/specs/<YYYYMMDD>_<short_title>.md` from main, uncommitted, organized around:
+Before saving, move specs in `.plans/specs/` whose filename date is more than 30 days old to `.plans/archive/specs/`. Save it to `<project-root>/.plans/specs/<YYYYMMDD>_<short_title>.md` from main, uncommitted, organized around:
 
 - **Design:** responsibilities, interfaces, data flow, constraints, and material failure behavior.
 - **Outcome:** observable success, active requirements, scope, and non-goals.
