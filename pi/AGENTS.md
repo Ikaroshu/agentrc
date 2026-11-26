@@ -44,5 +44,6 @@
 
 - Pi is the fallback harness for basic tasks while Claude and Codex usage limits are exhausted. Do small, well-scoped work directly; when a task needs a design decision, a spec, or a multi-step implementation, say so and stop instead of starting it.
 - State the plan and get the user's approval before changing files, unless the request already states the exact change.
+- When the guard denies a command or the user declines one, stop and report it; do not retry the same effect in another form.
 - Run servers and long commands, and start helper agents, through Herdr as the `herdr` skill describes. Start helpers only when the user asks.
 - Usage is billed per token from API credits: read targeted ranges instead of whole large files, and keep command output short.

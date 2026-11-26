@@ -1,13 +1,14 @@
-// Deterministic fast path for the guard's bash screen. A command skips the
-// judge only when every segment is a known read-only program with no redirects
-// other than to /dev/null; anything the scanner does not understand is rejected
-// so the judge can decide.
+// Deterministic fast path for the guard's bash screen: decides, without the
+// judge, commands made only of read-only programs and of agentrc's own
+// install, validate, and push commands. Anything the scanner does not
+// understand goes to the judge.
 //
 // Pi loads every file in the extensions directory as an extension entry point,
 // so this module also exports a no-op factory. The parser itself is
 // dependency-free and is tested directly by scripts/test-guard-fastpath.mjs.
+import { homedir } from "node:os";
+import { resolve } from "node:path";
 
-const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 const READ_ONLY_PROGRAMS = new Set([
   "cat", "cd", "date", "df", "du", "echo", "file", "grep", "head", "ls", "pwd",
   "rg", "stat", "tail", "tree", "true", "wc", "which",
@@ -16,10 +17,41 @@ const READ_ONLY_GIT = new Set(["blame", "diff", "log", "rev-parse", "show", "sta
 const READ_ONLY_HERDR_APP = new Set(["--help", "--skill", "commands", "ls", "status"]);
 const READ_ONLY_HC = new Set(["--help", "--skill", "get", "ls"]);
 
-export function isFastPath(command: string): boolean {
-  if (command.trim() === "") return false;
+// Scripts the user pre-approved in agentrc, relative to its root. They run
+// without the judge only while agentrc has no uncommitted code changes.
+export const AGENTRC_SCRIPTS = new Set([
+  "install.sh",
+  "codex/install.sh",
+  "claude/install.sh",
+  "pi/install.sh",
+  "herdr-app/install.sh",
+  "scripts/validate-config.sh",
+]);
+// Code that agentrc's scripts execute, as git pathspecs.
+export const AGENTRC_CODE_PATHSPECS = ["*.sh", "*.py", "*.mjs", "*.ts"];
+
+export type FastPath = "skip" | "skip-if-agentrc-clean" | "judge";
+
+// The pre-approved agentrc commands count only when the command starts in the
+// agentrc root and every cd targets that root, so a failed cd leaves the shell
+// where the guard assumed it was.
+export function classifyCommand(command: string, cwd: string, agentrcRoot: string): FastPath {
+  if (command.trim() === "") return "judge";
   const segments = splitSegments(command);
-  return segments !== null && segments.every(isReadOnlySegment);
+  if (segments === null) return "judge";
+  let inAgentrc = cwd === agentrcRoot;
+  let runsScript = false;
+  for (const tokens of segments) {
+    if (tokens[0] === "cd" && !(tokens.length === 2 && expandHome(tokens[1]) === agentrcRoot)) inAgentrc = false;
+    if (isReadOnlySegment(tokens)) continue;
+    if (inAgentrc && isAgentrcPush(tokens)) continue;
+    if (inAgentrc && isAgentrcScript(tokens, agentrcRoot)) {
+      runsScript = true;
+      continue;
+    }
+    return "judge";
+  }
+  return runsScript ? "skip-if-agentrc-clean" : "skip";
 }
 
 // All words of the command with quotes stripped and separators dropped, or
@@ -29,10 +61,14 @@ export function commandWords(command: string): string[] | null {
   return segments === null ? null : segments.flat();
 }
 
+function expandHome(word: string): string {
+  return word === "~" || word.startsWith("~/") ? homedir() + word.slice(1) : word;
+}
+
 // Splits on top-level &&, ||, ;, |, and newlines, honoring single and double
 // quotes. Returns null on any construct the fast path does not understand:
 // expansions, command substitution, subshells, brace groups, background jobs,
-// or redirects whose target is not /dev/null.
+// or redirects other than to /dev/null and fd duplication like 2>&1.
 function splitSegments(command: string): string[][] | null {
   const segments: string[][] = [[]];
   let word = "";
@@ -106,6 +142,11 @@ function splitSegments(command: string): string[][] | null {
       // anything else means the redirect is attached to an opaque token.
       if (!/^\d*$/.test(word)) return null;
       word = "";
+      if (command[i + 1] === "&") {
+        if (!/^[12](?=$|[\s;|&])/.test(command.slice(i + 2))) return null;
+        i += 3;
+        continue;
+      }
       i += 1;
       while (i < command.length && command[i] === " ") i++;
       const targetStart = i;
@@ -128,19 +169,28 @@ function splitSegments(command: string): string[][] | null {
 }
 
 function isReadOnlySegment(tokens: string[]): boolean {
-  let index = 0;
-  while (index < tokens.length && ASSIGNMENT.test(tokens[index])) index++;
-  if (index >= tokens.length) return true;
-  const program = tokens[index].split("/").pop() ?? "";
-  const args = tokens.slice(index + 1);
-  if (program === "git") return args.length > 0 && READ_ONLY_GIT.has(args[0]);
+  if (tokens.length === 0) return true;
+  const [program, ...args] = tokens;
+  if (program === "git") {
+    return args.length > 0 && READ_ONLY_GIT.has(args[0]) && !args.some((arg) => arg.startsWith("--output"));
+  }
   if (program === "herdr-app") return args.length > 0 && READ_ONLY_HERDR_APP.has(args[0]);
   if (program === "hc") return args.length > 0 && READ_ONLY_HC.has(args[0]);
-  // sed edits in place with -i or --in-place.
-  if (program === "sed") return args.every((arg) => !arg.startsWith("-i") && arg !== "--in-place");
   // rg --pre runs an external command per file.
   if (program === "rg") return !args.some((arg) => arg.startsWith("--pre"));
+  // tree -o writes its listing to a file.
+  if (program === "tree") return !args.some((arg) => arg.startsWith("-o"));
   return READ_ONLY_PROGRAMS.has(program);
+}
+
+function isAgentrcPush(tokens: string[]): boolean {
+  return tokens.length === 4 && tokens[0] === "git" && tokens[1] === "push" && tokens[2] === "origin" && tokens[3] === "main";
+}
+
+function isAgentrcScript(tokens: string[], agentrcRoot: string): boolean {
+  if (tokens.length !== 1 || !tokens[0].includes("/")) return false;
+  const path = resolve(agentrcRoot, expandHome(tokens[0]));
+  return path.startsWith(`${agentrcRoot}/`) && AGENTRC_SCRIPTS.has(path.slice(agentrcRoot.length + 1));
 }
 
 // Not an extension: empty factory so pi's loader accepts this module.
